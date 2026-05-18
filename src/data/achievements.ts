@@ -1,0 +1,28 @@
+import type { AchievementDef } from '../types';
+
+export const ACHIEVEMENTS: readonly AchievementDef[] = [
+  { id: 'first_plow',  name: 'Breaking Ground',  desc: 'Plow your first plot',    check: s => s.stats.plowed >= 1 },
+  { id: 'harvest_10',  name: 'Green Thumb',      desc: 'Harvest 10 crops',        check: s => s.stats.harvested >= 10 },
+  { id: 'harvest_100', name: 'Bountiful',        desc: 'Harvest 100 crops',       check: s => s.stats.harvested >= 100 },
+  { id: 'harvest_500', name: 'Farm Legend',      desc: 'Harvest 500 crops',       check: s => s.stats.harvested >= 500 },
+  { id: 'sell_50',     name: 'Market Day',       desc: 'Sell 50 items',           check: s => s.stats.sold >= 50 },
+  { id: 'sell_500',    name: 'Merchant',         desc: 'Sell 500 items',          check: s => s.stats.sold >= 500 },
+  { id: 'earn_1k',     name: 'First Thousand',   desc: 'Earn 1,000 coins total',  check: s => s.stats.earned >= 1000 },
+  { id: 'earn_10k',    name: 'Wealthy',          desc: 'Earn 10,000 coins total', check: s => s.stats.earned >= 10000 },
+  { id: 'earn_100k',   name: 'Tycoon',           desc: 'Earn 100,000 coins',      check: s => s.stats.earned >= 100000 },
+  { id: 'lvl_5',       name: 'Apprentice',       desc: 'Reach Level 5',           check: s => s.level >= 5 },
+  { id: 'lvl_10',      name: 'Veteran',          desc: 'Reach Level 10',          check: s => s.level >= 10 },
+  { id: 'lvl_20',      name: 'Master Farmer',    desc: 'Reach Level 20',          check: s => s.level >= 20 },
+  { id: 'animal_1',    name: 'Animal Friend',    desc: 'Own your first animal',   check: s => s.stats.animalsOwned >= 1 },
+  { id: 'animal_10',   name: 'Zookeeper',        desc: 'Own 10 animals',          check: s => s.stats.animalsOwned >= 10 },
+  { id: 'orders_10',   name: 'Reliable',         desc: 'Fulfill 10 orders',       check: s => s.stats.ordersFulfilled >= 10 },
+  { id: 'orders_50',   name: 'Trusted Supplier', desc: 'Fulfill 50 orders',       check: s => s.stats.ordersFulfilled >= 50 },
+  { id: 'quest_5',     name: 'Goal-Getter',      desc: 'Complete 5 quests',       check: s => s.stats.questsDone >= 5 },
+  { id: 'quest_25',    name: 'Quest Hero',       desc: 'Complete 25 quests',      check: s => s.stats.questsDone >= 25 },
+  { id: 'fish_1',      name: 'Angler',           desc: 'Catch your first fish',   check: s => s.stats.fishCaught >= 1 },
+  { id: 'fish_25',     name: 'Fisherman',        desc: 'Catch 25 fish',           check: s => s.stats.fishCaught >= 25 },
+  { id: 'cake',        name: 'Baker',            desc: 'Bake a cake',             check: s => (s.stats.itemsProduced.cake ?? 0) >= 1 },
+  { id: 'decor_5',     name: 'Decorator',        desc: 'Place 5 decorations',     check: s => s.stats.decorsPlaced >= 5 },
+  { id: 'tree_1',      name: 'Orchardist',       desc: 'Grow your first tree',    check: s => s.stats.treesGrown >= 1 },
+  { id: 'crow_5',      name: 'Scarecrow',        desc: 'Shoo 5 crows',            check: s => s.stats.crowsShooed >= 5 },
+];

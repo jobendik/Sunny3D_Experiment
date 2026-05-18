@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Sunny Acres — A Farming Adventure</title>
+</head>
+<body>
+<div id="game-root">
+  <canvas id="world"></canvas>
+
+  <!-- Top HUD -->
+  <div class="hud-top">
+    <div class="badge level-badge" id="level-badge">
+      <span>Lv. </span><span id="level-num">1</span>
+    </div>
+    <div class="xp-bar-wrap">
+      <div class="xp-bar">
+        <div class="xp-fill" id="xp-fill"></div>
+        <div class="xp-bar-label" id="xp-label">0 / 10 XP</div>
+      </div>
+    </div>
+    <div class="badge" id="coin-badge">
+      <span class="icon" id="coin-ico"></span>
+      <span id="coin-amount">100</span>
+    </div>
+    <div class="spacer"></div>
+    <div class="badge weather-badge" id="weather-badge" title="Weather">
+      <span id="weather-emoji">☀️</span>
+      <span id="weather-name">Sunny</span>
+    </div>
+    <div class="badge season-badge" id="season-badge" title="Season">
+      <span id="season-emoji">🌷</span>
+      <span id="season-name">Spring</span>
+    </div>
+    <div class="badge" id="day-badge" title="Day"><span id="day-num">Day 1</span></div>
+  </div>
+
+  <!-- Side panel: Quests + Orders -->
+  <div class="side-panel" id="side-panel">
+    <h3 style="margin-top:0">⭐ Quests</h3>
+    <div id="quests-list"></div>
+    <h3 style="margin-top:12px">📋 Orders</h3>
+    <div id="orders-list"></div>
+  </div>
+
+  <!-- Event banner -->
+  <div id="event-banner" class="event-banner"></div>
+
+  <!-- Bottom action bar -->
+  <div class="hud-bottom">
+    <div class="action-bar">
+      <button class="btn" data-tool="hand" title="Hand (interact)">
+        <span class="ico" id="ico-hand"></span>
+        <span class="btn-label">Hand<small>Interact</small></span>
+      </button>
+      <button class="btn" data-tool="plow" title="Plow soil">
+        <span class="ico" id="ico-plow"></span>
+        <span class="btn-label">Plow<small>Tap dirt</small></span>
+      </button>
+      <button class="btn" data-tool="seed" title="Plant seeds">
+        <span class="ico" id="ico-seed"></span>
+        <span class="btn-label" id="seed-btn-label">Seeds<small>Wheat</small></span>
+      </button>
+      <button class="btn" id="open-shop" title="Shop">
+        <span class="ico" id="ico-shop"></span>
+        <span class="btn-label">Shop<small>Buy/Sell</small></span>
+      </button>
+      <button class="btn" id="open-inventory" title="Inventory">
+        <span class="ico" id="ico-inv"></span>
+        <span class="btn-label">Barn<small>Goods</small></span>
+      </button>
+      <button class="btn" id="open-buildings" title="Buildings">
+        <span class="ico" id="ico-build"></span>
+        <span class="btn-label">Build<small>Animals</small></span>
+      </button>
+      <button class="btn" id="open-decor" title="Decorations">
+        <span class="ico" id="ico-decor"></span>
+        <span class="btn-label">Decor<small>Beauty</small></span>
+      </button>
+      <button class="btn" id="open-achievements" title="Achievements">
+        <span class="ico" id="ico-trophy"></span>
+        <span class="btn-label">Awards<small>Goals</small></span>
+      </button>
+      <button class="btn" id="open-news" title="Daily News">
+        <span class="ico" id="ico-news"></span>
+        <span class="btn-label">News<small>Today</small></span>
+      </button>
+      <button class="btn" id="save-btn" title="Save">
+        <span class="ico" id="ico-save"></span>
+        <span class="btn-label">Save<small>Game</small></span>
+      </button>
+      <button class="btn" id="help-btn" title="Help">
+        <span class="ico" id="ico-help"></span>
+        <span class="btn-label">Help<small>?</small></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Generic Modal -->
+  <div class="modal-backdrop" id="modal">
+    <div class="modal">
+      <div class="modal-header">
+        <span id="modal-title">Shop</span>
+        <button class="modal-close" id="modal-close">×</button>
+      </div>
+      <div class="modal-tabs" id="modal-tabs"></div>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <div id="toasts"></div>
+  <div id="tooltip"></div>
+
+  <!-- Fishing minigame overlay -->
+  <div id="fishing-overlay" class="fishing-overlay">
+    <div class="fishing-box">
+      <div class="fishing-title">🎣 Fishing!</div>
+      <div class="fishing-track">
+        <div class="fishing-zone" id="fishing-zone"></div>
+        <div class="fishing-marker" id="fishing-marker"></div>
+      </div>
+      <div class="fishing-hint">Tap when the marker is in the green zone!</div>
+      <button class="fishing-btn" id="fishing-tap">HOOK!</button>
+      <button class="fishing-btn cancel" id="fishing-cancel">Walk away</button>
+    </div>
+  </div>
+
+  <!-- Quest complete burst -->
+  <div id="quest-burst" class="quest-burst"></div>
+
+  <!-- Music toggle -->
+  <button id="music-toggle" class="music-toggle" title="Toggle music">🎵</button>
+</div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

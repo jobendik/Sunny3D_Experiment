@@ -1,0 +1,17 @@
+{
+  "name": "sunnyacres",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Sunny Acres — A Farming Adventure. A canvas-based farming game with procedural sprites and audio.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10"
+  }
+}
