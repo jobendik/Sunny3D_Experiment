@@ -22,6 +22,7 @@ export function openBuildMenu(): void {
     const canAfford = state.coins >= def.price;
     const div = document.createElement('div');
     div.className = 'shop-item';
+    const hint = def.kind === 'fishing' ? '<div style="font-size:11px;color:#3a78c0">💧 Place next to water</div>' : '';
     div.innerHTML = `
       <div style="width:80px;height:60px;display:flex;align-items:center;justify-content:center">
         <img style="max-width:80px;max-height:60px;image-rendering:pixelated" src="${sprites.building[k]!.toDataURL()}">
@@ -29,6 +30,7 @@ export function openBuildMenu(): void {
       <div class="name">${def.name}</div>
       <div class="price"><img class="ico-mini" src="${sprites.item.coin!.toDataURL()}">${def.price}</div>
       <div style="font-size:11px;color:#666">${def.w}×${def.h} tile</div>
+      ${hint}
       <button ${(!canAfford || locked) ? 'disabled' : ''}>Build</button>
       ${locked ? `<div class="locked">🔒 Lv ${def.level}</div>` : ''}
     `;
@@ -47,7 +49,7 @@ export function tryPlaceBuilding(gx: number, gy: number): void {
   const type = placing.type!;
   const def = BUILDINGS[type]!;
   if (!canPlaceBuilding(type, gx, gy)) {
-    toast('Cannot place here', 'error');
+    toast(def.kind === 'fishing' ? 'Fishing Dock must touch water' : 'Cannot place here', 'error');
     sfx.error();
     return;
   }

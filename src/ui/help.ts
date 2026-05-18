@@ -56,7 +56,7 @@ export function openHelp(): void {
         <li>⭐ <b>Quests</b> guide your progress; claim them for big rewards.</li>
         <li>🏆 <b>Achievements</b> reward long-term milestones.</li>
         <li>🐦 <b>Crow attacks</b> — tap crows to scare them before they eat crops.</li>
-        <li>🎣 <b>Fishing dock</b> — build one, then tap it for a timing minigame.</li>
+        <li>🎣 <b>Fishing dock</b> — build one next to the lake, then tap it for a timing minigame.</li>
         <li>🍎 <b>Orchard trees</b> — plant fruit trees once, harvest forever.</li>
         <li>🍽️ <b>Animal feeding</b> — pens need feed to keep producing.</li>
         <li>🎉 <b>Random events</b> — merchants visit, lucky days double yields!</li>

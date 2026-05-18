@@ -41,11 +41,23 @@ import {
 import { initDecor } from './decor';
 
 function setupInitialFarm(): void {
-  for (let gx = 0; gx < GRID_W; gx++) {
-    state.grid[Math.floor(GRID_H / 2)]![gx]!.type = 'path';
+  // Irregular lake in the upper-left — ~20 tiles, big enough to build
+  // a fishing dock alongside and to make the corner feel like real water.
+  const lake: ReadonlyArray<readonly [number, number]> = [
+    [0, 0], [1, 0], [2, 0], [3, 0],
+    [0, 1], [1, 1], [2, 1], [3, 1], [4, 1],
+    [0, 2], [1, 2], [2, 2], [3, 2], [4, 2], [5, 2],
+    [1, 3], [2, 3], [3, 3], [4, 3],
+    [2, 4], [3, 4],
+  ];
+  for (const [x, y] of lake) state.grid[y]![x]!.type = 'water';
+
+  // A single welcoming path entering from the south edge, leading north
+  // into the heart of the farm rather than bisecting it.
+  const entranceX = Math.floor(GRID_W / 2);
+  for (let gy = GRID_H - 1; gy >= 7; gy--) {
+    state.grid[gy]![entranceX]!.type = 'path';
   }
-  const ponds = [{ x: 0, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 0 }];
-  for (const p of ponds) state.grid[p.y]![p.x]!.type = 'water';
 }
 
 function bindToolbarHandlers(): void {
@@ -105,8 +117,12 @@ function init(): void {
   const loaded = loadGame();
   if (!loaded) {
     setupInitialFarm();
-    for (let x = 4; x <= 6; x++) {
-      state.grid[3]![x]!.type = 'plowed';
+    // Small starter plot tucked beside the path entrance: 4×2 plowed soil.
+    const entranceX = Math.floor(GRID_W / 2);
+    for (let y = 7; y <= 8; y++) {
+      for (let x = entranceX + 1; x <= entranceX + 4; x++) {
+        state.grid[y]![x]!.type = 'plowed';
+      }
     }
     maybeUnlockOrders();
   }
