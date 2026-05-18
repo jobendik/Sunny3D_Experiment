@@ -4,7 +4,19 @@ export interface ModalTab {
   render: (container: HTMLElement) => void;
 }
 
+let backdropBound = false;
+function ensureBackdrop(): void {
+  if (backdropBound) return;
+  backdropBound = true;
+  const backdrop = document.getElementById('modal')!;
+  // Tap on the dim backdrop (outside the modal panel) closes it.
+  backdrop.addEventListener('click', e => {
+    if (e.target === backdrop) closeModal();
+  });
+}
+
 export function openModal(title: string, tabs: ModalTab[] | null, defaultTab?: string): void {
+  ensureBackdrop();
   document.getElementById('modal')!.classList.add('open');
   document.getElementById('modal-title')!.textContent = title;
   const tabsEl = document.getElementById('modal-tabs')!;

@@ -11,7 +11,9 @@ export function getSeasonIcon(season: Season): string {
 }
 
 export function pickSeasonForDay(day: number): Season {
-  const idx = Math.floor((day - 1) / 3) % SEASONS.length;
+  const safeDay = Math.max(1, day | 0);
+  const raw = Math.floor((safeDay - 1) / 3) % SEASONS.length;
+  const idx = ((raw % SEASONS.length) + SEASONS.length) % SEASONS.length;
   return SEASONS[idx]!;
 }
 

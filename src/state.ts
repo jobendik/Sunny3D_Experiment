@@ -10,7 +10,7 @@ export const state: GameState = {
   xp: 0,
   level: 1,
   day: 1,
-  startTime: Date.now() / 1000,
+  startTime: typeof performance !== 'undefined' ? performance.now() / 1000 : 0,
   selectedTool: 'hand',
   selectedSeed: 'wheat',
   grid: [],

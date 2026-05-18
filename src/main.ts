@@ -33,6 +33,11 @@ import { openDecorMenu } from './ui/decor-menu';
 import { openAchievements } from './ui/achievements-panel';
 import { openNews } from './ui/news';
 import { openHelp } from './ui/help';
+import {
+  bindMobileShell,
+  updateQuestsFabBadge,
+  updatePlacingBanner,
+} from './ui/mobile-shell';
 import { initDecor } from './decor';
 
 function setupInitialFarm(): void {
@@ -73,12 +78,19 @@ function bindToolbarHandlers(): void {
 }
 
 let lastTime = performance.now();
+let badgeT = 0;
 function frame(now: number): void {
   const dt = Math.min(0.1, (now - lastTime) / 1000);
   lastTime = now;
   update(dt);
   render();
   updateHUD();
+  updatePlacingBanner();
+  badgeT += dt;
+  if (badgeT > 0.5) {
+    badgeT = 0;
+    updateQuestsFabBadge();
+  }
   requestAnimationFrame(frame);
 }
 
@@ -88,6 +100,7 @@ function init(): void {
   attachInput();
   attachToolButtons();
   bindToolbarHandlers();
+  bindMobileShell();
 
   const loaded = loadGame();
   if (!loaded) {
