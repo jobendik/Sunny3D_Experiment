@@ -41,11 +41,46 @@ import {
 import { initDecor } from './decor';
 
 function setupInitialFarm(): void {
-  for (let gx = 0; gx < GRID_W; gx++) {
-    state.grid[Math.floor(GRID_H / 2)]![gx]!.type = 'path';
+  // Irregular lake in the upper-left — ~20 tiles, big enough to build
+  // a fishing dock alongside and to make the corner feel like real water.
+  const lake: ReadonlyArray<readonly [number, number]> = [
+    [0, 0], [1, 0], [2, 0], [3, 0],
+    [0, 1], [1, 1], [2, 1], [3, 1], [4, 1],
+    [0, 2], [1, 2], [2, 2], [3, 2], [4, 2], [5, 2],
+    [1, 3], [2, 3], [3, 3], [4, 3],
+    [2, 4], [3, 4],
+  ];
+  for (const [x, y] of lake) state.grid[y]![x]!.type = 'water';
+
+  // Cross-shaped path: south entrance up to the heart of the farm, with a
+  // short west branch toward the lake that hints "this way to fish".
+  const entranceX = Math.floor(GRID_W / 2);
+  const branchY = 5;
+  for (let gy = GRID_H - 1; gy >= branchY; gy--) {
+    state.grid[gy]![entranceX]!.type = 'path';
   }
-  const ponds = [{ x: 0, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 0 }];
-  for (const p of ponds) state.grid[p.y]![p.x]!.type = 'water';
+  for (let gx = entranceX - 3; gx < entranceX; gx++) {
+    state.grid[branchY]![gx]!.type = 'path';
+  }
+
+  // Soil patches that subtly suggest gameplay zones: NE for animal pens,
+  // SE for production buildings, SW for orchards. Soil is mechanically
+  // equivalent to grass for placement — these are purely visual hints.
+  const soilZones: ReadonlyArray<readonly [number, number]> = [
+    // NE — pen zone
+    [13, 1], [14, 1], [15, 1], [16, 1],
+    [13, 2], [14, 2], [15, 2], [16, 2],
+    [14, 3], [15, 3],
+    // SE — production zone
+    [11, 11], [12, 11], [13, 11], [14, 11],
+    [10, 12], [11, 12], [12, 12], [13, 12], [14, 12], [15, 12],
+    [11, 13], [12, 13], [13, 13], [14, 13],
+    // SW — orchard zone
+    [1, 12], [2, 12], [3, 12],
+    [1, 13], [2, 13], [3, 13],
+    [2, 14], [3, 14],
+  ];
+  for (const [x, y] of soilZones) state.grid[y]![x]!.type = 'soil';
 }
 
 function bindToolbarHandlers(): void {
@@ -105,8 +140,13 @@ function init(): void {
   const loaded = loadGame();
   if (!loaded) {
     setupInitialFarm();
-    for (let x = 4; x <= 6; x++) {
-      state.grid[3]![x]!.type = 'plowed';
+    // Small starter plot tucked next to the path junction: 4×2 plowed soil
+    // on the east side of the vertical path, just below the shore branch.
+    const entranceX = Math.floor(GRID_W / 2);
+    for (let y = 6; y <= 7; y++) {
+      for (let x = entranceX + 1; x <= entranceX + 4; x++) {
+        state.grid[y]![x]!.type = 'plowed';
+      }
     }
     maybeUnlockOrders();
   }
@@ -117,8 +157,8 @@ function init(): void {
 
   state.camX = (GRID_W * TILE) / 2;
   state.camY = (GRID_H * TILE) / 2;
-  state.camScale = Math.min(SW() / (GRID_W * TILE), SH() / (GRID_H * TILE)) * 0.85;
-  state.camScale = clamp(state.camScale, 0.6, 1.6);
+  state.camScale = Math.min(SW() / (GRID_W * TILE), SH() / (GRID_H * TILE)) * 0.9;
+  state.camScale = clamp(state.camScale, 0.45, 1.6);
 
   if (state.quests.length === 0) refillQuests();
   renderQuests();

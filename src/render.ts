@@ -52,6 +52,11 @@ export function render(): void {
   ctx.translate(-state.camX, -state.camY);
 
   // Tiles
+  const isWater = (gx: number, gy: number): boolean => {
+    if (gx < 0 || gy < 0 || gx >= GRID_W || gy >= GRID_H) return false;
+    return state.grid[gy]![gx]!.type === 'water';
+  };
+
   for (let gy = 0; gy < GRID_H; gy++) {
     for (let gx = 0; gx < GRID_W; gx++) {
       const t = state.grid[gy]![gx]!;
@@ -62,6 +67,48 @@ export function render(): void {
       else if (t.type === 'path') s = sprites.path;
       else s = sprites.grass;
       ctx.drawImage(s, gx * TILE, gy * TILE);
+
+      // Sandy shore on grass tiles that border the lake. Drawn before any
+      // other tile content so crops/buildings sit on top cleanly.
+      if (t.type === 'grass') {
+        const N = isWater(gx, gy - 1);
+        const S = isWater(gx, gy + 1);
+        const W = isWater(gx - 1, gy);
+        const E = isWater(gx + 1, gy);
+        if (N || S || E || W) {
+          const px = gx * TILE;
+          const py = gy * TILE;
+          ctx.fillStyle = '#e8d7ac';
+          if (N) ctx.fillRect(px, py, TILE, 7);
+          if (S) ctx.fillRect(px, py + TILE - 7, TILE, 7);
+          if (W) ctx.fillRect(px, py, 7, TILE);
+          if (E) ctx.fillRect(px + TILE - 7, py, 7, TILE);
+          ctx.fillStyle = 'rgba(180,160,120,0.45)';
+          if (N) ctx.fillRect(px, py + 6, TILE, 1);
+          if (S) ctx.fillRect(px, py + TILE - 7, TILE, 1);
+          if (W) ctx.fillRect(px + 6, py, 1, TILE);
+          if (E) ctx.fillRect(px + TILE - 7, py, 1, TILE);
+        }
+      }
+
+      // Lily pads scattered across the lake — deterministic per tile.
+      if (t.type === 'water') {
+        const hash = (gx * 73856093 ^ gy * 19349663) >>> 0;
+        if (hash % 6 === 0) {
+          const cx = gx * TILE + TILE / 2 + ((hash >> 8) % 18) - 9;
+          const cy = gy * TILE + TILE / 2 + ((hash >> 16) % 18) - 9;
+          ctx.fillStyle = '#3a7a30';
+          ctx.beginPath(); ctx.ellipse(cx, cy, 11, 7, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = 'rgba(0,0,0,0.18)';
+          ctx.beginPath(); ctx.ellipse(cx, cy + 1, 11, 7, 0, Math.PI * 1.05, Math.PI * 1.95); ctx.fill();
+          if (hash % 24 === 0) {
+            ctx.fillStyle = '#ff9ed4';
+            ctx.beginPath(); ctx.arc(cx + 3, cy - 2, 3, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#ffe070';
+            ctx.fillRect(cx + 2, cy - 3, 2, 2);
+          }
+        }
+      }
 
       if (state.season === 'winter' && (t.type === 'grass' || t.type === 'soil')) {
         ctx.save();

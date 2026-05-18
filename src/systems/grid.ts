@@ -55,6 +55,7 @@ export function buildingAt(gx: number, gy: number): BuildingInstance | null {
 
 export function canPlaceBuilding(type: string, gx: number, gy: number): boolean {
   const def = BUILDINGS[type]!;
+  let touchesWater = false;
   for (let dy = 0; dy < def.h; dy++) {
     for (let dx = 0; dx < def.w; dx++) {
       const x = gx + dx;
@@ -62,18 +63,24 @@ export function canPlaceBuilding(type: string, gx: number, gy: number): boolean 
       if (x < 0 || y < 0 || x >= GRID_W || y >= GRID_H) return false;
       const t = state.grid[y]![x]!;
       if (t.building) return false;
-      if (def.kind === 'fishing') {
-        if (t.type !== 'grass' && t.type !== 'soil') return false;
-      } else {
-        if (t.type !== 'grass' && t.type !== 'plowed' && t.type !== 'soil') return false;
-      }
+      if (t.type !== 'grass' && t.type !== 'plowed' && t.type !== 'soil') return false;
       if (t.crop) return false;
       if (t.tree) return false;
       if (state.decor.some(d => {
         const dD = DECORATIONS[d.type]!;
         return x >= d.x && x < d.x + dD.w && y >= d.y && y < d.y + dD.h;
       })) return false;
+      if (def.kind === 'fishing' && !touchesWater) {
+        const neighbors: Array<[number, number]> = [
+          [x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1],
+        ];
+        for (const [nx, ny] of neighbors) {
+          if (nx < 0 || ny < 0 || nx >= GRID_W || ny >= GRID_H) continue;
+          if (state.grid[ny]![nx]!.type === 'water') { touchesWater = true; break; }
+        }
+      }
     }
   }
+  if (def.kind === 'fishing' && !touchesWater) return false;
   return true;
 }

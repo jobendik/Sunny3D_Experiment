@@ -92,7 +92,7 @@ function onWheel(e: WheelEvent): void {
   e.preventDefault();
   const factor = e.deltaY > 0 ? 0.88 : 1.12;
   const before = screenToWorld(e.clientX, e.clientY);
-  state.camScale = clamp(state.camScale * factor, 0.5, 2.4);
+  state.camScale = clamp(state.camScale * factor, 0.4, 2.4);
   const after = screenToWorld(e.clientX, e.clientY);
   state.camX += before.x - after.x;
   state.camY += before.y - after.y;
