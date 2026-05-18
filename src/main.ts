@@ -52,12 +52,35 @@ function setupInitialFarm(): void {
   ];
   for (const [x, y] of lake) state.grid[y]![x]!.type = 'water';
 
-  // A single welcoming path entering from the south edge, leading north
-  // into the heart of the farm rather than bisecting it.
+  // Cross-shaped path: south entrance up to the heart of the farm, with a
+  // short west branch toward the lake that hints "this way to fish".
   const entranceX = Math.floor(GRID_W / 2);
-  for (let gy = GRID_H - 1; gy >= 7; gy--) {
+  const branchY = 5;
+  for (let gy = GRID_H - 1; gy >= branchY; gy--) {
     state.grid[gy]![entranceX]!.type = 'path';
   }
+  for (let gx = entranceX - 3; gx < entranceX; gx++) {
+    state.grid[branchY]![gx]!.type = 'path';
+  }
+
+  // Soil patches that subtly suggest gameplay zones: NE for animal pens,
+  // SE for production buildings, SW for orchards. Soil is mechanically
+  // equivalent to grass for placement — these are purely visual hints.
+  const soilZones: ReadonlyArray<readonly [number, number]> = [
+    // NE — pen zone
+    [13, 1], [14, 1], [15, 1], [16, 1],
+    [13, 2], [14, 2], [15, 2], [16, 2],
+    [14, 3], [15, 3],
+    // SE — production zone
+    [11, 11], [12, 11], [13, 11], [14, 11],
+    [10, 12], [11, 12], [12, 12], [13, 12], [14, 12], [15, 12],
+    [11, 13], [12, 13], [13, 13], [14, 13],
+    // SW — orchard zone
+    [1, 12], [2, 12], [3, 12],
+    [1, 13], [2, 13], [3, 13],
+    [2, 14], [3, 14],
+  ];
+  for (const [x, y] of soilZones) state.grid[y]![x]!.type = 'soil';
 }
 
 function bindToolbarHandlers(): void {
@@ -117,9 +140,10 @@ function init(): void {
   const loaded = loadGame();
   if (!loaded) {
     setupInitialFarm();
-    // Small starter plot tucked beside the path entrance: 4×2 plowed soil.
+    // Small starter plot tucked next to the path junction: 4×2 plowed soil
+    // on the east side of the vertical path, just below the shore branch.
     const entranceX = Math.floor(GRID_W / 2);
-    for (let y = 7; y <= 8; y++) {
+    for (let y = 6; y <= 7; y++) {
       for (let x = entranceX + 1; x <= entranceX + 4; x++) {
         state.grid[y]![x]!.type = 'plowed';
       }
@@ -133,8 +157,8 @@ function init(): void {
 
   state.camX = (GRID_W * TILE) / 2;
   state.camY = (GRID_H * TILE) / 2;
-  state.camScale = Math.min(SW() / (GRID_W * TILE), SH() / (GRID_H * TILE)) * 0.85;
-  state.camScale = clamp(state.camScale, 0.6, 1.6);
+  state.camScale = Math.min(SW() / (GRID_W * TILE), SH() / (GRID_H * TILE)) * 0.9;
+  state.camScale = clamp(state.camScale, 0.45, 1.6);
 
   if (state.quests.length === 0) refillQuests();
   renderQuests();
