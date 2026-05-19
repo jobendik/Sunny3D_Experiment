@@ -59,8 +59,9 @@ export function update(dt: number): void {
     const def = BUILDINGS[b.type]!;
     for (const a of state.penAnimals[id]!) {
       a.frameT += dt;
-      if (a.frameT > 0.4) {
-        a.frame = 1 - a.frame;
+      // 4-frame walk cycle at ~5fps (0.2s per frame) — readable but lively.
+      if (a.frameT > 0.2) {
+        a.frame = (a.frame + 1) % 4;
         a.frameT = 0;
       }
       const dx = a.tx - a.ax;

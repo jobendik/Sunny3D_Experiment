@@ -160,7 +160,44 @@ export function renderQuests(): void {
 export function showQuestBurst(text: string): void {
   const el = document.getElementById('quest-burst');
   if (!el) return;
-  el.textContent = '★ ' + text + ' ★';
+  // Rich choreographed burst — ribbon + title + sparkles + streamers
+  el.innerHTML = '';
+  const ribbon = document.createElement('div');
+  ribbon.className = 'qb-ribbon';
+  ribbon.textContent = 'QUEST COMPLETE';
+  el.appendChild(ribbon);
+
+  const title = document.createElement('div');
+  title.className = 'qb-title';
+  title.textContent = text;
+  el.appendChild(title);
+
+  // 8 radial sparkles at varied angles
+  for (let i = 0; i < 8; i++) {
+    const s = document.createElement('span');
+    s.className = 'qb-sparkle';
+    const ang = (i / 8) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+    const dist = 90 + Math.random() * 40;
+    s.style.setProperty('--qb-dx', `${Math.cos(ang) * dist}px`);
+    s.style.setProperty('--qb-dy', `${Math.sin(ang) * dist}px`);
+    s.style.setProperty('--qb-delay', `${0.05 + i * 0.025}s`);
+    s.textContent = i % 2 === 0 ? '✦' : '✧';
+    el.appendChild(s);
+  }
+  // 10 falling streamers
+  const palette = ['#f4b942', '#7fb957', '#f48ac0', '#a6d8f0', '#fff5c0', '#ef6a7c'];
+  for (let i = 0; i < 10; i++) {
+    const s = document.createElement('span');
+    s.className = 'qb-streamer';
+    s.style.left = `${(Math.random() - 0.5) * 220}px`;
+    s.style.background = palette[Math.floor(Math.random() * palette.length)]!;
+    s.style.setProperty('--qb-dx', `${(Math.random() - 0.5) * 40}px`);
+    s.style.setProperty('--qb-dy', `${100 + Math.random() * 80}px`);
+    s.style.setProperty('--qb-rot', `${(Math.random() - 0.5) * 720}deg`);
+    s.style.setProperty('--qb-delay', `${0.2 + Math.random() * 0.2}s`);
+    el.appendChild(s);
+  }
+
   el.classList.remove('show');
   void el.offsetWidth;
   el.classList.add('show');

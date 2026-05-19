@@ -22,6 +22,7 @@ import { perkValue } from '../systems/prestige';
 import { track } from '../systems/telemetry';
 import { comboHit } from '../systems/combo';
 import { addPassPoints } from '../systems/season-pass';
+import { spawnHUDBurst } from '../systems/flyers';
 
 export function openShop(): void {
   openModal('🛒 Shop', [
@@ -144,6 +145,7 @@ export function sellItem(k: string, qty: number): void {
   state.stats.earned += total;
   sfx.coin();
   toast(`+${total}${isEvent('market_rush') ? ' (+50%!)' : ''}`, 'gold');
+  spawnHUDBurst('coin', Math.min(8, 2 + Math.floor(total / 30)));
   updateHUD();
   renderShopSell(document.getElementById('modal-body')!);
   questProgress('sell', k, qty);

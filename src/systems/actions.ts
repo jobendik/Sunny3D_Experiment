@@ -28,6 +28,10 @@ import { track } from './telemetry';
 import { comboHit } from './combo';
 import { maybeSpawnChest } from './treasures';
 import { addPassPoints } from './season-pass';
+import { spawnFlyerBurst } from './flyers';
+import { triggerFlash, triggerShake } from './juice';
+import { spawnPop } from './pops';
+import { sprites } from '../sprites';
 
 export function tryPlaceDecoration(gx: number, gy: number): void {
   const placing = state.placing!;
@@ -155,13 +159,33 @@ export function tryHarvestOrInteract(gx: number, gy: number): void {
     if (combo.count >= 3) {
       floatText(gx * TILE + TILE / 2, gy * TILE + TILE / 2 + 4, `COMBO ×${combo.count}!`, '#e87018');
     }
+    const wasFirstHarvest = state.stats.harvested === 0;
     addItem(crop.item, yieldAmt);
     addXP(crop.xp);
     state.stats.harvested += yieldAmt;
+    // Pop the crop sprite — scale up, drift, fade out — so the harvest
+    // has a clean exit beat instead of vanishing instantly.
+    const cropSprite = sprites.crops[t.crop]?.[3];
+    if (cropSprite) spawnPop(cropSprite, gx * TILE, gy * TILE);
+    if (wasFirstHarvest) {
+      // First harvest — bigger sparkle, gold flash, the player remembers this beat.
+      triggerFlash('#fff5c0', 0.32, 0.45);
+      triggerShake(4, 0.28);
+      spawnParticles(gx * TILE + TILE / 2, gy * TILE + TILE / 2, '#ffd040', 36, true);
+      spawnParticles(gx * TILE + TILE / 2, gy * TILE + TILE / 2, '#fff5c0', 18, true);
+      toast('🌟 First harvest! Sell it at the Shop for coins.', 'gold');
+    }
     drainFertilityOnHarvest(gx, gy);
     recordDiscovery('crop', t.crop, 1);
     sfx.harvest();
     spawnParticles(gx * TILE + TILE / 2, gy * TILE + TILE / 2, '#ffe080', 14);
+    // XP gem arcs up to the level badge — the real "you earned that" beat.
+    spawnFlyerBurst(
+      gx * TILE + TILE / 2,
+      gy * TILE + TILE / 2,
+      'xp',
+      Math.min(4, Math.max(1, Math.ceil(crop.xp / 3))),
+    );
     floatText(
       gx * TILE + TILE / 2,
       gy * TILE + TILE / 2 - 12,

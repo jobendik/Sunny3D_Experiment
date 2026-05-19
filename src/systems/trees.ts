@@ -18,6 +18,8 @@ import { recordDiscovery } from './collection';
 import { specEffects } from './specializations';
 import { activeEffects as weatherGridEffects } from './weather-grid';
 import { beautyBonus } from './beautification';
+import { sprites } from '../sprites';
+import { spawnPopSized } from './pops';
 import type { Tree } from '../types';
 
 export function plantTree(type: string, gx: number, gy: number): boolean {
@@ -69,6 +71,16 @@ export function tryHarvestTree(treeId: string): void {
   tree.lastHarvested = nowSeconds();
   if (state.stats.treesGrown < state.trees.length) state.stats.treesGrown = state.trees.length;
   sfx.harvest();
+  // Pop the fruit icon up and away — feels like picking it from the canopy.
+  const fruitSprite = sprites.item[def.fruit];
+  if (fruitSprite) {
+    spawnPopSized(
+      fruitSprite,
+      tree.x * TILE + TILE / 2 - 18,
+      tree.y * TILE - 12,
+      36, 36,
+    );
+  }
   spawnParticles(tree.x * TILE + TILE / 2, tree.y * TILE + TILE / 2 - 30, '#d83030', 14);
   floatText(
     tree.x * TILE + TILE / 2,

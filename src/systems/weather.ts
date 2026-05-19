@@ -57,6 +57,9 @@ export function updateWeatherAndSeason(): void {
   if (wNm) wNm.textContent = WEATHER[state.weather].name;
   if (sEl) sEl.textContent = getSeasonIcon(state.season);
   if (sNm) sNm.textContent = SEASON_INFO[state.season].name;
+  // Reflect current weather/season on the HUD chips so CSS can tint them.
+  document.getElementById('weather-badge')?.setAttribute('data-weather', state.weather);
+  document.getElementById('season-badge')?.setAttribute('data-season', state.season);
 }
 
 // Seasonal arc events — strategic, set the tone for the new season.

@@ -13,6 +13,7 @@ import { shooCrow } from './systems/crows';
 import { tryPlow, tryPlant, tryHarvestOrInteract, tryPlaceDecoration } from './systems/actions';
 import { plantTree, tryHarvestTree } from './systems/trees';
 import { chestAt, openChest } from './systems/treasures';
+import { spawnRipple } from './systems/flyers';
 import { tryPlaceBuilding } from './ui/build-menu';
 import { openBuildingPanel } from './ui/building-panel';
 import { setTool } from './ui/tools';
@@ -101,6 +102,8 @@ function onWheel(e: WheelEvent): void {
 }
 
 function handleTap(sx: number, sy: number): void {
+  // Universal tap ripple — pure visual feedback that the tap was received
+  spawnRipple(sx, sy);
   const w = screenToWorld(sx, sy);
   const t = tileAt(w.x, w.y);
 

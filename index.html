@@ -10,10 +10,36 @@
 <meta name="apple-mobile-web-app-title" content="Sunny Acres">
 <meta name="format-detection" content="telephone=no">
 <title>Sunny Acres — A Farming Adventure</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap">
 </head>
 <body>
 <div id="game-root">
   <canvas id="world"></canvas>
+
+  <!-- Splash overlay: branded intro on first paint -->
+  <div id="splash" class="splash">
+    <div class="splash-bg" aria-hidden="true"></div>
+    <div class="splash-rays" aria-hidden="true"></div>
+    <div class="splash-content">
+      <div class="splash-mark" aria-hidden="true">
+        <span class="splash-sun">☀️</span>
+        <span class="splash-sprout">🌱</span>
+      </div>
+      <h1 class="splash-title">
+        <span class="splash-word splash-word-1">Sunny</span>
+        <span class="splash-word splash-word-2">Acres</span>
+      </h1>
+      <p class="splash-tag">A Farming Adventure</p>
+      <button class="splash-cta" id="splash-cta" type="button">
+        <span class="splash-cta-label">Start Playing</span>
+        <span class="splash-cta-sub" id="splash-cta-sub">Tap or press any key</span>
+      </button>
+      <div class="splash-credits">v2 · cozy mastery</div>
+    </div>
+  </div>
 
   <!-- Top HUD: two tiers (primary + secondary) -->
   <div class="hud-top">
@@ -23,13 +49,16 @@
       </div>
       <div class="xp-bar-wrap">
         <div class="xp-bar">
-          <div class="xp-fill" id="xp-fill"></div>
+          <div class="xp-fill" id="xp-fill">
+            <span class="xp-sheen" aria-hidden="true"></span>
+          </div>
           <div class="xp-bar-label" id="xp-label">0 / 10 XP</div>
         </div>
       </div>
       <div class="badge coin-badge" id="coin-badge">
         <span class="icon" id="coin-ico"></span>
         <span id="coin-amount">100</span>
+        <span class="badge-glint" aria-hidden="true"></span>
       </div>
     </div>
     <div class="hud-top-row hud-top-secondary">
@@ -82,6 +111,12 @@
 
   <!-- Live combo meter (floating) -->
   <div id="combo-hud" class="combo-hud" hidden></div>
+
+  <!-- Tutorial spotlight + arrow (highlights the next-action button) -->
+  <div id="tutorial-spotlight" class="tutorial-spotlight" hidden></div>
+  <div id="tutorial-arrow" class="tutorial-arrow" hidden>
+    <span class="tutorial-arrow-inner">▼</span>
+  </div>
 
   <!-- Tutorial bubble (non-blocking) -->
   <div id="tutorial-bubble" class="tutorial-bubble" hidden>

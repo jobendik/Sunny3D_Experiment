@@ -54,7 +54,13 @@ export function buildSprites(): void {
 
   sprites.animal = {};
   for (const k of Object.keys(ANIMALS)) {
-    sprites.animal[k] = [spriteAnimal(k, 0), spriteAnimal(k, 1)];
+    // 4-frame walk cycle: idle, step-up, idle (mirrored), step-down
+    sprites.animal[k] = [
+      spriteAnimal(k, 0),
+      spriteAnimal(k, 1),
+      spriteAnimal(k, 2),
+      spriteAnimal(k, 3),
+    ];
   }
 
   sprites.building = {};

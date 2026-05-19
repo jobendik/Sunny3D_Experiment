@@ -6,6 +6,7 @@ import { toast } from '../ui/toasts';
 import { updateHUD } from '../ui/hud';
 import { spawnParticles, floatText } from './particles';
 import { addXP } from './xp';
+import { spawnFlyerBurst } from './flyers';
 import { checkAchievements } from './achievements';
 import { isEvent } from './events';
 import type { Crow } from '../types';
@@ -121,6 +122,7 @@ export function shooCrow(crowId: string): void {
   addXP(2);
   state.coins += 5;
   state.stats.earned += 5;
+  spawnFlyerBurst(c.x, c.y, 'coin', 3);
   updateHUD();
   checkAchievements();
 }

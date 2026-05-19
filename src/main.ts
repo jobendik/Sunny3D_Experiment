@@ -73,6 +73,7 @@ import { openWheel } from './ui/wheel-panel';
 import { openPass } from './ui/pass-panel';
 import { renderComboHud } from './ui/combo-hud';
 import { maybeOpenWelcomeBack } from './ui/welcome-back';
+import { bindSplash, startCameraIntro, tickCameraIntro } from './systems/intro';
 
 function setupInitialFarm(): void {
   // Irregular lake in the upper-left — ~20 tiles, big enough to build
@@ -162,6 +163,7 @@ let railT = 0;
 function frame(now: number): void {
   const dt = Math.min(0.1, (now - lastTime) / 1000);
   lastTime = now;
+  tickCameraIntro(dt);
   update(dt);
   render();
   updateHUD();
@@ -269,7 +271,11 @@ function init(): void {
   checkAchievements();
 
   if (!loaded) {
-    setTimeout(openHelp, 500);
+    // Splash overlay + cinematic camera intro for fresh sessions
+    bindSplash(() => {
+      startCameraIntro();
+      setTimeout(openHelp, 1600);
+    });
     // Drop a starter chest near the entrance plot so the new player gets an
     // immediate "wow" moment within the first 30 seconds of play.
     setTimeout(() => {
@@ -284,8 +290,10 @@ function init(): void {
         });
         toast('A welcome chest appeared on your farm! Tap to open it.', 'gold');
       }
-    }, 4000);
+    }, 6500);
   } else {
+    // Returning sessions skip the splash entirely
+    document.getElementById('splash')?.remove();
     // Show a rich "while you were away" panel if applicable, else the toast
     setTimeout(maybeOpenWelcomeBack, 400);
     toast('Welcome back!');

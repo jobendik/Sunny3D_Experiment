@@ -67,8 +67,15 @@ export function spriteAnimal(kind: string, frame: number): HTMLCanvasElement {
   const g = c.getContext('2d')!;
   const cx = W / 2;
   const baseY = 50;
-  const bob = frame ? -2 : 0;
-  const legY = frame ? 2 : 0;
+  // 4-frame walk cycle: 0=idle stand, 1=mid-step up, 2=cross step, 3=mid-step down
+  // body bobs in a sine wave, legs alternate diagonally for a real walk.
+  const t = (frame % 4) / 4;
+  const bob = Math.round(Math.sin(t * Math.PI * 2) * -2);
+  const legAFwd = Math.round(Math.sin(t * Math.PI * 2) * 2);   // front-left + back-right
+  const legBFwd = Math.round(Math.sin((t + 0.5) * Math.PI * 2) * 2); // opposite pair
+  const tailWag = Math.round(Math.sin(t * Math.PI * 2 + 0.3) * 2);
+  // Backwards-compat: legY ~ legAFwd for the chicken/duck (which use 2 legs).
+  const legY = legAFwd;
 
   // Ground shadow
   shadow(g, cx, baseY + 6, cfg.w * 0.4);
@@ -146,11 +153,12 @@ export function spriteAnimal(kind: string, frame: number): HTMLCanvasElement {
     }
 
   } else if (kind === 'cow') {
-    // Legs
+    // Legs — front-left + back-right move together (legAFwd), the other pair on legBFwd
     const legPositions = [-0.3, -0.05, 0.1, 0.3];
+    const legPhases = [legAFwd, legBFwd, legAFwd, legBFwd];
     for (let i = 0; i < 4; i++) {
       const lx = cx + cfg.w * legPositions[i]!;
-      const lOff = i % 2 === 0 ? legY : -legY;
+      const lOff = legPhases[i]!;
       g.save();
       g.strokeStyle = cfg.accent;
       g.lineWidth = 4;
@@ -198,20 +206,21 @@ export function spriteAnimal(kind: string, frame: number): HTMLCanvasElement {
     // Eye
     eye(g, cx + 14, baseY - 18 + bob, 2);
 
-    // Tail
+    // Tail (wags with tailWag)
     g.strokeStyle = cfg.color;
     g.lineWidth = 1.5;
     g.beginPath();
     g.moveTo(cx - cfg.w * 0.45, baseY - 12 + bob);
-    g.quadraticCurveTo(cx - cfg.w * 0.55, baseY - 6 + bob, cx - cfg.w * 0.5, baseY - 2 + bob);
+    g.quadraticCurveTo(cx - cfg.w * 0.55 + tailWag, baseY - 6 + bob, cx - cfg.w * 0.5 + tailWag * 2, baseY - 2 + bob);
     g.stroke();
-    softCircle(g, cx - cfg.w * 0.5, baseY - 2 + bob, 2, cfg.accent, 0.7);
+    softCircle(g, cx - cfg.w * 0.5 + tailWag * 2, baseY - 2 + bob, 2, cfg.accent, 0.7);
 
   } else if (kind === 'sheep') {
-    // Legs (dark)
+    // Legs (dark) — same alternating-pair walk
+    const sheepPhases = [legAFwd, legBFwd, legAFwd, legBFwd];
     for (let i = 0; i < 4; i++) {
       const lx = cx - 6 + i * 4;
-      const lOff = i % 2 === 0 ? legY : -legY;
+      const lOff = sheepPhases[i]!;
       g.strokeStyle = cfg.accent;
       g.lineWidth = 3;
       g.lineCap = 'round';
@@ -250,10 +259,11 @@ export function spriteAnimal(kind: string, frame: number): HTMLCanvasElement {
     eye(g, cx + 17, baseY - 13 + bob, 1.5, '#2a1a08');
 
   } else if (kind === 'pig') {
-    // Legs
+    // Legs — diagonal pair alternation
+    const pigPhases = [legAFwd, legBFwd, legAFwd, legBFwd];
     for (let i = 0; i < 4; i++) {
       const lx = cx - 8 + i * 5;
-      const lOff = i % 2 === 0 ? legY : -legY;
+      const lOff = pigPhases[i]!;
       g.strokeStyle = darker(cfg.color, 30);
       g.lineWidth = 3.5;
       g.lineCap = 'round';
@@ -303,10 +313,11 @@ export function spriteAnimal(kind: string, frame: number): HTMLCanvasElement {
     g.stroke();
 
   } else if (kind === 'goat') {
-    // Legs
+    // Legs — diagonal pair alternation
+    const goatPhases = [legAFwd, legBFwd, legAFwd, legBFwd];
     for (let i = 0; i < 4; i++) {
       const lx = cx - 8 + i * 5;
-      const lOff = i % 2 === 0 ? legY : -legY;
+      const lOff = goatPhases[i]!;
       g.strokeStyle = darker(cfg.color, 30);
       g.lineWidth = 3;
       g.lineCap = 'round';

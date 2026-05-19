@@ -13,6 +13,7 @@ import { addWeeklyPoints } from './weekly';
 import { checkAchievements } from './achievements';
 import { track } from './telemetry';
 import { addPassPoints } from './season-pass';
+import { spawnHUDBurst } from './flyers';
 import type { Order } from '../types';
 
 export function generateOrder(): Order {
@@ -50,6 +51,8 @@ export function fulfillOrder(orderId: string): void {
   addXP(o.xp);
   sfx.order(); sfx.coin();
   toast(`Order fulfilled! +${o.reward}`, 'gold');
+  spawnHUDBurst('coin', Math.min(8, 3 + Math.floor(o.reward / 25)));
+  spawnHUDBurst('xp', Math.min(4, 1 + Math.floor(o.xp / 6)));
   state.orders.splice(idx, 1);
   setTimeout(() => {
     state.orders.push(generateOrder());
