@@ -20,6 +20,7 @@ import { penFeedLevel } from './systems/pens';
 import { mousePos } from './input';
 import { drawDecor } from './decor';
 import { currentBeacon } from './systems/goal-beacon';
+import { tickShake, tickFlash } from './systems/juice';
 
 interface Drawable {
   y: number;
@@ -48,7 +49,9 @@ export function render(): void {
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, SW(), SH());
 
-  ctx.translate(SW() / 2, SH() / 2);
+  // Screen-space jiggle for celebrations
+  const shake = tickShake(1 / 60);
+  ctx.translate(SW() / 2 + shake.dx, SH() / 2 + shake.dy);
   ctx.scale(state.camScale, state.camScale);
   ctx.translate(-state.camX, -state.camY);
 
@@ -365,6 +368,42 @@ export function render(): void {
     ctx.restore();
   }
 
+  // Treasure chests
+  if (state.treasures) {
+    for (const ch of state.treasures.chests) {
+      const cx = ch.gx * TILE + TILE / 2;
+      const cy = ch.gy * TILE + TILE / 2;
+      const bob = Math.sin(performance.now() / 240 + ch.gx + ch.gy) * 2;
+      ctx.save();
+      ctx.translate(cx, cy + bob);
+      // Aura
+      const grad = ctx.createRadialGradient(0, 0, 6, 0, 0, 26);
+      grad.addColorStop(0, ch.rare ? 'rgba(200, 120, 255, 0.5)' : 'rgba(255, 220, 100, 0.4)');
+      grad.addColorStop(1, 'rgba(255, 220, 100, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(0, 4, 26, 0, Math.PI * 2);
+      ctx.fill();
+      // Chest body
+      const w = 22, h = 16;
+      ctx.fillStyle = ch.rare ? '#9038c0' : '#a06028';
+      ctx.fillRect(-w / 2, -h / 4, w, h);
+      ctx.fillStyle = ch.rare ? '#c890ff' : '#d8a060';
+      ctx.fillRect(-w / 2, -h / 4, w, 4);
+      ctx.fillStyle = '#ffd040';
+      ctx.fillRect(-2, -h / 4 + 4, 4, 6);
+      ctx.fillRect(-w / 2, 1, w, 1);
+      // Sparkle
+      const sparkle = Math.sin(performance.now() / 200) > 0.5;
+      if (sparkle) {
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(w / 2 - 5, -h / 4 - 4, 2, 2);
+        ctx.fillRect(-w / 2 + 3, -h / 4 - 6, 1.5, 1.5);
+      }
+      ctx.restore();
+    }
+  }
+
   // Goal beacon — soft glow over the recommended next action target
   const beacon = currentBeacon();
   if (beacon) {
@@ -419,6 +458,17 @@ export function render(): void {
   drawDecor();
 
   ctx.restore();
+
+  // Full-screen celebration flash
+  const flash = tickFlash(1 / 60);
+  if (flash) {
+    ctx.save();
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.globalAlpha = flash.intensity * (1 - flash.age / flash.duration);
+    ctx.fillStyle = flash.color;
+    ctx.fillRect(0, 0, SW(), SH());
+    ctx.restore();
+  }
 
   // Screen-space atmospheric overlay
   ctx.save();

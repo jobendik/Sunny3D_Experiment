@@ -11,6 +11,7 @@ import { ITEMS } from '../data/items';
 import { nowSeconds } from '../utils';
 import { cropStage, isWilting } from './crops';
 import { canClaimStreak, timedClaimReady } from './daily';
+import { canSpin } from './wheel';
 import { getTreeStage } from './trees';
 import { penFeedLevel } from './pens';
 
@@ -47,6 +48,14 @@ export function rankObjectives(): ObjectiveSuggestion[] {
     out.push({
       text: 'Claim timed reward',
       icon: '⏱️', priority: 90, actionId: 'claimTimed',
+    });
+  }
+
+  // -------- High: daily wheel spin --------
+  if (canSpin()) {
+    out.push({
+      text: 'Spin the Daily Wheel',
+      icon: '🎡', priority: 92, actionId: 'openWheel',
     });
   }
 

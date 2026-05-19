@@ -63,6 +63,16 @@ import { openSnapshot } from './ui/snapshot-panel';
 import { renderObjectiveRail } from './ui/objective-rail';
 import { renderTutorialBubble, bindTutorial } from './ui/tutorial-overlay';
 import { renderChoiceOverlay, bindChoice } from './ui/choice-overlay';
+// CrazyGames-launch retention extras
+import { initWheel } from './systems/wheel';
+import { initCombo } from './systems/combo';
+import { initTreasures, tickTreasures } from './systems/treasures';
+import { initPass } from './systems/season-pass';
+import { bindReadyNotifier, tickReadyTitle } from './systems/ready-notifier';
+import { openWheel } from './ui/wheel-panel';
+import { openPass } from './ui/pass-panel';
+import { renderComboHud } from './ui/combo-hud';
+import { maybeOpenWelcomeBack } from './ui/welcome-back';
 
 function setupInitialFarm(): void {
   // Irregular lake in the upper-left — ~20 tiles, big enough to build
@@ -123,6 +133,8 @@ function bindToolbarHandlers(): void {
   document.getElementById('open-leaderboard')!.addEventListener('click', openLeaderboard);
   document.getElementById('open-prestige')!.addEventListener('click', openPrestige);
   document.getElementById('open-snapshot')!.addEventListener('click', openSnapshot);
+  document.getElementById('open-wheel')!.addEventListener('click', openWheel);
+  document.getElementById('open-pass')!.addEventListener('click', openPass);
   document.getElementById('save-btn')!.addEventListener('click', () => {
     saveGame();
     toast('Game saved!');
@@ -165,7 +177,9 @@ function frame(now: number): void {
     renderObjectiveRail();
     renderTutorialBubble();
     renderChoiceOverlay();
+    tickReadyTitle();
   }
+  renderComboHud();
   requestAnimationFrame(frame);
 }
 
@@ -214,6 +228,12 @@ function init(): void {
   initBiome();
   initPrestige();
   initTutorial();
+  // Retention extras
+  initWheel();
+  initCombo();
+  initTreasures();
+  initPass();
+  bindReadyNotifier();
   track(loaded ? 'session_resume' : 'session_new', { level: state.level });
 
   state.camX = (GRID_W * TILE) / 2;
@@ -250,7 +270,24 @@ function init(): void {
 
   if (!loaded) {
     setTimeout(openHelp, 500);
+    // Drop a starter chest near the entrance plot so the new player gets an
+    // immediate "wow" moment within the first 30 seconds of play.
+    setTimeout(() => {
+      const entrance = Math.floor(GRID_W / 2);
+      const tx = entrance + 1, ty = 7;
+      if (state.treasures && !state.treasures.chests.some(c => c.gx === tx && c.gy === ty)) {
+        state.treasures.chests.push({
+          id: 'startergift', gx: tx, gy: ty,
+          spawnedAt: performance.now() / 1000,
+          expiresAt: performance.now() / 1000 + 300,
+          rare: true,
+        });
+        toast('A welcome chest appeared on your farm! Tap to open it.', 'gold');
+      }
+    }, 4000);
   } else {
+    // Show a rich "while you were away" panel if applicable, else the toast
+    setTimeout(maybeOpenWelcomeBack, 400);
     toast('Welcome back!');
   }
 

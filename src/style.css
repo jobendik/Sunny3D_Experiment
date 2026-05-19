@@ -1639,6 +1639,149 @@
   }
 
   /* ====================================================
+     COMBO HUD
+     ==================================================== */
+  .combo-hud {
+    position: absolute;
+    bottom: calc(85px + var(--safe-bottom));
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(180deg, #ff9050, #e84030);
+    color: white;
+    border: 3px solid #fff;
+    border-radius: 14px;
+    padding: 8px 16px;
+    box-shadow: 0 4px 16px rgba(232,64,48,0.6);
+    z-index: 26;
+    text-align: center;
+    pointer-events: none;
+    animation: comboPop 0.25s ease-out;
+  }
+  .combo-hud[hidden] { display: none; }
+  .combo-count {
+    font-size: 22px;
+    font-weight: bold;
+    text-shadow: 0 2px 0 rgba(0,0,0,0.4);
+    letter-spacing: 1px;
+  }
+  .combo-mult { font-size: 12px; opacity: 0.9; }
+  .combo-bar {
+    width: 100%; height: 5px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 3px;
+    margin-top: 4px;
+    overflow: hidden;
+  }
+  .combo-bar-fill {
+    height: 100%; background: #fff;
+    transition: width 0.1s linear;
+  }
+  @keyframes comboPop {
+    from { transform: translateX(-50%) scale(0.7); opacity: 0; }
+    to { transform: translateX(-50%) scale(1); opacity: 1; }
+  }
+  @media (max-width: 780px) {
+    .combo-hud { bottom: calc(80px + var(--safe-bottom)); padding: 6px 12px; }
+    .combo-count { font-size: 18px; }
+  }
+
+  /* ====================================================
+     WHEEL OF FORTUNE
+     ==================================================== */
+  .wheel-wrap {
+    position: relative;
+    width: 280px;
+    height: 280px;
+    margin: 0 auto 16px;
+  }
+  .wheel-svg { width: 100%; height: 100%; }
+  .wheel-pointer {
+    position: absolute;
+    left: 50%; top: -8px;
+    transform: translateX(-50%);
+    font-size: 28px;
+    color: var(--gold-dark);
+    text-shadow: 0 2px 0 var(--shadow);
+    z-index: 2;
+  }
+  .wheel-actions { text-align: center; }
+  .wheel-actions button {
+    font-size: 18px;
+    padding: 12px 32px;
+  }
+
+  /* ====================================================
+     SEASON PASS
+     ==================================================== */
+  .pass-header { text-align: center; margin-bottom: 12px; }
+  .pass-title { font-size: 22px; font-weight: bold; color: var(--wood-2); }
+  .pass-meta { font-size: 13px; color: #5a3d0c; margin-top: 4px; }
+  .pass-track {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 6px;
+  }
+  .pass-tier {
+    background: var(--panel);
+    border: 2px solid var(--panel-edge);
+    border-radius: 10px;
+    padding: 6px;
+    text-align: center;
+  }
+  .pass-tier.reached {
+    background: linear-gradient(180deg, #fff7da, #ffe9b0);
+    border-color: var(--gold-dark);
+  }
+  .pass-tier.claimed { opacity: 0.6; }
+  .pass-tier-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(180deg, #ffe88a, var(--gold-dark));
+    margin: 0 auto;
+    line-height: 28px;
+    font-weight: bold;
+    color: #5a3d0c;
+  }
+  .pass-tier-reward { font-size: 12px; margin: 4px 0; font-weight: bold; color: #3a2410; }
+  .pass-tier button {
+    background: var(--green-btn);
+    color: white; border: none; border-radius: 6px;
+    padding: 4px; width: 100%; font-family: inherit; font-weight: bold;
+    cursor: pointer; font-size: 11px;
+  }
+  .pass-tier button:disabled { background: #aaa; cursor: not-allowed; }
+
+  /* ====================================================
+     WELCOME BACK MODAL
+     ==================================================== */
+  .welcome-back-card { text-align: center; padding: 8px; }
+  .wb-headline { font-size: 16px; color: #5a3d0c; }
+  .wb-subheadline { font-size: 13px; color: #888; margin: 4px 0 10px; }
+  .wb-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .wb-block {
+    background: linear-gradient(180deg, #fff7da, #ffe9b0);
+    border: 2px solid var(--gold-dark);
+    border-radius: 12px;
+    padding: 10px;
+  }
+  .wb-big { font-size: 28px; font-weight: bold; color: #5a3d0c; }
+  .wb-cap { font-size: 11px; color: #7a4f2e; }
+  .wb-row {
+    display: flex; gap: 4px; align-items: center;
+    justify-content: center;
+    font-size: 11px; margin-top: 2px;
+  }
+  .wb-value {
+    font-size: 14px; font-weight: bold; color: var(--gold-dark);
+    margin: 8px 0;
+  }
+
+  /* ====================================================
      EMPTY STATES
      ==================================================== */
   .empty { text-align: center; padding: 20px; color: #888; font-size: 13px; }

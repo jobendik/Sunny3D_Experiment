@@ -24,6 +24,8 @@ import { regenerateCharges, pruneExpired } from './systems/weather-grid';
 import { tickDeferredPayouts } from './systems/event-choices';
 import { maybeShowHints } from './systems/hints';
 import { tickVisitors } from './systems/visitors';
+import { tickTreasures } from './systems/treasures';
+import { rolloverIfExpired } from './systems/season-pass';
 
 let smokeT = 0;
 
@@ -136,6 +138,8 @@ export function update(dt: number): void {
     pruneExpired();
     maybeShowHints();
     tickVisitors();
+    tickTreasures();
+    rolloverIfExpired();
   }
 
   // Weather particles

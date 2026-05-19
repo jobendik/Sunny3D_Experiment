@@ -12,6 +12,7 @@ import { dailyChallengeProgress } from './daily';
 import { addWeeklyPoints } from './weekly';
 import { checkAchievements } from './achievements';
 import { track } from './telemetry';
+import { addPassPoints } from './season-pass';
 import type { Order } from '../types';
 
 export function generateOrder(): Order {
@@ -59,6 +60,7 @@ export function fulfillOrder(orderId: string): void {
   questProgress('orders', null, 1);
   dailyChallengeProgress('orders', null, 1);
   addWeeklyPoints(20, 'craft');
+  addPassPoints(12);
   track('order_fulfilled', { reward: o.reward });
   checkAchievements();
 }

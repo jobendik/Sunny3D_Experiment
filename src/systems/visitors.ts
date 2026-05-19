@@ -13,16 +13,6 @@ import { localDayIndex } from './daily';
 
 const VISITOR_NAMES = ['Holly', 'Marsh', 'River', 'Oat', 'Pip', 'Sage', 'Clover', 'Wren'];
 
-interface VisitorState {
-  lastVisitDay: number;
-}
-
-declare module '../types' {
-  interface GameState {
-    visitors?: VisitorState;
-  }
-}
-
 export function tickVisitors(): void {
   if (!state.visitors) state.visitors = { lastVisitDay: 0 };
   const today = localDayIndex();

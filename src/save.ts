@@ -46,6 +46,12 @@ interface SaveData {
   deferredPayouts?: GameState['deferredPayouts'];
   tileTraits?: GameState['tileTraits'];
   farmName?: string;
+  wheel?: GameState['wheel'];
+  combo?: GameState['combo'];
+  treasures?: GameState['treasures'];
+  pass?: GameState['pass'];
+  visitors?: GameState['visitors'];
+  lastSessionEndedAt?: number;
 }
 
 export function saveGame(): void {
@@ -90,6 +96,12 @@ export function saveGame(): void {
     deferredPayouts: state.deferredPayouts,
     tileTraits: state.tileTraits,
     farmName: state.farmName,
+    wheel: state.wheel,
+    combo: state.combo,
+    treasures: state.treasures,
+    pass: state.pass,
+    visitors: state.visitors,
+    lastSessionEndedAt: Date.now(),
   };
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
@@ -145,6 +157,12 @@ export function loadGame(): boolean {
     if (data.deferredPayouts) state.deferredPayouts = data.deferredPayouts;
     if (data.tileTraits) state.tileTraits = data.tileTraits;
     if (data.farmName) state.farmName = data.farmName;
+    if (data.wheel) state.wheel = data.wheel;
+    if (data.combo) state.combo = data.combo;
+    if (data.treasures) state.treasures = data.treasures;
+    if (data.pass) state.pass = data.pass;
+    if (data.visitors) state.visitors = data.visitors;
+    if (data.lastSessionEndedAt) state.lastSessionEndedAt = data.lastSessionEndedAt;
 
     const offset = data.saveTime || 0;
     const curNow = nowSeconds();

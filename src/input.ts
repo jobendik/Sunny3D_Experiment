@@ -12,6 +12,7 @@ import { tileAt, buildingAt } from './systems/grid';
 import { shooCrow } from './systems/crows';
 import { tryPlow, tryPlant, tryHarvestOrInteract, tryPlaceDecoration } from './systems/actions';
 import { plantTree, tryHarvestTree } from './systems/trees';
+import { chestAt, openChest } from './systems/treasures';
 import { tryPlaceBuilding } from './ui/build-menu';
 import { openBuildingPanel } from './ui/building-panel';
 import { setTool } from './ui/tools';
@@ -115,6 +116,14 @@ function handleTap(sx: number, sy: number): void {
   }
 
   if (!t) return;
+
+  // Chest tap takes precedence
+  const chest = chestAt(t.gx, t.gy);
+  if (chest) {
+    openChest(chest.id);
+    haptic(15);
+    return;
+  }
 
   if (state.placing && state.placing.decor) {
     tryPlaceDecoration(t.gx, t.gy);

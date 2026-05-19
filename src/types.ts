@@ -412,6 +412,42 @@ export interface DeferredPayout {
   xp: number;
 }
 
+export interface WheelRoot {
+  lastSpinDay: number;
+  spinning: boolean;
+  pendingResult: number | null;
+}
+
+export interface ComboRoot {
+  count: number;
+  lastAt: number;
+  highest: number;
+}
+
+export interface TreasuresRoot {
+  chests: Array<{
+    id: string;
+    gx: number;
+    gy: number;
+    spawnedAt: number;
+    expiresAt: number;
+    rare: boolean;
+  }>;
+  lastSpawnAt: number;
+}
+
+export interface PassRoot {
+  startDay: number;
+  durationDays: number;
+  points: number;
+  tier: number;
+  claimed: number[];
+}
+
+export interface VisitorRoot {
+  lastVisitDay: number;
+}
+
 export interface GameState {
   coins: number;
   xp: number;
@@ -467,6 +503,13 @@ export interface GameState {
   tileTraits?: Record<string, string>;
   // Identity & cosmetics
   farmName?: string;
+  // CrazyGames-launch retention extras
+  wheel?: WheelRoot;
+  combo?: ComboRoot;
+  treasures?: TreasuresRoot;
+  pass?: PassRoot;
+  visitors?: VisitorRoot;
+  lastSessionEndedAt?: number;
   // Internal periodic timers
   _weatherPartT?: number;
   _orderTick?: number;

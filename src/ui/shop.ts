@@ -20,6 +20,8 @@ import { activeEffects as weatherGridEffects } from '../systems/weather-grid';
 import { collectionBonuses } from '../systems/collection';
 import { perkValue } from '../systems/prestige';
 import { track } from '../systems/telemetry';
+import { comboHit } from '../systems/combo';
+import { addPassPoints } from '../systems/season-pass';
 
 export function openShop(): void {
   openModal('🛒 Shop', [
@@ -134,7 +136,9 @@ export function sellItem(k: string, qty: number): void {
   mult *= 1 + cb.sellMult;
   mult *= 1 + perkValue('sellBoost');
   unitPrice = Math.max(1, Math.floor(unitPrice * mult));
-  const total = unitPrice * qty;
+  // Combo applies to sell value too
+  const combo = comboHit();
+  const total = Math.floor(unitPrice * qty * combo.mult);
   state.coins += total;
   state.stats.sold += qty;
   state.stats.earned += total;
@@ -147,6 +151,7 @@ export function sellItem(k: string, qty: number): void {
   dailyChallengeProgress('sell', k, qty);
   dailyChallengeProgress('earn', null, total);
   addWeeklyPoints(qty * 3, 'craft');
+  addPassPoints(qty * 2);
   track('sell', { item: k, qty, total });
   checkAchievements();
 }

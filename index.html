@@ -80,6 +80,9 @@
     </div>
   </div>
 
+  <!-- Live combo meter (floating) -->
+  <div id="combo-hud" class="combo-hud" hidden></div>
+
   <!-- Tutorial bubble (non-blocking) -->
   <div id="tutorial-bubble" class="tutorial-bubble" hidden>
     <div class="tutorial-step" id="tutorial-step"></div>
@@ -173,6 +176,14 @@
         <span class="ico-emoji">🌅</span>
         <span>Daily</span>
       </button>
+      <button class="sheet-btn" data-more="open-wheel">
+        <span class="ico-emoji">🎡</span>
+        <span>Wheel</span>
+      </button>
+      <button class="sheet-btn" data-more="open-pass">
+        <span class="ico-emoji">🎖️</span>
+        <span>Pass</span>
+      </button>
       <button class="sheet-btn" data-more="open-weather-grid">
         <span class="ico-emoji">🌦️</span>
         <span>Grid</span>
@@ -242,6 +253,8 @@
     <button id="open-leaderboard" type="button"></button>
     <button id="open-prestige" type="button"></button>
     <button id="open-snapshot" type="button"></button>
+    <button id="open-wheel" type="button"></button>
+    <button id="open-pass" type="button"></button>
   </div>
 
   <!-- Generic Modal -->

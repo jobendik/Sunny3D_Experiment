@@ -13,6 +13,7 @@ import { openBuildMenu } from './build-menu';
 import { setTool } from './tools';
 import { openProductionPanel } from './production-panel';
 import { openPenPanel } from './pen-panel';
+import { openWheel } from './wheel-panel';
 
 let lastSig = '';
 
@@ -21,6 +22,7 @@ function actOn(s: ObjectiveSuggestion): void {
     case 'claimReturn': claimReturnGift(); break;
     case 'claimStreak': claimStreak(); break;
     case 'claimTimed': claimTimedReward(); break;
+    case 'openWheel': openWheel(); break;
     case 'claimChallenge': claimDailyChallenge(String(s.payload?.id ?? ''), false); break;
     case 'claimQuest': claimQuest(String(s.payload?.id ?? '')); break;
     case 'fulfillOrder': fulfillOrder(String(s.payload?.id ?? '')); break;

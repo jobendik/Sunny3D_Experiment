@@ -25,6 +25,9 @@ import { beautyBonus } from './beautification';
 import { collectionBonuses } from './collection';
 import { perkValue } from './prestige';
 import { track } from './telemetry';
+import { comboHit } from './combo';
+import { maybeSpawnChest } from './treasures';
+import { addPassPoints } from './season-pass';
 
 export function tryPlaceDecoration(gx: number, gy: number): void {
   const placing = state.placing!;
@@ -137,7 +140,8 @@ export function tryHarvestOrInteract(gx: number, gy: number): void {
     }
     let yieldAmt = randi(crop.yieldMax - crop.yieldMin + 1) + crop.yieldMin;
     if (isEvent('lucky')) yieldAmt *= 2;
-    // Multipliers from soil / spec / weather grid / beauty / collection / prestige
+    // Combo + spec / weather grid / beauty / collection / prestige multipliers
+    const combo = comboHit();
     const sp = specEffects();
     const eff = weatherGridEffects();
     const cb = collectionBonuses();
@@ -146,9 +150,13 @@ export function tryHarvestOrInteract(gx: number, gy: number): void {
     mult *= 1 + eff.yieldBonus;
     mult *= 1 + beautyBonus();
     mult *= 1 + cb.yieldMult;
+    mult *= combo.mult;
     yieldAmt = Math.max(1, Math.round(yieldAmt * mult));
+    if (combo.count >= 3) {
+      floatText(gx * TILE + TILE / 2, gy * TILE + TILE / 2 + 4, `COMBO ×${combo.count}!`, '#e87018');
+    }
     addItem(crop.item, yieldAmt);
-    addXP(Math.round(crop.xp * (1 + perkValue('xpBoost'))));
+    addXP(crop.xp);
     state.stats.harvested += yieldAmt;
     drainFertilityOnHarvest(gx, gy);
     recordDiscovery('crop', t.crop, 1);
@@ -166,6 +174,8 @@ export function tryHarvestOrInteract(gx: number, gy: number): void {
     questProgress('harvest', crop.item, yieldAmt);
     dailyChallengeProgress('harvest', crop.item, yieldAmt);
     addWeeklyPoints(yieldAmt * 2, 'crop');
+    addPassPoints(yieldAmt);
+    maybeSpawnChest();
     checkAchievements();
     track('harvest', { crop: crop.item, amt: yieldAmt });
   }
