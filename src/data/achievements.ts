@@ -25,4 +25,30 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   { id: 'decor_5',     name: 'Decorator',        desc: 'Place 5 decorations',     check: s => s.stats.decorsPlaced >= 5 },
   { id: 'tree_1',      name: 'Orchardist',       desc: 'Grow your first tree',    check: s => s.stats.treesGrown >= 1 },
   { id: 'crow_5',      name: 'Scarecrow',        desc: 'Shoo 5 crows',            check: s => s.stats.crowsShooed >= 5 },
+  // New retention & meta achievements
+  { id: 'streak_3',    name: 'Habit Forming',    desc: 'Reach a 3-day streak',    check: s => (s.daily?.streak ?? 0) >= 3 },
+  { id: 'streak_7',    name: 'Devoted Farmer',   desc: 'Reach a 7-day streak',    check: s => (s.daily?.longestStreak ?? 0) >= 7 },
+  { id: 'cast_grid',   name: 'Stormbringer',     desc: 'Cast the Weather Grid',   check: s => (s.weatherGrid?.activations.length ?? 0) > 0 || ((s.weatherGrid?.ownedCards.length ?? 0) > 0) },
+  { id: 'pick_spec',   name: 'Found Your Path',  desc: 'Pick a specialization',   check: s => !!s.specialization?.primary },
+  { id: 'craft_card',  name: 'Cardmaker',        desc: 'Craft a weather card',    check: s => (s.weatherGrid?.ownedCards.length ?? 0) >= 1 },
+  { id: 'collect_25',  name: 'Naturalist',       desc: 'Discover 25 collection entries',
+    check: s => {
+      const c = s.collection;
+      if (!c) return 0 >= 25;
+      let n = 0;
+      for (const k of Object.keys(c.discovered)) n += Object.keys(c.discovered[k] ?? {}).length;
+      return n >= 25;
+    },
+  },
+  { id: 'prestige_1',  name: 'Reborn',           desc: 'Prestige once',           check: s => (s.prestige?.prestigeCount ?? 0) >= 1 },
+  { id: 'weekly_t3',   name: 'Weekly Warrior',   desc: 'Reach Weekly Tier 3',     check: s => (s.weekly?.tier ?? 0) >= 3 },
+  { id: 'beauty_50',   name: 'Aesthete',         desc: 'Reach beauty score 50',
+    check: s => {
+      const TIER: Record<string, number> = { flowerbed: 0, lamppost: 0, pinwheel: 0, bench: 1, scarecrow: 1, fountain: 2, statue: 3, gazebo: 4 };
+      const PER: number[] = [1, 3, 5, 8, 12];
+      let total = 0;
+      for (const d of s.decor) total += PER[TIER[d.type] ?? 0] ?? 1;
+      return total >= 50;
+    },
+  },
 ];

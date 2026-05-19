@@ -151,6 +151,36 @@ export function spriteCropStage(cropKey: string, stage: number): HTMLCanvasEleme
       }
       break;
     }
+    case 'lavender': {
+      const h = [5, 10, 16][stage - 1]!;
+      drawLeaves(h, '#3a8020', '#7acf50');
+      if (stage === 3) {
+        for (let i = 0; i < 4; i++) {
+          const x = cx + (i - 1.5) * 8;
+          g.fillStyle = '#a460c8';
+          for (let j = 0; j < 3; j++) {
+            g.fillRect(x - 1, cy - h - 2 - j * 3, 2, 2);
+          }
+          g.fillStyle = '#c098e0';
+          g.fillRect(x - 1, cy - h - 8, 2, 1);
+        }
+      }
+      break;
+    }
+    case 'blueberry': {
+      const h = [4, 9, 14][stage - 1]!;
+      drawLeaves(h, '#3a6020', '#8acf50');
+      if (stage === 3) {
+        for (let i = 0; i < 4; i++) {
+          const x = cx + (i - 1.5) * 8;
+          g.fillStyle = '#3050a0';
+          g.fillRect(x - 2, cy - Math.floor(h * 0.4), 3, 3);
+          g.fillStyle = '#5070d0';
+          g.fillRect(x - 2, cy - Math.floor(h * 0.4), 1, 1);
+        }
+      }
+      break;
+    }
     default: {
       drawLeaves([4, 8, 12][stage - 1] ?? 4);
     }

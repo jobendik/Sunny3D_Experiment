@@ -287,6 +287,131 @@ export interface GameStats {
   itemsProduced: Record<string, number>;
 }
 
+// ---- Retention / progression / mastery sub-states ----
+
+export interface DailyChallenge {
+  id: string;
+  kind: QuestKind;
+  item?: string;
+  target: number;
+  progress: number;
+  desc: string;
+  reward: QuestReward;
+  bonusReward?: QuestReward;
+  complete?: boolean;
+  claimed?: boolean;
+}
+
+export interface MerchantSlot {
+  item: string;
+  price: number;
+  stock: number;
+  bought: number;
+}
+
+export interface DailyState {
+  lastSeenDay: number;
+  streak: number;
+  streakClaimedDay: number;
+  longestStreak: number;
+  graceTokens: number;
+  challenges: DailyChallenge[];
+  challengeDay: number;
+  rerollsLeft: number;
+  merchantDay: number;
+  merchantStock: MerchantSlot[];
+  timedClaim: { readyAt: number; claimed: boolean };
+  forecast: { day: number; predicted: Weather; guessed?: boolean; correct?: boolean };
+  lastVisitTime: number;
+  pendingReturnGift: { coins: number; xp: number; hours: number };
+  returnGiftClaimed?: boolean;
+}
+
+export interface WeeklyTheme {
+  id: string;
+  name: string;
+  icon: string;
+  focus: 'orchard' | 'fish' | 'bakery' | 'pen' | 'crop' | 'craft';
+}
+
+export interface WeeklyState {
+  week: number;
+  points: number;
+  tier: number;
+  themeIdx: number;
+  claimedTiers: number[];
+  communityTarget: number;
+  communityProgress: number;
+  communityClaimed: boolean;
+}
+
+export interface WeatherGridState {
+  slots: Array<string | null>;
+  activations: Array<{
+    slottedCards: string[];
+    until: number;
+    startedAt: number;
+  }>;
+  charges: number;
+  lastRegenDay: number;
+  ownedCards: string[];
+  unlocked: boolean;
+}
+
+export interface SpecializationState {
+  primary: 'crop' | 'ranch' | 'artisan' | 'fisher' | null;
+  secondary: 'crop' | 'ranch' | 'artisan' | 'fisher' | null;
+  switches: number;
+}
+
+export interface CollectionRoot {
+  discovered: Record<string, Record<string, number>>;
+  firstRewardClaimed: Record<string, true>;
+}
+
+export interface MarketState {
+  day: number;
+  modifiers: Record<string, number>;
+  scarcityItem: string | null;
+  scarcityUntil: number;
+}
+
+export interface SoilState {
+  grid: Array<Array<{ moisture: number; fertility: number }>>;
+  lastTick: number;
+}
+
+export interface MoodRoot {
+  mood: Record<string, number>;
+  lastTick: number;
+}
+
+export interface BiomeRoot {
+  current: 'pond' | 'river' | 'deep';
+  activeBait: string | null;
+  baitUntil: number;
+}
+
+export interface PrestigeRoot {
+  prestigeCount: number;
+  talents: number;
+  perks: Record<string, number>;
+  totalLifetimeXP: number;
+  totalLifetimeCoins: number;
+}
+
+export interface TutorialRoot {
+  stepIdx: number;
+  completed: boolean;
+  dismissed: boolean;
+}
+
+export interface DeferredPayout {
+  at: number;
+  coins: number;
+  xp: number;
+}
+
 export interface GameState {
   coins: number;
   xp: number;
@@ -324,10 +449,31 @@ export interface GameState {
   fishing: FishingState | null;
   musicOn: boolean;
   sfxOn: boolean;
+  // Retention systems
+  daily?: DailyState;
+  weekly?: WeeklyState;
+  weatherGrid?: WeatherGridState;
+  specialization?: SpecializationState;
+  collection?: CollectionRoot;
+  market?: MarketState;
+  soil?: SoilState;
+  mood?: MoodRoot;
+  biome?: BiomeRoot;
+  prestige?: PrestigeRoot;
+  tutorial?: TutorialRoot;
+  deferredPayouts?: DeferredPayout[];
+  qualityFlags?: Record<string, boolean>;
+  // Seed traits per planted tile (keyed by gx,gy concatenation)
+  tileTraits?: Record<string, string>;
+  // Identity & cosmetics
+  farmName?: string;
   // Internal periodic timers
   _weatherPartT?: number;
   _orderTick?: number;
   _saveTick?: number;
+  _dailyTick?: number;
+  _moodTick?: number;
+  _soilTick?: number;
 }
 
 // ---- Sprite cache shape ----

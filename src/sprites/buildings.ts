@@ -56,6 +56,13 @@ export function spriteBuilding(type: string): HTMLCanvasElement {
     else if (type === 'juicer')   { bodyColor = '#ffd070'; roofColor = '#e07020'; sign = 'J'; }
     else if (type === 'loom')     { bodyColor = '#d8a8e0'; roofColor = '#704080'; sign = 'L'; }
     else if (type === 'bbq')      { bodyColor = '#806050'; roofColor = '#3a2418'; sign = 'Q'; }
+    else if (type === 'perfumery'){ bodyColor = '#e0b0e8'; roofColor = '#7040a0'; sign = 'P'; }
+    else if (type === 'apiary')   { bodyColor = '#ffe080'; roofColor = '#c89018'; sign = 'H'; }
+    else if (type === 'candleshop'){bodyColor = '#fff0c8'; roofColor = '#c8932a'; sign = 'C'; }
+    else if (type === 'smoothiebar'){bodyColor='#ffa0c0'; roofColor = '#d04060'; sign = 'M'; }
+    else if (type === 'windmill') { bodyColor = '#f0e0c0'; roofColor = '#c44040'; sign = 'W'; }
+    else if (type === 'greatbarn'){ bodyColor = '#d04040'; roofColor = '#7a4f2e'; sign = 'B'; }
+    else if (type === 'fishery')  { bodyColor = '#a0c8e8'; roofColor = '#3060a0'; sign = 'F'; }
     else                          { bodyColor = '#c0a880'; roofColor = '#7a4f2e'; sign = '?'; }
 
     g.fillStyle = bodyColor;

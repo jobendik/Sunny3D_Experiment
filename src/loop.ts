@@ -15,6 +15,15 @@ import { updateDog } from './systems/dog';
 import { updatePenFeed } from './systems/pens';
 import { maybeUnlockOrders } from './systems/orders';
 import { saveGame } from './save';
+import { dailyTick } from './systems/daily';
+import { weeklyTick } from './systems/weekly';
+import { tickSoil } from './systems/soil';
+import { tickMood } from './systems/animal-mood';
+import { refreshMarketModifiers } from './systems/market';
+import { regenerateCharges, pruneExpired } from './systems/weather-grid';
+import { tickDeferredPayouts } from './systems/event-choices';
+import { maybeShowHints } from './systems/hints';
+import { tickVisitors } from './systems/visitors';
 
 let smokeT = 0;
 
@@ -90,7 +99,14 @@ export function update(dt: number): void {
 
   // Day clock
   const elapsed = nowSeconds() - state.startTime;
+  const prevDay = state.day;
   state.day = 1 + Math.floor(elapsed / DAY_SECONDS);
+
+  // Day-over-day side effects (market refresh, deferred payouts)
+  if (state.day !== prevDay) {
+    refreshMarketModifiers();
+    tickDeferredPayouts();
+  }
 
   updateWeatherAndSeason();
   tryTriggerEvent(dt);
@@ -99,6 +115,28 @@ export function update(dt: number): void {
   if (state.crows.length > 0) updateCrows(dt);
   updateDog(dt);
   updatePenFeed(dt);
+
+  // New systems
+  state._soilTick = (state._soilTick ?? 0) + dt;
+  if (state._soilTick > 1) {
+    state._soilTick = 0;
+    tickSoil(1);
+  }
+  state._moodTick = (state._moodTick ?? 0) + dt;
+  if (state._moodTick > 1.5) {
+    state._moodTick = 0;
+    tickMood(1.5);
+  }
+  state._dailyTick = (state._dailyTick ?? 0) + dt;
+  if (state._dailyTick > 5) {
+    state._dailyTick = 0;
+    dailyTick();
+    weeklyTick();
+    regenerateCharges();
+    pruneExpired();
+    maybeShowHints();
+    tickVisitors();
+  }
 
   // Weather particles
   state._weatherPartT = (state._weatherPartT ?? 0) + dt;

@@ -90,6 +90,23 @@ export function updateCrows(dt: number): void {
       c.dx = (Math.random() - 0.5) * 40;
     }
   }
+  // Scarecrow effect: cull at most 1 crow per tick if nearby
+  if (state.decor.some(d => d.type === 'scarecrow')) {
+    for (let i = state.crows.length - 1; i >= 0; i--) {
+      const c = state.crows[i]!;
+      if (c.scared) continue;
+      for (const d of state.decor) {
+        if (d.type !== 'scarecrow') continue;
+        const ddx = (d.x + 0.5) * TILE - c.x;
+        const ddy = (d.y + 0.5) * TILE - c.y;
+        if (ddx * ddx + ddy * ddy < 90 * 90) {
+          c.scared = true;
+          c.dx = (Math.random() - 0.5) * 40;
+          break;
+        }
+      }
+    }
+  }
 }
 
 export function shooCrow(crowId: string): void {

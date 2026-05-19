@@ -10,6 +10,7 @@ import { updateHUD } from '../ui/hud';
 import { spawnParticles } from './particles';
 import { addXP } from './xp';
 import { checkAchievements } from './achievements';
+import { track } from './telemetry';
 import type { Quest, QuestKind } from '../types';
 
 export function generateQuest(level: number): Quest {
@@ -125,6 +126,7 @@ export function claimQuest(qid: string): void {
   toast(`Quest done: +${q.reward.coins} 💰 +${q.reward.xp} XP`, 'gold');
   state.quests.splice(idx, 1);
   setTimeout(() => refillQuests(), 400);
+  track('quest_claimed', { kind: q.kind, coins: q.reward.coins });
   updateHUD();
   checkAchievements();
 }

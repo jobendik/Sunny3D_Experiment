@@ -4,6 +4,7 @@ import { ITEMS } from '../data/items';
 import { screenToWorld } from '../systems/camera';
 import { tileAt, buildingAt } from '../systems/grid';
 import { cropStage } from '../systems/crops';
+import { moistureAt, fertilityAt } from '../systems/soil';
 import { nowSeconds } from '../utils';
 import { mousePos, isDragging } from '../input';
 
@@ -26,7 +27,11 @@ function describeAt(sx: number, sy: number): string {
     const left = Math.max(0, Math.ceil(crop.grow - (nowSeconds() - t.t.plantedAt)));
     return `${ITEMS[crop.item]!.name} — ${left}s left`;
   }
-  if (t.t.type === 'plowed') return 'Plowed soil — ready to plant';
+  if (t.t.type === 'plowed') {
+    const m = moistureAt(t.gx, t.gy);
+    const f = fertilityAt(t.gx, t.gy);
+    return `Plowed soil — Moisture ${Math.round(m * 100)}%, Fertility ${Math.round(f * 100)}%`;
+  }
   if (t.t.type === 'soil') return 'Soil — plow to till';
   if (t.t.type === 'grass') return 'Grass — plow or decorate';
   if (t.t.type === 'water') return 'Water';

@@ -167,6 +167,107 @@ export function spriteDecoration(type: string): HTMLCanvasElement {
       g.beginPath(); g.arc(cx, cy - 6, 2, 0, Math.PI * 2); g.fill();
       break;
     }
+    case 'cherrytree': {
+      g.fillStyle = '#5a3a18';
+      g.fillRect(cx - 2, cy + 6, 4, 18);
+      g.fillStyle = '#ff9bd6';
+      g.beginPath(); g.arc(cx - 10, cy - 6, 12, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.arc(cx + 10, cy - 6, 12, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.arc(cx, cy - 16, 14, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#ffe0e8';
+      g.beginPath(); g.arc(cx - 4, cy - 12, 4, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.arc(cx + 8, cy - 4, 3, 0, Math.PI * 2); g.fill();
+      break;
+    }
+    case 'petalpath': {
+      g.fillStyle = '#d8b878';
+      g.fillRect(cx - 24, cy + 8, 48, 14);
+      g.fillStyle = '#ffc0d8';
+      for (let i = 0; i < 6; i++) {
+        g.beginPath();
+        g.arc(cx - 20 + i * 8, cy + 14 + (i % 2 === 0 ? 0 : 3), 2, 0, Math.PI * 2);
+        g.fill();
+      }
+      break;
+    }
+    case 'beachchair': {
+      g.fillStyle = '#f0e0a0';
+      g.fillRect(cx - 16, cy + 4, 32, 6);
+      g.fillStyle = '#3c8dbc';
+      g.fillRect(cx - 14, cy + 2, 28, 4);
+      g.fillStyle = '#a87248';
+      g.fillRect(cx - 14, cy + 10, 4, 8);
+      g.fillRect(cx + 10, cy + 10, 4, 8);
+      g.fillStyle = '#f0e0a0';
+      g.fillRect(cx - 14, cy - 10, 5, 14);
+      g.fillStyle = '#3c8dbc';
+      g.fillRect(cx - 14, cy - 10, 4, 10);
+      break;
+    }
+    case 'tikitorch': {
+      g.fillStyle = '#7a4f2e';
+      g.fillRect(cx - 1, cy - 16, 3, 32);
+      g.fillStyle = '#a87248';
+      g.fillRect(cx - 5, cy - 22, 10, 7);
+      g.fillStyle = '#ff8030';
+      g.beginPath(); g.arc(cx, cy - 26, 4, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#ffe040';
+      g.beginPath(); g.arc(cx, cy - 27, 2, 0, Math.PI * 2); g.fill();
+      break;
+    }
+    case 'pumpkinstack': {
+      g.fillStyle = '#e87018';
+      g.beginPath(); g.ellipse(cx, cy + 14, 14, 9, 0, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.ellipse(cx, cy + 2, 11, 7, 0, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.ellipse(cx, cy - 8, 8, 5, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#3a6a20';
+      g.fillRect(cx - 1, cy - 14, 2, 4);
+      g.fillStyle = '#a04810';
+      for (let i = 0; i < 3; i++) {
+        const y = [14, 2, -8][i]!;
+        g.fillRect(cx - 1, y + cy - 4, 1, 8);
+      }
+      break;
+    }
+    case 'scarecrowhat': {
+      g.fillStyle = '#8a5a30';
+      g.fillRect(cx - 1, cy - 16, 3, 32);
+      g.fillRect(cx - 12, cy - 10, 24, 3);
+      g.fillStyle = '#e87018';
+      g.beginPath(); g.arc(cx, cy - 22, 6, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#3a2410';
+      g.fillRect(cx - 8, cy - 28, 16, 3);
+      g.fillRect(cx - 5, cy - 35, 10, 8);
+      g.fillStyle = '#ffe040';
+      g.fillRect(cx - 3, cy - 33, 6, 2);
+      break;
+    }
+    case 'snowman': {
+      g.fillStyle = '#fff';
+      g.beginPath(); g.arc(cx, cy + 12, 12, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.arc(cx, cy - 2, 9, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.arc(cx, cy - 14, 6, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#000';
+      g.beginPath(); g.arc(cx - 2, cy - 15, 1, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.arc(cx + 2, cy - 15, 1, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#ff8030';
+      g.fillRect(cx, cy - 13, 4, 1);
+      g.fillStyle = '#3a2410';
+      g.fillRect(cx - 6, cy - 20, 12, 2);
+      g.fillRect(cx - 3, cy - 22, 6, 4);
+      break;
+    }
+    case 'lanternice': {
+      g.fillStyle = '#7a4f2e';
+      g.fillRect(cx - 1, cy - 14, 3, 26);
+      g.fillStyle = '#a0d0f0';
+      g.beginPath(); g.arc(cx, cy - 18, 7, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#fff';
+      g.beginPath(); g.arc(cx, cy - 19, 3, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = '#3070c0'; g.lineWidth = 1;
+      g.beginPath(); g.arc(cx, cy - 18, 7, 0, Math.PI * 2); g.stroke();
+      break;
+    }
   }
   return c;
 }

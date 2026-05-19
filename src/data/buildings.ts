@@ -57,4 +57,52 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     ],
   },
   fishingdock: { name: 'Fishing Dock', kind: 'fishing', w: 3, h: 2, price: 300, level: 3 },
+  // Phase 3 production chains
+  perfumery:   {
+    name: 'Perfumery', kind: 'production', w: 3, h: 3, price: 900, level: 6,
+    recipes: [
+      { in: { lavender: 3 }, out: { perfume: 1 }, time: 90, xp: 16 },
+      { in: { strawberry: 4 }, out: { perfume: 1 }, time: 110, xp: 18, lvl: 7 },
+    ],
+  },
+  apiary:      {
+    name: 'Apiary', kind: 'production', w: 3, h: 2, price: 700, level: 5,
+    recipes: [
+      { in: { lavender: 1 }, out: { honey: 1 }, time: 60, xp: 10 },
+      { in: { blueberry: 2 }, out: { honey: 1 }, time: 70, xp: 12, lvl: 6 },
+    ],
+  },
+  candleshop:  {
+    name: 'Candle Shop', kind: 'production', w: 3, h: 3, price: 850, level: 6,
+    recipes: [
+      { in: { honey: 1, wool: 1 }, out: { candle: 1 }, time: 80, xp: 14 },
+      { in: { honey: 2 }, out: { candle: 2 }, time: 120, xp: 22, lvl: 7 },
+    ],
+  },
+  smoothiebar: {
+    name: 'Smoothie Bar', kind: 'production', w: 3, h: 2, price: 750, level: 6,
+    recipes: [
+      { in: { blueberry: 2, milk: 1 }, out: { smoothie: 1 }, time: 70, xp: 12 },
+      { in: { strawberry: 2, milk: 1 }, out: { smoothie: 1 }, time: 70, xp: 12, lvl: 6 },
+    ],
+  },
+  // Landmark buildings (Phase 3 — visual + bonus)
+  windmill: {
+    name: 'Windmill (Landmark)', kind: 'production', w: 3, h: 4, price: 5000, level: 10,
+    recipes: [
+      { in: { wheat: 6 }, out: { flour: 3 }, time: 60, xp: 14 },
+    ],
+  },
+  greatbarn: {
+    name: 'Great Barn (Landmark)', kind: 'production', w: 4, h: 3, price: 6500, level: 12,
+    recipes: [
+      { in: { wheat: 5, corn: 2 }, out: { feed: 12 }, time: 50, xp: 14 },
+    ],
+  },
+  fishery: {
+    name: 'Fishery (Landmark)', kind: 'production', w: 3, h: 3, price: 7500, level: 13,
+    recipes: [
+      { in: { bluefish: 2 }, out: { jam: 1 }, time: 70, xp: 16 },
+    ],
+  },
 };

@@ -8,4 +8,7 @@ export const CROPS: Record<string, CropDef> = {
   pumpkin:    { item: 'pumpkin',    grow: 180, seedCost: 22, yieldMin: 1, yieldMax: 2, level: 4, xp: 5 },
   strawberry: { item: 'strawberry', grow: 220, seedCost: 28, yieldMin: 1, yieldMax: 2, level: 5, xp: 6 },
   sugarcane:  { item: 'sugarcane',  grow: 280, seedCost: 32, yieldMin: 1, yieldMax: 2, level: 6, xp: 7 },
+  // Phase 3 new crops
+  lavender:   { item: 'lavender',   grow: 150, seedCost: 18, yieldMin: 1, yieldMax: 2, level: 4, xp: 4 },
+  blueberry:  { item: 'blueberry',  grow: 200, seedCost: 24, yieldMin: 1, yieldMax: 2, level: 5, xp: 5 },
 };

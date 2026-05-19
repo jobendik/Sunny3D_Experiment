@@ -11,6 +11,8 @@ import { addItem } from '../systems/inventory';
 import { growthMultiplier } from '../systems/crops';
 import { isEvent } from '../systems/events';
 import { getSeasonIcon } from '../systems/weather';
+import { dailyMarketSnapshot, scarcityActive } from '../systems/market';
+import { currentTheme } from '../systems/weekly';
 
 export function openNews(): void {
   openModal('📰 The Daily Acre', null);
@@ -60,6 +62,33 @@ export function openNews(): void {
         <h4>📢 Active Event</h4>
         <p style="margin:4px 0;font-size:13px">${state.event.msg}</p>
       </div>` : ''}
+      ${(() => {
+        const sc = scarcityActive();
+        if (!sc) return '';
+        return `<div class="news-section" style="background:linear-gradient(180deg, #ffe888, #f4a042)">
+          <h4>⚠️ Market Scarcity</h4>
+          <p style="margin:4px 0;font-size:13px"><b>${ITEMS[sc.item]!.name}</b> is selling at a premium! (${(sc.remaining / 60).toFixed(1)} min remaining)</p>
+        </div>`;
+      })()}
+      ${(() => {
+        if (!state.weekly) return '';
+        const theme = currentTheme();
+        return `<div class="news-section" style="background:linear-gradient(180deg, #d8e6ff, #a8c8e8)">
+          <h4>📅 This Week: ${theme.icon} ${theme.name}</h4>
+          <p style="margin:4px 0;font-size:13px">+25% Weekly Points for ${theme.focus}-focused actions. Tier: <b>${state.weekly.tier}</b> · Points: <b>${state.weekly.points}</b></p>
+        </div>`;
+      })()}
+      ${(() => {
+        const snap = dailyMarketSnapshot().slice(0, 6);
+        if (!snap.length) return '';
+        const rows = snap.map(s => `<div style="display:inline-block;margin:2px 6px;font-size:12px">
+          <img class="ico-mini" src="${sprites.item[s.key]!.toDataURL()}">${ITEMS[s.key]!.name}: <b style="color:${s.mod >= 0 ? '#4a8a2f' : '#d24a4a'}">${(s.mod >= 0 ? '+' : '')}${Math.round(s.mod * 100)}%</b>
+        </div>`).join('');
+        return `<div class="news-section">
+          <h4>💱 Top Market Movers</h4>
+          <div>${rows}</div>
+        </div>`;
+      })()}
       ${merchantHTML}
       <div class="news-section">
         <h4>⭐ Today's Goals</h4>

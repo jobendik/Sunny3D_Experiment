@@ -10,8 +10,16 @@ import { updateHUD } from './hud';
 import { setTool, updateSeedBtnLabel } from './tools';
 import { addItem, removeItem } from '../systems/inventory';
 import { questProgress } from '../systems/quests';
+import { dailyChallengeProgress } from '../systems/daily';
+import { addWeeklyPoints } from '../systems/weekly';
 import { checkAchievements } from '../systems/achievements';
 import { isEvent } from '../systems/events';
+import { priceMultiplier } from '../systems/market';
+import { specEffects } from '../systems/specializations';
+import { activeEffects as weatherGridEffects } from '../systems/weather-grid';
+import { collectionBonuses } from '../systems/collection';
+import { perkValue } from '../systems/prestige';
+import { track } from '../systems/telemetry';
 
 export function openShop(): void {
   openModal('🛒 Shop', [
@@ -19,6 +27,7 @@ export function openShop(): void {
     { key: 'trees', label: 'Trees', render: renderShopTrees },
     { key: 'sell',  label: 'Sell',  render: renderShopSell },
     { key: 'feed',  label: 'Buy',   render: renderShopFeed },
+    { key: 'supplies', label: 'Supplies', render: renderShopSupplies },
   ], 'seeds');
 }
 
@@ -112,7 +121,19 @@ export function sellItem(k: string, qty: number): void {
   const it = ITEMS[k]!;
   removeItem(k, qty);
   let unitPrice = it.sell;
+  // Market dynamics
+  unitPrice = Math.floor(unitPrice * priceMultiplier(k));
   if (isEvent('market_rush')) unitPrice = Math.floor(unitPrice * 1.5);
+  // Specialization + weather grid + collection
+  const sp = specEffects();
+  const eff = weatherGridEffects();
+  const cb = collectionBonuses();
+  let mult = 1 + (sp.produceValue && (k === 'bread' || k === 'cookie' || k === 'cheese' || k === 'butter' || k === 'cake' || k === 'juice' || k === 'jam' || k === 'cloth' || k === 'ribs' || k === 'pie') ? sp.produceValue : 0);
+  mult *= 1 + (sp.fishingValue && (k === 'bluefish' || k === 'trout' || k === 'goldfish') ? sp.fishingValue : 0);
+  mult *= 1 + eff.sellBonus;
+  mult *= 1 + cb.sellMult;
+  mult *= 1 + perkValue('sellBoost');
+  unitPrice = Math.max(1, Math.floor(unitPrice * mult));
   const total = unitPrice * qty;
   state.coins += total;
   state.stats.sold += qty;
@@ -123,6 +144,10 @@ export function sellItem(k: string, qty: number): void {
   renderShopSell(document.getElementById('modal-body')!);
   questProgress('sell', k, qty);
   questProgress('earn', null, total);
+  dailyChallengeProgress('sell', k, qty);
+  dailyChallengeProgress('earn', null, total);
+  addWeeklyPoints(qty * 3, 'craft');
+  track('sell', { item: k, qty, total });
   checkAchievements();
 }
 
@@ -156,4 +181,39 @@ function buyShopItem(key: string, qty: number, unit: number): void {
   toast(`+${qty} ${ITEMS[key]!.name}`);
   updateHUD();
   renderShopFeed(document.getElementById('modal-body')!);
+}
+
+function renderShopSupplies(container: HTMLElement): void {
+  container.innerHTML = `<p style="font-size:12px;color:#666;margin:0 0 8px 0">
+    Catalysts, fertilizers, and bait. Spend coins to invest in efficiency.</p>
+    <div class="shop-grid"></div>`;
+  const grid = container.querySelector<HTMLElement>('.shop-grid')!;
+  const buyable: Array<{ item: string; cost: number; level: number; note?: string }> = [
+    { item: 'fertilizer', cost: 30,  level: 3, note: 'Use on a tile to boost fertility' },
+    { item: 'speedup',    cost: 80,  level: 4, note: 'Cut current production -30%' },
+    { item: 'priority',   cost: 150, level: 5, note: 'Bump a queue job to front' },
+    { item: 'qualityink', cost: 250, level: 6, note: 'Next produced item is Perfect quality' },
+    { item: 'worm',       cost: 5,   level: 3, note: 'Bait — basic' },
+    { item: 'fly',        cost: 25,  level: 5, note: 'Bait — bias rare' },
+    { item: 'lure',       cost: 80,  level: 7, note: 'Bait — best rare bias' },
+  ];
+  for (const b of buyable) {
+    const it = ITEMS[b.item]!;
+    const locked = state.level < b.level;
+    const div = document.createElement('div');
+    div.className = 'shop-item';
+    div.innerHTML = `
+      <img class="ico" src="${sprites.item[b.item]!.toDataURL()}">
+      <div class="name">${it.name}</div>
+      <div style="font-size:11px;color:#666">${b.note ?? ''}</div>
+      <div class="price"><img class="ico-mini" src="${sprites.item.coin!.toDataURL()}">${b.cost}</div>
+      <button ${locked ? 'disabled' : ''}>Buy 1</button>
+      <button ${locked ? 'disabled' : ''}>Buy 5</button>
+      ${locked ? `<div class="locked">🔒 Lv ${b.level}</div>` : ''}
+    `;
+    const [b1, b5] = Array.from(div.querySelectorAll<HTMLButtonElement>('button'));
+    b1!.addEventListener('click', () => buyShopItem(b.item, 1, b.cost));
+    b5!.addEventListener('click', () => buyShopItem(b.item, 5, b.cost));
+    grid.appendChild(div);
+  }
 }

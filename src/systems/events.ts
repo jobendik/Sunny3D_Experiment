@@ -4,6 +4,10 @@ import { sfx } from '../audio/sfx';
 import { spawnCrows } from './crows';
 import { updateWeatherAndSeason } from './weather';
 import { openNews } from '../ui/news';
+import { makeChoiceEvent } from './event-choices';
+import { showChoiceEvent } from '../ui/choice-overlay';
+import { activeEffects as weatherGridEffects } from './weather-grid';
+import { CONFIG } from '../config';
 import type { EventKind } from '../types';
 
 const EVENT_TYPES: readonly EventKind[] = ['crows', 'merchant', 'lucky', 'rain_blessing', 'market_rush'];
@@ -12,9 +16,19 @@ export function tryTriggerEvent(dt: number): void {
   if (state.event) return;
   state.eventCooldown -= dt;
   if (state.eventCooldown > 0) return;
-  if (Math.random() < 0.0008 * dt * 60 + 0.002) {
-    triggerEvent(choice(EVENT_TYPES));
-    state.eventCooldown = 90 + rand(120);
+  if (Math.random() < CONFIG.events.triggerChance * dt * 60 + 0.002) {
+    // 25% chance of a narrative choice event over a tactical event.
+    if (Math.random() < 0.25 && state.level >= 3) {
+      const ce = makeChoiceEvent();
+      showChoiceEvent(ce);
+      state.eventCooldown = CONFIG.events.cooldownMin + rand(CONFIG.events.cooldownMaxAdd);
+      return;
+    }
+    // No-crows weather card prevents crow events
+    let eligible: EventKind[] = [...EVENT_TYPES];
+    if (weatherGridEffects().noCrows) eligible = eligible.filter(k => k !== 'crows');
+    triggerEvent(choice(eligible));
+    state.eventCooldown = CONFIG.events.cooldownMin + rand(CONFIG.events.cooldownMaxAdd);
   }
 }
 

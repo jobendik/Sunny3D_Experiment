@@ -4,6 +4,7 @@ import { DAY_SECONDS } from '../constants';
 import { rand, nowSeconds } from '../utils';
 import { sfx } from '../audio/sfx';
 import { toast } from '../ui/toasts';
+import { track } from './telemetry';
 import type { Season, Weather } from '../types';
 
 export function getSeasonIcon(season: Season): string {
@@ -32,9 +33,12 @@ export function pickWeatherForSeason(season: Season): Weather {
 export function updateWeatherAndSeason(): void {
   const newSeason = pickSeasonForDay(state.day);
   if (newSeason !== state.season) {
+    const prevSeason = state.season;
     state.season = newSeason;
     toast(`${getSeasonIcon(newSeason)} ${SEASON_INFO[newSeason].name} has arrived!`, 'xp');
     sfx.bell();
+    track('season_change', { from: prevSeason, to: newSeason });
+    triggerSeasonalArc(newSeason);
   }
   if (nowSeconds() >= state.weatherUntil) {
     const newW = pickWeatherForSeason(state.season);
@@ -53,4 +57,30 @@ export function updateWeatherAndSeason(): void {
   if (wNm) wNm.textContent = WEATHER[state.weather].name;
   if (sEl) sEl.textContent = getSeasonIcon(state.season);
   if (sNm) sNm.textContent = SEASON_INFO[state.season].name;
+}
+
+// Seasonal arc events — strategic, set the tone for the new season.
+function triggerSeasonalArc(season: Season): void {
+  const banner = document.getElementById('event-banner');
+  let msg = '';
+  switch (season) {
+    case 'spring':
+      msg = '🌱 Spring Flood! Soil is rich — crops grow 30% faster this season.';
+      break;
+    case 'summer':
+      msg = '🌤️ Summer Drought watch — irrigate when possible. Sun bonuses apply.';
+      break;
+    case 'autumn':
+      msg = '🍂 Autumn Fair! Orchards and pumpkin crops earn +20% this season.';
+      break;
+    case 'winter':
+      msg = '❄️ Winter Storm! Crop growth slowed, but cheese/bread sell at +25%.';
+      break;
+  }
+  if (banner) {
+    banner.textContent = msg;
+    banner.classList.add('show');
+    window.setTimeout(() => banner.classList.remove('show'), 6000);
+  }
+  track('seasonal_arc', { season });
 }

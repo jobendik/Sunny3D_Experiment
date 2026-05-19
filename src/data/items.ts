@@ -39,4 +39,21 @@ export const ITEMS: Record<string, ItemDef> = {
   cloth:      { name: 'Cloth',       icon: 'cloth', sell: 160, level: 7 },
   ribs:       { name: 'BBQ Ribs',    icon: 'ribs',  sell: 250, level: 9 },
   pie:        { name: 'Pie',         icon: 'pie',   sell: 310, level: 8 },
+  // New crops (seasonal expansion)
+  lavender:   { name: 'Lavender',    icon: 'lavender',   sell: 28, level: 4 },
+  blueberry:  { name: 'Blueberry',   icon: 'blueberry',  sell: 36, level: 5 },
+  // New processed (Phase 3 chains)
+  perfume:    { name: 'Perfume',     icon: 'perfume',    sell: 180, level: 7 },
+  honey:      { name: 'Honey',       icon: 'honey',      sell: 95,  level: 6 },
+  candle:     { name: 'Candle',      icon: 'candle',     sell: 140, level: 6 },
+  smoothie:   { name: 'Smoothie',    icon: 'smoothie',   sell: 160, level: 6 },
+  // Catalysts (consumables)
+  fertilizer: { name: 'Fertilizer',  icon: 'fertilizer', sell: 12,  level: 3 },
+  speedup:    { name: 'Speed Boost', icon: 'speedup',    sell: 28,  level: 4 },
+  priority:   { name: 'Priority',    icon: 'priority',   sell: 50,  level: 5 },
+  qualityink: { name: 'Quality Ink', icon: 'qualityink', sell: 90,  level: 6 },
+  // Bait
+  worm:       { name: 'Earthworm',   icon: 'worm',       sell: 1,   level: 3 },
+  fly:        { name: 'Mayfly',      icon: 'fly',        sell: 6,   level: 5 },
+  lure:       { name: 'Goldlure',    icon: 'lure',       sell: 20,  level: 7 },
 };

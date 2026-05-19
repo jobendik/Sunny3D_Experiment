@@ -2,10 +2,16 @@ import { state } from '../state';
 import { CROPS } from '../data/crops';
 import { SEASON_INFO, WEATHER } from '../data/seasons';
 import { nowSeconds } from '../utils';
+import { specEffects } from './specializations';
+import { activeEffects as weatherGridEffects } from './weather-grid';
+import { perkValue } from './prestige';
 import type { Tile } from '../types';
 
 export function growthMultiplier(): number {
-  return SEASON_INFO[state.season].growthMod * WEATHER[state.weather].growthMod;
+  const base = SEASON_INFO[state.season].growthMod * WEATHER[state.weather].growthMod;
+  const sp = specEffects();
+  const eff = weatherGridEffects();
+  return base * (1 + (sp.cropGrowth ?? 0)) * (1 + eff.growth) * (1 + perkValue('growthBoost'));
 }
 
 export function cropStage(tile: Tile): number {

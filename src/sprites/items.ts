@@ -546,6 +546,149 @@ export function spriteItem(key: string): HTMLCanvasElement {
       g.fillStyle = '#888';
       g.fillRect(28, 26, 10, 10);
       break;
+    case 'lavender':
+      g.fillStyle = '#3a8020';
+      g.fillRect(20, 22, 3, 22);
+      g.fillStyle = '#a460c8';
+      for (let i = 0; i < 5; i++) {
+        const py = 8 + i * 4;
+        g.beginPath(); g.arc(21, py, 4, 0, Math.PI * 2); g.fill();
+      }
+      g.fillStyle = '#c098e0';
+      for (let i = 0; i < 5; i++) {
+        const py = 8 + i * 4;
+        g.fillRect(19, py - 1, 2, 1);
+      }
+      break;
+    case 'blueberry':
+      g.fillStyle = '#3a6020';
+      g.fillRect(22, 10, 4, 10);
+      g.fillStyle = '#3050a0';
+      g.beginPath(); g.arc(18, 26, 6, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.arc(30, 26, 6, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.arc(24, 36, 6, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#5070d0';
+      g.beginPath(); g.arc(17, 25, 2, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.arc(29, 25, 2, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.arc(23, 35, 2, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#3a8020';
+      g.beginPath(); g.ellipse(28, 14, 6, 3, 0.4, 0, Math.PI * 2); g.fill();
+      break;
+    case 'perfume':
+      g.fillStyle = '#a47acf';
+      g.fillRect(16, 18, 16, 22);
+      g.fillStyle = '#c8a0e8';
+      g.fillRect(16, 18, 16, 4);
+      g.fillStyle = '#8048a0';
+      g.fillRect(20, 8, 8, 10);
+      g.fillStyle = '#fff';
+      g.font = 'bold 7px sans-serif';
+      g.fillText('Eau', 18, 32);
+      break;
+    case 'honey':
+      g.fillStyle = '#a47028';
+      g.fillRect(14, 14, 20, 26);
+      g.fillStyle = '#f0b840';
+      g.fillRect(16, 18, 16, 20);
+      g.fillStyle = '#ffd860';
+      g.fillRect(16, 18, 16, 4);
+      g.fillStyle = '#3a2410';
+      g.font = 'bold 8px sans-serif';
+      g.fillText('🍯', 18, 30);
+      break;
+    case 'candle':
+      g.fillStyle = '#f0e0a0';
+      g.fillRect(20, 12, 8, 24);
+      g.fillStyle = '#a87248';
+      g.fillRect(14, 36, 20, 4);
+      g.fillStyle = '#fff080';
+      g.beginPath(); g.arc(24, 9, 3, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#ffc080';
+      g.beginPath(); g.arc(24, 6, 2, 0, Math.PI * 2); g.fill();
+      break;
+    case 'smoothie':
+      g.fillStyle = '#fff';
+      g.fillRect(16, 10, 16, 28);
+      g.fillStyle = '#e060a0';
+      g.fillRect(18, 14, 12, 22);
+      g.fillStyle = '#ffa0d0';
+      g.fillRect(18, 14, 12, 4);
+      g.fillStyle = '#888';
+      g.fillRect(22, 4, 4, 12);
+      g.fillStyle = '#3a8020';
+      g.beginPath(); g.arc(20, 22, 1.5, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.arc(26, 28, 1.5, 0, Math.PI * 2); g.fill();
+      break;
+    case 'fertilizer':
+      g.fillStyle = '#6a4218';
+      g.fillRect(12, 16, 24, 24);
+      g.fillStyle = '#8a6238';
+      g.fillRect(12, 16, 24, 4);
+      g.fillStyle = '#3a8020';
+      g.beginPath(); g.arc(18, 12, 4, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.arc(28, 10, 5, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#fff';
+      g.font = 'bold 7px sans-serif';
+      g.fillText('GROW', 14, 32);
+      break;
+    case 'speedup':
+      g.fillStyle = '#3c8dbc';
+      g.beginPath(); g.arc(24, 24, 16, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#fff';
+      g.beginPath();
+      g.moveTo(22, 8); g.lineTo(14, 26); g.lineTo(22, 26); g.lineTo(20, 40);
+      g.lineTo(32, 22); g.lineTo(24, 22); g.lineTo(26, 8); g.closePath();
+      g.fill();
+      break;
+    case 'priority':
+      g.fillStyle = '#e88030';
+      g.beginPath();
+      g.moveTo(24, 6); g.lineTo(42, 24); g.lineTo(24, 42); g.lineTo(6, 24); g.closePath();
+      g.fill();
+      g.fillStyle = '#fff';
+      g.font = 'bold 20px sans-serif';
+      g.fillText('!', 20, 31);
+      break;
+    case 'qualityink':
+      g.fillStyle = '#1a1830';
+      g.fillRect(14, 14, 20, 26);
+      g.fillStyle = '#3a3a60';
+      g.fillRect(14, 14, 20, 4);
+      g.fillStyle = '#a050c0';
+      g.beginPath(); g.arc(24, 26, 5, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#fff';
+      g.font = 'bold 18px sans-serif';
+      g.fillText('★', 18, 34);
+      break;
+    case 'worm':
+      g.fillStyle = '#a06038';
+      g.beginPath();
+      g.moveTo(8, 28); g.bezierCurveTo(18, 16, 30, 36, 40, 22);
+      g.lineWidth = 7; g.strokeStyle = '#a06038'; g.stroke();
+      g.fillStyle = '#603018';
+      g.beginPath(); g.arc(40, 22, 4, 0, Math.PI * 2); g.fill();
+      break;
+    case 'fly':
+      g.fillStyle = '#3a2410';
+      g.beginPath(); g.arc(24, 26, 5, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#a8c8e8';
+      g.beginPath(); g.ellipse(16, 20, 7, 4, 0.5, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.ellipse(32, 20, 7, 4, -0.5, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#3a2410';
+      g.fillRect(20, 32, 1, 8); g.fillRect(28, 32, 1, 8);
+      break;
+    case 'lure':
+      g.fillStyle = '#ffd840';
+      g.beginPath();
+      g.moveTo(14, 14); g.lineTo(38, 24); g.lineTo(14, 34); g.closePath();
+      g.fill();
+      g.fillStyle = '#fff';
+      g.beginPath(); g.arc(18, 24, 2, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = '#888'; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(38, 24); g.lineTo(44, 28); g.stroke();
+      g.fillStyle = '#888';
+      g.beginPath(); g.arc(44, 30, 2, 0, Math.PI * 2); g.fill();
+      break;
     default:
       g.fillStyle = '#999';
       g.fillRect(8, 8, 32, 32);

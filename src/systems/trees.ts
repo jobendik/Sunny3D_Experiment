@@ -10,8 +10,14 @@ import { spawnParticles, floatText } from './particles';
 import { addItem } from './inventory';
 import { addXP } from './xp';
 import { questProgress } from './quests';
+import { dailyChallengeProgress } from './daily';
+import { addWeeklyPoints, currentTheme } from './weekly';
 import { checkAchievements } from './achievements';
 import { isEvent } from './events';
+import { recordDiscovery } from './collection';
+import { specEffects } from './specializations';
+import { activeEffects as weatherGridEffects } from './weather-grid';
+import { beautyBonus } from './beautification';
 import type { Tree } from '../types';
 
 export function plantTree(type: string, gx: number, gy: number): boolean {
@@ -51,7 +57,13 @@ export function tryHarvestTree(treeId: string): void {
   if (getTreeStage(tree) !== 3) return;
   const def = ORCHARDS[tree.type]!;
   const yieldAmt = def.yieldMin + randi(def.yieldMax - def.yieldMin + 1);
-  const finalYield = isEvent('lucky') ? yieldAmt * 2 : yieldAmt;
+  const sp = specEffects();
+  const eff = weatherGridEffects();
+  const mult = (isEvent('lucky') ? 2 : 1)
+    * (1 + (sp.cropYield ?? 0))
+    * (1 + eff.yieldBonus)
+    * (1 + beautyBonus());
+  const finalYield = Math.max(1, Math.round(yieldAmt * mult));
   addItem(def.fruit, finalYield);
   addXP(def.xp);
   tree.lastHarvested = nowSeconds();
@@ -65,5 +77,9 @@ export function tryHarvestTree(treeId: string): void {
     '#3a8020',
   );
   questProgress('harvest', def.fruit, finalYield);
+  dailyChallengeProgress('harvest', def.fruit, finalYield);
+  const t = currentTheme();
+  addWeeklyPoints(finalYield * 2, t.focus === 'orchard' ? 'orchard' : 'crop');
+  recordDiscovery('tree', tree.type, 1);
   checkAchievements();
 }

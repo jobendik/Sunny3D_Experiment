@@ -19,6 +19,7 @@ import { getTreeStage } from './systems/trees';
 import { penFeedLevel } from './systems/pens';
 import { mousePos } from './input';
 import { drawDecor } from './decor';
+import { currentBeacon } from './systems/goal-beacon';
 
 interface Drawable {
   y: number;
@@ -361,6 +362,29 @@ export function render(): void {
     ctx.fillText(f.text, f.x - ctx.measureText(f.text).width / 2 + 1, f.y + 1);
     ctx.fillStyle = f.color;
     ctx.fillText(f.text, f.x - ctx.measureText(f.text).width / 2, f.y);
+    ctx.restore();
+  }
+
+  // Goal beacon — soft glow over the recommended next action target
+  const beacon = currentBeacon();
+  if (beacon) {
+    ctx.save();
+    const t = performance.now() / 700;
+    const pulse = 0.45 + 0.25 * Math.sin(t);
+    ctx.globalAlpha = pulse;
+    const grad = ctx.createRadialGradient(beacon.x, beacon.y, 4, beacon.x, beacon.y, beacon.radius + 14);
+    grad.addColorStop(0, 'rgba(255, 240, 140, 0.7)');
+    grad.addColorStop(1, 'rgba(255, 220, 120, 0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(beacon.x, beacon.y, beacon.radius + 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 0.5;
+    ctx.strokeStyle = '#f4c542';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(beacon.x, beacon.y, beacon.radius, 0, Math.PI * 2);
+    ctx.stroke();
     ctx.restore();
   }
 

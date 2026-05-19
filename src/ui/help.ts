@@ -52,19 +52,28 @@ export function openHelp(): void {
       </ol>
       <p style="margin-top:14px"><b>Features:</b></p>
       <ul style="text-align:left;font-size:13px;line-height:1.5;padding-left:20px">
-        <li>🌦️ <b>Weather & seasons</b> affect crop growth — rain doubles speed!</li>
+        <li>🌅 <b>Daily streak</b> — claim each day for an escalating reward, grace token saves a missed day.</li>
+        <li>🎯 <b>Daily challenges</b> — 3 rotating tasks with bonus tiers and rerolls.</li>
+        <li>🌦️ <b>Weather Mastery Grid</b> at Lv 5 — craft & slot weather cards to program weather effects!</li>
+        <li>🌟 <b>Specialization</b> at Lv 5 — pick Crop Baron / Ranch Keeper / Artisan / Fisher.</li>
+        <li>📖 <b>Collection</b> — discover crops, fish, trees, recipes for permanent passive bonuses.</li>
+        <li>💱 <b>Dynamic market</b> — daily price modifiers, scarcity windows, overstock penalties.</li>
+        <li>📜 <b>Choice events</b> — narrative tradeoffs with risk and reward.</li>
+        <li>✨ <b>Prestige</b> at Lv 25 — reset for permanent talents.</li>
+        <li>🏅 <b>Leaderboards</b> — climb the local league across 5 categories.</li>
+        <li>🖼️ <b>Snapshot</b> — share your farm as a postcard image.</li>
+        <li>🌱 <b>Soil quality</b> — moisture + fertility per tile. Use Fertilizer to boost.</li>
+        <li>🎣 <b>Biomes + bait</b> — choose where to fish and what to use.</li>
+        <li>🐮 <b>Animal mood</b> — happy pens produce more, faster.</li>
+        <li>🏭 <b>Adjacency buffs</b> — production buildings boost each other when neighboring.</li>
         <li>⭐ <b>Quests</b> guide your progress; claim them for big rewards.</li>
         <li>🏆 <b>Achievements</b> reward long-term milestones.</li>
         <li>🐦 <b>Crow attacks</b> — tap crows to scare them before they eat crops.</li>
-        <li>🎣 <b>Fishing dock</b> — build one next to the lake, then tap it for a timing minigame.</li>
-        <li>🍎 <b>Orchard trees</b> — plant fruit trees once, harvest forever.</li>
-        <li>🍽️ <b>Animal feeding</b> — pens need feed to keep producing.</li>
-        <li>🎉 <b>Random events</b> — merchants visit, lucky days double yields!</li>
-        <li>🌸 <b>Decorations</b> — make your farm beautiful.</li>
-        <li>🐶 <b>Pet dog</b> at level 4 — finds you bonus coins.</li>
+        <li>🐶 <b>Pet dog</b> at Lv 4 — finds you bonus coins.</li>
       </ul>
       <p style="margin-top:10px;font-style:italic;color:#666">Tip: production chains
       (wheat→bread, apple→juice, wool→cloth) earn far more than raw sales.</p>
+      <p style="margin-top:8px;font-style:italic;color:#666">Pro tip: chain a Weather Card with the Daily Forecast Puzzle and Market Scarcity — that's where massive gains come from.</p>
     </div>
   `;
 }

@@ -63,8 +63,29 @@
   </div>
   <div class="side-panel-scrim" id="side-panel-scrim"></div>
 
+  <!-- Objective rail: next best action -->
+  <div id="objective-rail" class="objective-rail"></div>
+
   <!-- Event banner -->
   <div id="event-banner" class="event-banner"></div>
+
+  <!-- Choice event modal (custom, non-blocking) -->
+  <div id="choice-event-overlay" class="choice-overlay" hidden>
+    <div class="choice-box">
+      <div class="choice-icon" id="choice-icon">📜</div>
+      <div class="choice-title" id="choice-title">Event</div>
+      <div class="choice-story" id="choice-story"></div>
+      <div class="choice-actions" id="choice-actions"></div>
+      <button class="choice-skip" id="choice-skip">Maybe later</button>
+    </div>
+  </div>
+
+  <!-- Tutorial bubble (non-blocking) -->
+  <div id="tutorial-bubble" class="tutorial-bubble" hidden>
+    <div class="tutorial-step" id="tutorial-step"></div>
+    <div class="tutorial-text" id="tutorial-text"></div>
+    <button class="tutorial-skip" id="tutorial-skip">Skip</button>
+  </div>
 
   <!-- Active placement banner (mobile-friendly cancel) -->
   <div id="placing-banner" class="placing-banner" hidden>
@@ -115,6 +136,22 @@
         <span class="ico" id="ico-news"></span>
         <span class="btn-label">News<small>Today</small></span>
       </button>
+      <button class="btn mobile-hide" id="open-daily" title="Daily" aria-label="Daily">
+        <span class="ico-emoji">🌅</span>
+        <span class="btn-label">Daily<small>Streak</small></span>
+      </button>
+      <button class="btn mobile-hide" id="open-weather-grid" title="Weather Grid" aria-label="Weather Grid">
+        <span class="ico-emoji">🌦️</span>
+        <span class="btn-label">Grid<small>Weather</small></span>
+      </button>
+      <button class="btn mobile-hide" id="open-spec" title="Specialization" aria-label="Specialization">
+        <span class="ico-emoji">🌟</span>
+        <span class="btn-label">Path<small>Spec</small></span>
+      </button>
+      <button class="btn mobile-hide" id="open-collection" title="Collection" aria-label="Collection">
+        <span class="ico-emoji">📖</span>
+        <span class="btn-label">Codex<small>Find</small></span>
+      </button>
       <button class="btn mobile-hide" id="save-btn" title="Save" aria-label="Save game">
         <span class="ico" id="ico-save"></span>
         <span class="btn-label">Save<small>Game</small></span>
@@ -132,6 +169,38 @@
     <div class="bottom-sheet-handle"></div>
     <div class="bottom-sheet-title">More</div>
     <div class="bottom-sheet-grid" id="more-grid">
+      <button class="sheet-btn" data-more="open-daily">
+        <span class="ico-emoji">🌅</span>
+        <span>Daily</span>
+      </button>
+      <button class="sheet-btn" data-more="open-weather-grid">
+        <span class="ico-emoji">🌦️</span>
+        <span>Grid</span>
+      </button>
+      <button class="sheet-btn" data-more="open-spec">
+        <span class="ico-emoji">🌟</span>
+        <span>Path</span>
+      </button>
+      <button class="sheet-btn" data-more="open-collection">
+        <span class="ico-emoji">📖</span>
+        <span>Codex</span>
+      </button>
+      <button class="sheet-btn" data-more="open-market">
+        <span class="ico-emoji">💱</span>
+        <span>Market</span>
+      </button>
+      <button class="sheet-btn" data-more="open-leaderboard">
+        <span class="ico-emoji">🏅</span>
+        <span>Ranks</span>
+      </button>
+      <button class="sheet-btn" data-more="open-prestige">
+        <span class="ico-emoji">✨</span>
+        <span>Prestige</span>
+      </button>
+      <button class="sheet-btn" data-more="open-snapshot">
+        <span class="ico-emoji">🖼️</span>
+        <span>Share</span>
+      </button>
       <button class="sheet-btn" data-more="open-inventory">
         <span class="ico" id="ico-inv-m"></span>
         <span>Barn</span>
@@ -165,6 +234,14 @@
         <span>Re-center</span>
       </button>
     </div>
+  </div>
+
+  <!-- Hidden trigger buttons (so they can be clicked from More menu) -->
+  <div style="display:none">
+    <button id="open-market" type="button"></button>
+    <button id="open-leaderboard" type="button"></button>
+    <button id="open-prestige" type="button"></button>
+    <button id="open-snapshot" type="button"></button>
   </div>
 
   <!-- Generic Modal -->

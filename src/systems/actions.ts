@@ -8,12 +8,23 @@ import { sfx } from '../audio/sfx';
 import { toast } from '../ui/toasts';
 import { updateHUD } from '../ui/hud';
 import { spawnParticles, floatText } from './particles';
-import { addItem } from './inventory';
+import { addItem, removeItem } from './inventory';
+import { applyFertilizer, tileGrowthBoost } from './soil';
 import { addXP } from './xp';
 import { questProgress } from './quests';
+import { dailyChallengeProgress } from './daily';
+import { addWeeklyPoints } from './weekly';
 import { checkAchievements } from './achievements';
 import { cropStage, isWithered } from './crops';
 import { isEvent } from './events';
+import { recordDiscovery } from './collection';
+import { drainFertilityOnHarvest, tileYieldBoost } from './soil';
+import { specEffects } from './specializations';
+import { activeEffects as weatherGridEffects } from './weather-grid';
+import { beautyBonus } from './beautification';
+import { collectionBonuses } from './collection';
+import { perkValue } from './prestige';
+import { track } from './telemetry';
 
 export function tryPlaceDecoration(gx: number, gy: number): void {
   const placing = state.placing!;
@@ -64,6 +75,14 @@ export function tryPlow(gx: number, gy: number): void {
   const t = state.grid[gy]![gx]!;
   if (t.building || t.crop || t.tree) { sfx.error(); return; }
   if (t.type === 'plowed') {
+    // Apply fertilizer if held — otherwise just unplow
+    if ((state.inv.fertilizer ?? 0) > 0) {
+      removeItem('fertilizer', 1);
+      applyFertilizer(gx, gy);
+      toast('Fertilized!', 'xp');
+      spawnParticles(gx * TILE + TILE / 2, gy * TILE + TILE / 2, '#3a8020', 12);
+      return;
+    }
     t.type = 'grass';
     sfx.plow();
     spawnParticles(gx * TILE + TILE / 2, gy * TILE + TILE / 2, '#6e4520', 6);
@@ -118,9 +137,21 @@ export function tryHarvestOrInteract(gx: number, gy: number): void {
     }
     let yieldAmt = randi(crop.yieldMax - crop.yieldMin + 1) + crop.yieldMin;
     if (isEvent('lucky')) yieldAmt *= 2;
+    // Multipliers from soil / spec / weather grid / beauty / collection / prestige
+    const sp = specEffects();
+    const eff = weatherGridEffects();
+    const cb = collectionBonuses();
+    let mult = tileYieldBoost(gx, gy);
+    mult *= 1 + (sp.cropYield ?? 0);
+    mult *= 1 + eff.yieldBonus;
+    mult *= 1 + beautyBonus();
+    mult *= 1 + cb.yieldMult;
+    yieldAmt = Math.max(1, Math.round(yieldAmt * mult));
     addItem(crop.item, yieldAmt);
-    addXP(crop.xp);
+    addXP(Math.round(crop.xp * (1 + perkValue('xpBoost'))));
     state.stats.harvested += yieldAmt;
+    drainFertilityOnHarvest(gx, gy);
+    recordDiscovery('crop', t.crop, 1);
     sfx.harvest();
     spawnParticles(gx * TILE + TILE / 2, gy * TILE + TILE / 2, '#ffe080', 14);
     floatText(
@@ -133,6 +164,9 @@ export function tryHarvestOrInteract(gx: number, gy: number): void {
     t.plantedAt = 0;
     t.type = 'soil';
     questProgress('harvest', crop.item, yieldAmt);
+    dailyChallengeProgress('harvest', crop.item, yieldAmt);
+    addWeeklyPoints(yieldAmt * 2, 'crop');
     checkAchievements();
+    track('harvest', { crop: crop.item, amt: yieldAmt });
   }
 }

@@ -39,6 +39,30 @@ import {
   updatePlacingBanner,
 } from './ui/mobile-shell';
 import { initDecor } from './decor';
+// Phase 0–4 retention/diff/meta systems
+import { initDaily, dailyTick } from './systems/daily';
+import { initWeekly, weeklyTick } from './systems/weekly';
+import { initWeatherGrid, maybeUnlockGrid } from './systems/weather-grid';
+import { initSpecializations } from './systems/specializations';
+import { initCollection } from './systems/collection';
+import { initMarket, refreshMarketModifiers } from './systems/market';
+import { initSoil, tickSoil, ensureSoilGridFor } from './systems/soil';
+import { initMood, tickMood } from './systems/animal-mood';
+import { initBiome } from './systems/biome';
+import { initPrestige } from './systems/prestige';
+import { initTutorial } from './systems/tutorial';
+import { track } from './systems/telemetry';
+import { openDaily } from './ui/daily-panel';
+import { openWeatherGrid } from './ui/weather-grid-panel';
+import { openSpecialization } from './ui/spec-panel';
+import { openCollection } from './ui/collection-panel';
+import { openMarket } from './ui/market-panel';
+import { openLeaderboard } from './ui/leaderboard-panel';
+import { openPrestige } from './ui/prestige-panel';
+import { openSnapshot } from './ui/snapshot-panel';
+import { renderObjectiveRail } from './ui/objective-rail';
+import { renderTutorialBubble, bindTutorial } from './ui/tutorial-overlay';
+import { renderChoiceOverlay, bindChoice } from './ui/choice-overlay';
 
 function setupInitialFarm(): void {
   // Irregular lake in the upper-left — ~20 tiles, big enough to build
@@ -91,6 +115,14 @@ function bindToolbarHandlers(): void {
   document.getElementById('open-decor')!.addEventListener('click', openDecorMenu);
   document.getElementById('open-achievements')!.addEventListener('click', openAchievements);
   document.getElementById('open-news')!.addEventListener('click', openNews);
+  document.getElementById('open-daily')!.addEventListener('click', openDaily);
+  document.getElementById('open-weather-grid')!.addEventListener('click', openWeatherGrid);
+  document.getElementById('open-spec')!.addEventListener('click', openSpecialization);
+  document.getElementById('open-collection')!.addEventListener('click', openCollection);
+  document.getElementById('open-market')!.addEventListener('click', openMarket);
+  document.getElementById('open-leaderboard')!.addEventListener('click', openLeaderboard);
+  document.getElementById('open-prestige')!.addEventListener('click', openPrestige);
+  document.getElementById('open-snapshot')!.addEventListener('click', openSnapshot);
   document.getElementById('save-btn')!.addEventListener('click', () => {
     saveGame();
     toast('Game saved!');
@@ -114,6 +146,7 @@ function bindToolbarHandlers(): void {
 
 let lastTime = performance.now();
 let badgeT = 0;
+let railT = 0;
 function frame(now: number): void {
   const dt = Math.min(0.1, (now - lastTime) / 1000);
   lastTime = now;
@@ -126,6 +159,13 @@ function frame(now: number): void {
     badgeT = 0;
     updateQuestsFabBadge();
   }
+  railT += dt;
+  if (railT > 0.75) {
+    railT = 0;
+    renderObjectiveRail();
+    renderTutorialBubble();
+    renderChoiceOverlay();
+  }
   requestAnimationFrame(frame);
 }
 
@@ -136,6 +176,10 @@ function init(): void {
   attachToolButtons();
   bindToolbarHandlers();
   bindMobileShell();
+
+  // Wire tutorial + choice overlay buttons
+  bindTutorial();
+  bindChoice();
 
   const loaded = loadGame();
   if (!loaded) {
@@ -154,6 +198,23 @@ function init(): void {
   initDecor();
   setTool('hand');
   updateSeedBtnLabel();
+
+  // Init all retention systems
+  initDaily(); dailyTick();
+  initWeekly(); weeklyTick();
+  initWeatherGrid(); maybeUnlockGrid();
+  initSpecializations();
+  initCollection();
+  initMarket();
+  if (state.market!.day !== state.day) refreshMarketModifiers();
+  initSoil();
+  // Ensure soil grid covers the world dims (in case save was older)
+  ensureSoilGridFor(GRID_W, GRID_H);
+  initMood();
+  initBiome();
+  initPrestige();
+  initTutorial();
+  track(loaded ? 'session_resume' : 'session_new', { level: state.level });
 
   state.camX = (GRID_W * TILE) / 2;
   state.camY = (GRID_H * TILE) / 2;

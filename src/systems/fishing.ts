@@ -7,7 +7,14 @@ import { toast } from '../ui/toasts';
 import { addItem } from './inventory';
 import { addXP } from './xp';
 import { questProgress } from './quests';
+import { dailyChallengeProgress } from './daily';
+import { addWeeklyPoints } from './weekly';
 import { checkAchievements } from './achievements';
+import { recordDiscovery } from './collection';
+import { effectiveFishWeights, baitValueMultiplier } from './biome';
+import { activeEffects as weatherGridEffects } from './weather-grid';
+import { specEffects } from './specializations';
+import { track } from './telemetry';
 
 export function startFishing(): void {
   if (state.level < 3) {
@@ -16,11 +23,22 @@ export function startFishing(): void {
     return;
   }
   const eligible = Object.entries(FISH).filter(([, f]) => f.level <= state.level);
-  const total = eligible.reduce((a, [, f]) => a + f.weight, 0);
+  // Apply biome/bait/time-window weights
+  const w = effectiveFishWeights();
+  // Apply weather grid + spec rare bonus
+  const eff = weatherGridEffects();
+  const sp = specEffects();
+  const rareBonus = eff.fishingRareBonus + (sp.fishingRare ?? 0);
+  for (const k of Object.keys(w)) {
+    const baseLevel = ITEMS[k]?.level ?? 0;
+    if (baseLevel >= 5) w[k] = (w[k] ?? 0) * (1 + rareBonus);
+  }
+  const filtered = eligible.filter(([k]) => w[k] !== undefined);
+  const total = filtered.reduce((a, [k]) => a + (w[k] ?? 0), 0);
   let r = rand(total);
-  let chosenKind = eligible[0]![0];
-  for (const [k, f] of eligible) {
-    r -= f.weight;
+  let chosenKind = filtered[0]?.[0] ?? eligible[0]![0];
+  for (const [k] of filtered) {
+    r -= w[k] ?? 0;
     if (r <= 0) { chosenKind = k; break; }
   }
   const fish = FISH[chosenKind]!;
@@ -66,8 +84,22 @@ export function tryHookFish(): void {
     addXP(FISH[f.fishKind]!.xp);
     state.stats.fishCaught++;
     sfx.fishCatch();
-    toast(`Caught a ${ITEMS[f.fishKind]!.name}!`, 'xp');
+    const bm = baitValueMultiplier();
+    // Rare catch event chain: every 10th catch grants a bonus
+    if (state.stats.fishCaught % 10 === 0) {
+      const bonus = 50 + state.level * 10;
+      state.coins += bonus;
+      state.stats.earned += bonus;
+      addXP(10);
+      toast(`🎣 Lucky streak! +${bonus}💰 +10XP`, 'gold');
+    } else {
+      toast(`Caught a ${ITEMS[f.fishKind]!.name}!${bm > 1 ? ' (bait bonus active)' : ''}`, 'xp');
+    }
     questProgress('fish', f.fishKind, 1);
+    dailyChallengeProgress('fish', f.fishKind, 1);
+    addWeeklyPoints(15, 'fish');
+    recordDiscovery('fish', f.fishKind, 1);
+    track('fish_caught', { kind: f.fishKind });
     checkAchievements();
   } else {
     toast('The fish got away!', 'error');

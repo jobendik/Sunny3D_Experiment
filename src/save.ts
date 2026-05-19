@@ -31,6 +31,21 @@ interface SaveData {
   trees: GameState['trees'];
   musicOn: boolean;
   saveTime: number;
+  // Retention / mastery
+  daily?: GameState['daily'];
+  weekly?: GameState['weekly'];
+  weatherGrid?: GameState['weatherGrid'];
+  specialization?: GameState['specialization'];
+  collection?: GameState['collection'];
+  market?: GameState['market'];
+  soil?: GameState['soil'];
+  mood?: GameState['mood'];
+  biome?: GameState['biome'];
+  prestige?: GameState['prestige'];
+  tutorial?: GameState['tutorial'];
+  deferredPayouts?: GameState['deferredPayouts'];
+  tileTraits?: GameState['tileTraits'];
+  farmName?: string;
 }
 
 export function saveGame(): void {
@@ -61,6 +76,20 @@ export function saveGame(): void {
     trees: state.trees,
     musicOn: state.musicOn,
     saveTime: nowSeconds(),
+    daily: state.daily,
+    weekly: state.weekly,
+    weatherGrid: state.weatherGrid,
+    specialization: state.specialization,
+    collection: state.collection,
+    market: state.market,
+    soil: state.soil,
+    mood: state.mood,
+    biome: state.biome,
+    prestige: state.prestige,
+    tutorial: state.tutorial,
+    deferredPayouts: state.deferredPayouts,
+    tileTraits: state.tileTraits,
+    farmName: state.farmName,
   };
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
@@ -102,6 +131,20 @@ export function loadGame(): boolean {
     state.decor = data.decor || [];
     state.trees = data.trees || [];
     state.musicOn = data.musicOn !== undefined ? data.musicOn : true;
+    if (data.daily) state.daily = data.daily;
+    if (data.weekly) state.weekly = data.weekly;
+    if (data.weatherGrid) state.weatherGrid = data.weatherGrid;
+    if (data.specialization) state.specialization = data.specialization;
+    if (data.collection) state.collection = data.collection;
+    if (data.market) state.market = data.market;
+    if (data.soil) state.soil = data.soil;
+    if (data.mood) state.mood = data.mood;
+    if (data.biome) state.biome = data.biome;
+    if (data.prestige) state.prestige = data.prestige;
+    if (data.tutorial) state.tutorial = data.tutorial;
+    if (data.deferredPayouts) state.deferredPayouts = data.deferredPayouts;
+    if (data.tileTraits) state.tileTraits = data.tileTraits;
+    if (data.farmName) state.farmName = data.farmName;
 
     const offset = data.saveTime || 0;
     const curNow = nowSeconds();

@@ -8,7 +8,10 @@ import { updateHUD } from '../ui/hud';
 import { hasItems, removeItem } from './inventory';
 import { addXP } from './xp';
 import { questProgress } from './quests';
+import { dailyChallengeProgress } from './daily';
+import { addWeeklyPoints } from './weekly';
 import { checkAchievements } from './achievements';
+import { track } from './telemetry';
 import type { Order } from '../types';
 
 export function generateOrder(): Order {
@@ -54,6 +57,9 @@ export function fulfillOrder(orderId: string): void {
   renderOrders();
   updateHUD();
   questProgress('orders', null, 1);
+  dailyChallengeProgress('orders', null, 1);
+  addWeeklyPoints(20, 'craft');
+  track('order_fulfilled', { reward: o.reward });
   checkAchievements();
 }
 

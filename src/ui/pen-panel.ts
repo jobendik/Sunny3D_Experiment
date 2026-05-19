@@ -13,8 +13,12 @@ import { addItem } from '../systems/inventory';
 import { addXP } from '../systems/xp';
 import { feedPen, penFeedLevel } from '../systems/pens';
 import { questProgress } from '../systems/quests';
+import { dailyChallengeProgress } from '../systems/daily';
+import { addWeeklyPoints, currentTheme } from '../systems/weekly';
 import { checkAchievements } from '../systems/achievements';
 import { floatText } from '../systems/particles';
+import { moodLevel, moodMultipliers } from '../systems/animal-mood';
+import { specEffects } from '../systems/specializations';
 import type { BuildingInstance } from '../types';
 
 export function openPenPanel(b: BuildingInstance): void {
@@ -30,13 +34,17 @@ export function openPenPanel(b: BuildingInstance): void {
   function render(): void {
     const feedPct = penFeedLevel(b.id);
     const isHungry = feedPct < 20;
+    const mood = moodLevel(b.id);
+    const mm = moodMultipliers(b.id);
+    const sp = specEffects();
+    const effectiveTime = aniDef.produceTime / mm.speed / (1 + (sp.animalSpeed ?? 0));
     const slots: string[] = [];
     for (let i = 0; i < def.capacity!; i++) {
       const a = animals[i];
       if (a) {
         const elapsed = nowSeconds() - a.lastProduced;
-        const ready = elapsed >= aniDef.produceTime;
-        const pct = Math.min(100, (elapsed / aniDef.produceTime) * 100);
+        const ready = elapsed >= effectiveTime;
+        const pct = Math.min(100, (elapsed / effectiveTime) * 100);
         slots.push(`
           <div class="shop-item">
             <img class="ico" src="${sprites.animal[def.animal!]![0]!.toDataURL()}">
@@ -47,7 +55,7 @@ export function openPenPanel(b: BuildingInstance): void {
             <button ${ready && !isHungry ? '' : 'disabled'} data-act="collect" data-idx="${i}">${
               isHungry ? 'Too hungry!' :
               ready ? 'Collect ' + ITEMS[aniDef.produces]!.name :
-              'Growing... ' + Math.ceil(aniDef.produceTime - elapsed) + 's'
+              'Growing... ' + Math.ceil(effectiveTime - elapsed) + 's'
             }</button>
           </div>
         `);
@@ -64,8 +72,13 @@ export function openPenPanel(b: BuildingInstance): void {
     }
     body.innerHTML = `
       <div style="font-size:13px;margin-bottom:6px;color:#666">
-        Animals produce ${ITEMS[aniDef.produces]!.name} every ${aniDef.produceTime}s.
+        Animals produce ${ITEMS[aniDef.produces]!.name} every ${effectiveTime.toFixed(0)}s (base ${aniDef.produceTime}s).
         Capacity: ${animals.length}/${def.capacity}
+      </div>
+      <div class="mood-bar-wrap">
+        <span style="font-size:12px;font-weight:bold">Mood: ${Math.floor(mood)}/100</span>
+        <div class="mood-bar"><div class="mood-bar-fill" style="width:${mood}%"></div></div>
+        <span style="font-size:11px;color:#666">Yield ×${mm.yield.toFixed(2)} · Speed ×${mm.speed.toFixed(2)}</span>
       </div>
       <div style="background:#fff;border:2px solid var(--panel-edge);border-radius:8px;padding:8px;margin-bottom:8px;display:flex;align-items:center;gap:8px">
         <img class="ico-mini" src="${sprites.item.feed!.toDataURL()}">
@@ -94,6 +107,12 @@ export function openPenPanel(b: BuildingInstance): void {
           if (animals.length >= def.capacity!) return;
           state.coins -= aniDef.price;
           state.stats.animalsOwned += 1;
+          // Random breed trait roll: 70% common, 20% prized, 10% champion
+          const r = Math.random();
+          const trait = r < 0.10 ? 'champion' : (r < 0.30 ? 'prized' : 'common');
+          if (trait !== 'common') {
+            toast(`A ${trait} ${aniDef.name}!`, 'gold');
+          }
           animals.push({
             kind: def.animal!,
             lastProduced: nowSeconds(),
@@ -113,21 +132,25 @@ export function openPenPanel(b: BuildingInstance): void {
           const idx = parseInt(btn.dataset.idx!, 10);
           const a = animals[idx]!;
           const elapsed = nowSeconds() - a.lastProduced;
-          if (elapsed < aniDef.produceTime) return;
+          if (elapsed < effectiveTime) return;
           if (isHungry) { toast('Animals too hungry!', 'error'); return; }
-          addItem(aniDef.produces, 1);
+          const yieldAmt = Math.max(1, Math.round(1 * mm.yield * (1 + (sp.animalYield ?? 0))));
+          addItem(aniDef.produces, yieldAmt);
           addXP(aniDef.xp);
           state.stats.produced++;
-          state.stats.itemsProduced[aniDef.produces] = (state.stats.itemsProduced[aniDef.produces] ?? 0) + 1;
+          state.stats.itemsProduced[aniDef.produces] = (state.stats.itemsProduced[aniDef.produces] ?? 0) + yieldAmt;
           a.lastProduced = nowSeconds();
           sfx.harvest();
           floatText(
             b.x * TILE + def.w * TILE / 2,
             b.y * TILE + def.h * TILE / 2,
-            `+1 ${ITEMS[aniDef.produces]!.name}`,
+            `+${yieldAmt} ${ITEMS[aniDef.produces]!.name}`,
             '#3a8020',
           );
-          questProgress('produce', aniDef.produces, 1);
+          questProgress('produce', aniDef.produces, yieldAmt);
+          dailyChallengeProgress('produce', aniDef.produces, yieldAmt);
+          const t = currentTheme();
+          addWeeklyPoints(8, t.focus === 'pen' ? 'pen' : 'craft');
           checkAchievements();
           render();
         }
