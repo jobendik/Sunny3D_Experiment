@@ -21,10 +21,11 @@ import { mousePos } from './input';
 import { drawDecor } from './decor';
 import { currentBeacon } from './systems/goal-beacon';
 import { tickShake, tickFlash } from './systems/juice';
+import { getAmbientCreatures } from './systems/ambient';
 
 interface Drawable {
   y: number;
-  kind: 'building' | 'decor' | 'tree' | 'crow' | 'dog';
+  kind: 'building' | 'decor' | 'tree' | 'crow' | 'dog' | 'ambient';
   data: unknown;
 }
 
@@ -67,7 +68,7 @@ export function render(): void {
       let s: HTMLCanvasElement;
       if (t.type === 'plowed') s = sprites.plowed;
       else if (t.type === 'soil') s = sprites.soil;
-      else if (t.type === 'water') s = sprites.water;
+      else if (t.type === 'water') s = sprites.waterFrames[Math.floor(performance.now() / 250) % 4]!;
       else if (t.type === 'path') s = sprites.path;
       else s = sprites.grass;
       ctx.drawImage(s, gx * TILE, gy * TILE);
@@ -214,6 +215,11 @@ export function render(): void {
   if (state.dog) {
     drawables.push({ y: state.dog.y + 20, kind: 'dog', data: state.dog });
   }
+  for (const a of getAmbientCreatures()) {
+    // Render airborne creatures high up, leaves lower
+    const ySort = a.kind === 'bird' ? a.y + 100 : a.y;
+    drawables.push({ y: ySort, kind: 'ambient', data: a });
+  }
   drawables.sort((a, b) => a.y - b.y);
 
   for (const d of drawables) {
@@ -332,6 +338,49 @@ export function render(): void {
     } else if (d.kind === 'dog') {
       const g = d.data as NonNullable<typeof state.dog>;
       ctx.drawImage(sprites.dog[g.frame]!, g.x - 24, g.y - 20);
+    } else if (d.kind === 'ambient') {
+      const a = d.data as ReturnType<typeof getAmbientCreatures>[number];
+      ctx.save();
+      ctx.globalAlpha = a.alpha;
+      ctx.translate(a.x, a.y);
+      if (a.rotation) ctx.rotate(a.rotation);
+      
+      if (a.kind === 'butterfly') {
+        const flutter = Math.sin(a.phase * 4);
+        ctx.fillStyle = a.color;
+        // wings
+        ctx.beginPath(); ctx.ellipse(-2, 0, a.size, a.size * (0.3 + 0.7 * Math.abs(flutter)), 0.2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(2, 0, a.size, a.size * (0.3 + 0.7 * Math.abs(flutter)), -0.2, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#222';
+        ctx.fillRect(-0.5, -2, 1, 4); // body
+      } else if (a.kind === 'firefly') {
+        ctx.fillStyle = a.color;
+        ctx.beginPath(); ctx.arc(0, 0, a.size, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowColor = a.color;
+        ctx.shadowBlur = 8;
+        ctx.beginPath(); ctx.arc(0, 0, a.size * 0.5, 0, Math.PI * 2); ctx.fill();
+      } else if (a.kind === 'bird') {
+        const flap = Math.sin(a.phase * 6);
+        ctx.fillStyle = a.color;
+        // Body
+        ctx.beginPath(); ctx.ellipse(0, 0, a.size, a.size * 0.6, 0, 0, Math.PI * 2); ctx.fill();
+        // Wings
+        ctx.beginPath();
+        if (flap > 0) {
+          ctx.moveTo(-2, -1); ctx.quadraticCurveTo(0, -a.size * 2, 3, -2);
+        } else {
+          ctx.moveTo(-2, 1); ctx.quadraticCurveTo(0, a.size * 2, 3, 2);
+        }
+        ctx.stroke();
+      } else if (a.kind === 'leaf') {
+        ctx.fillStyle = a.color;
+        ctx.beginPath();
+        ctx.moveTo(-a.size, 0);
+        ctx.quadraticCurveTo(0, -a.size, a.size, 0);
+        ctx.quadraticCurveTo(0, a.size, -a.size, 0);
+        ctx.fill();
+      }
+      ctx.restore();
     }
   }
 

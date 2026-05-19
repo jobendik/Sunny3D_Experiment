@@ -527,6 +527,7 @@ export interface SpriteCache {
   plowed: HTMLCanvasElement;
   path: HTMLCanvasElement;
   water: HTMLCanvasElement;
+  waterFrames: HTMLCanvasElement[];
   crops: Record<string, HTMLCanvasElement[]>;
   item: Record<string, HTMLCanvasElement>;
   animal: Record<string, HTMLCanvasElement[]>;

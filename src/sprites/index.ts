@@ -5,7 +5,7 @@ import { ANIMALS } from '../data/animals';
 import { BUILDINGS } from '../data/buildings';
 import { DECORATIONS } from '../data/decorations';
 import { ORCHARDS } from '../data/orchards';
-import { spriteGrassTile, spriteSoilTile, spritePathTile, spriteWaterTile } from './tiles';
+import { spriteGrassTile, spriteSoilTile, spritePathTile, spriteWaterFrames } from './tiles';
 import { spriteCropStage } from './crops';
 import { spriteItem } from './items';
 import { spriteAnimal } from './animals';
@@ -33,7 +33,8 @@ export function buildSprites(): void {
   sprites.soil = spriteSoilTile(false);
   sprites.plowed = spriteSoilTile(true);
   sprites.path = spritePathTile();
-  sprites.water = spriteWaterTile();
+  sprites.waterFrames = spriteWaterFrames();
+  sprites.water = sprites.waterFrames[0]!;
 
   sprites.crops = {};
   for (const k of Object.keys(CROPS)) {

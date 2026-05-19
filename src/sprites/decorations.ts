@@ -2,6 +2,28 @@ import { makeCanvas } from '../canvas';
 import { TILE } from '../constants';
 import { DECORATIONS } from '../data/decorations';
 
+function softCircle(
+  g: CanvasRenderingContext2D,
+  x: number, y: number, r: number,
+  color: string, alpha = 1,
+): void {
+  g.save();
+  g.globalAlpha = alpha;
+  g.beginPath();
+  g.arc(x, y, r, 0, Math.PI * 2);
+  g.fillStyle = color;
+  g.fill();
+  g.restore();
+}
+
+function shadow(g: CanvasRenderingContext2D, x: number, y: number, rx: number, ry: number) {
+  g.save();
+  g.globalAlpha = 0.2;
+  g.fillStyle = '#000';
+  g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); g.fill();
+  g.restore();
+}
+
 export function spriteDecoration(type: string): HTMLCanvasElement {
   const def = DECORATIONS[type]!;
   const W = def.w * TILE;
@@ -13,261 +35,193 @@ export function spriteDecoration(type: string): HTMLCanvasElement {
 
   switch (type) {
     case 'flowerbed': {
-      g.fillStyle = '#5a3a18';
-      g.beginPath(); g.ellipse(cx, cy + 8, 22, 10, 0, 0, Math.PI * 2); g.fill();
-      g.fillStyle = '#3a8020';
-      g.fillRect(cx - 12, cy - 4, 3, 12);
-      g.fillRect(cx, cy - 2, 3, 14);
-      g.fillRect(cx + 10, cy - 6, 3, 16);
-      const colors = ['#ff80c0', '#ffe080', '#80c0ff'];
-      ([[-12, -4], [0, -2], [10, -6]] as const).forEach(([dx, dy], i) => {
-        g.fillStyle = colors[i]!;
+      // Soil mound
+      const moundGrad = g.createRadialGradient(cx, cy + 8, 2, cx, cy + 8, 22);
+      moundGrad.addColorStop(0, '#6a4420');
+      moundGrad.addColorStop(1, '#4a2c10');
+      g.fillStyle = moundGrad;
+      g.beginPath(); g.ellipse(cx, cy + 8, 22, 12, 0, 0, Math.PI * 2); g.fill();
+      
+      // Stems
+      g.strokeStyle = '#5cb040'; g.lineWidth = 2; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(cx - 12, cy + 6); g.quadraticCurveTo(cx - 14, cy, cx - 12, cy - 6); g.stroke();
+      g.beginPath(); g.moveTo(cx, cy + 8); g.lineTo(cx, cy - 8); g.stroke();
+      g.beginPath(); g.moveTo(cx + 10, cy + 6); g.quadraticCurveTo(cx + 12, cy, cx + 10, cy - 10); g.stroke();
+      
+      // Flowers (soft circles)
+      const colors = ['#ff9ed4', '#ffe070', '#80c0ff', '#ffa0a0'];
+      ([[-12, -6], [0, -8], [10, -10], [-5, 0], [6, -2]] as const).forEach(([dx, dy], i) => {
+        const fc = colors[i % colors.length]!;
         for (let a = 0; a < 5; a++) {
           const ang = a / 5 * Math.PI * 2;
-          g.beginPath();
-          g.arc(cx + dx + 0.5 + Math.cos(ang) * 4, cy + dy + Math.sin(ang) * 4, 3, 0, Math.PI * 2);
-          g.fill();
+          softCircle(g, cx + dx + Math.cos(ang) * 4, cy + dy + Math.sin(ang) * 4, 3.5, fc, 0.9);
         }
-        g.fillStyle = '#ffe040';
-        g.beginPath(); g.arc(cx + dx + 0.5, cy + dy, 2, 0, Math.PI * 2); g.fill();
+        softCircle(g, cx + dx, cy + dy, 2.5, '#ffe040', 1); // center
       });
       break;
     }
-    case 'lamppost':
-      g.fillStyle = '#3a3a3a';
-      g.fillRect(cx - 1, cy - 22, 3, 40);
+    case 'lamppost': {
+      shadow(g, cx, cy + 20, 8, 3);
+      // Base
       g.fillStyle = '#222';
-      g.fillRect(cx - 3, cy + 18, 7, 4);
-      g.fillStyle = '#3a3a3a';
-      g.fillRect(cx - 6, cy - 28, 13, 6);
-      g.fillStyle = '#ffe080';
-      g.fillRect(cx - 5, cy - 26, 11, 4);
+      g.beginPath(); g.ellipse(cx, cy + 18, 6, 3, 0, 0, Math.PI * 2); g.fill();
+      // Pole
+      const poleGrad = g.createLinearGradient(cx - 2, 0, cx + 2, 0);
+      poleGrad.addColorStop(0, '#2a2a2a');
+      poleGrad.addColorStop(0.5, '#4a4a4a');
+      poleGrad.addColorStop(1, '#1a1a1a');
+      g.fillStyle = poleGrad;
+      g.fillRect(cx - 1.5, cy - 22, 3, 40);
+      
+      // Top housing
+      g.fillStyle = '#222';
+      g.fillRect(cx - 6, cy - 28, 12, 6);
+      g.beginPath(); g.moveTo(cx - 8, cy - 28); g.lineTo(cx, cy - 34); g.lineTo(cx + 8, cy - 28); g.fill();
+      
+      // Glass / Glow
+      const glowGrad = g.createRadialGradient(cx, cy - 25, 2, cx, cy - 25, 18);
+      glowGrad.addColorStop(0, 'rgba(255,230,128,0.8)');
+      glowGrad.addColorStop(1, 'rgba(255,230,128,0)');
+      g.fillStyle = glowGrad;
+      g.beginPath(); g.arc(cx, cy - 25, 18, 0, Math.PI * 2); g.fill();
+      
       g.fillStyle = '#fff8a0';
-      g.fillRect(cx - 4, cy - 25, 9, 2);
-      g.fillStyle = 'rgba(255,230,128,0.3)';
-      g.beginPath(); g.arc(cx, cy - 24, 14, 0, Math.PI * 2); g.fill();
+      g.fillRect(cx - 4, cy - 26, 8, 5);
+      softCircle(g, cx, cy - 24, 2, '#fff', 1);
       break;
-    case 'bench':
-      g.fillStyle = '#a87248';
-      g.fillRect(cx - W * 0.4, cy - 2, W * 0.8, 8);
-      g.fillStyle = '#a87248';
-      g.fillRect(cx - W * 0.4, cy - 16, W * 0.8, 6);
-      g.fillStyle = '#8a5a30';
+    }
+    case 'bench': {
+      shadow(g, cx, cy + 16, W * 0.45, 6);
+      
+      const woodColor = '#a87248';
+      const woodDark = '#7a4f2e';
+      
+      // Legs
+      g.fillStyle = woodDark;
+      g.fillRect(cx - W * 0.35, cy + 4, 4, 12);
+      g.fillRect(cx + W * 0.35 - 4, cy + 4, 4, 12);
+      g.fillRect(cx - W * 0.3, cy + 2, 4, 10);
+      g.fillRect(cx + W * 0.3 - 4, cy + 2, 4, 10);
+      
+      // Seat
+      g.fillStyle = woodColor;
+      g.beginPath(); g.roundRect(cx - W * 0.4, cy - 2, W * 0.8, 8, 3); g.fill();
+      g.fillStyle = woodDark;
+      g.fillRect(cx - W * 0.4, cy + 4, W * 0.8, 2); // seat depth
+      
+      // Back support beams
+      g.fillStyle = woodDark;
       for (let i = 0; i < 5; i++) {
         const x = cx - W * 0.35 + i * (W * 0.7 / 4);
-        g.fillRect(x, cy - 16, 2, 6);
+        g.fillRect(x - 1, cy - 16, 2, 14);
       }
-      g.fillStyle = '#7a4f2e';
-      g.fillRect(cx - W * 0.35, cy + 4, 4, 14);
-      g.fillRect(cx + W * 0.32, cy + 4, 4, 14);
+      
+      // Backrest
+      g.fillStyle = woodColor;
+      g.beginPath(); g.roundRect(cx - W * 0.4, cy - 18, W * 0.8, 6, 2); g.fill();
+      
+      // Armrests
+      g.strokeStyle = woodColor; g.lineWidth = 3; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(cx - W * 0.35, cy - 10); g.quadraticCurveTo(cx - W * 0.38, cy - 4, cx - W * 0.35, cy + 2); g.stroke();
+      g.beginPath(); g.moveTo(cx + W * 0.35, cy - 10); g.quadraticCurveTo(cx + W * 0.38, cy - 4, cx + W * 0.35, cy + 2); g.stroke();
       break;
-    case 'scarecrow':
-      g.fillStyle = '#8a5a30';
-      g.fillRect(cx - 1, cy - 18, 3, 36);
-      g.fillRect(cx - 12, cy - 12, 24, 3);
-      g.fillStyle = '#d8b878';
-      g.beginPath(); g.arc(cx, cy - 22, 7, 0, Math.PI * 2); g.fill();
-      g.fillStyle = '#5a3a18';
-      g.fillRect(cx - 10, cy - 30, 20, 3);
-      g.fillRect(cx - 6, cy - 36, 12, 8);
-      g.fillStyle = '#000';
-      g.fillRect(cx - 3, cy - 23, 2, 2);
-      g.fillRect(cx + 1, cy - 23, 2, 2);
-      g.fillStyle = '#3a2410';
-      g.fillRect(cx - 3, cy - 20, 6, 1);
-      g.fillStyle = '#c44040';
-      g.fillRect(cx - 8, cy - 15, 16, 14);
-      g.fillStyle = '#a02828';
-      g.fillRect(cx - 8, cy - 15, 16, 2);
-      g.fillStyle = '#d8b878';
-      g.fillRect(cx - 13, cy - 12, 4, 8);
-      g.fillRect(cx + 9, cy - 12, 4, 8);
-      g.fillStyle = '#3a2410';
-      g.fillRect(cx - 3, cy - 10, 2, 2);
-      break;
-    case 'fountain':
-      g.fillStyle = '#888';
+    }
+    case 'fountain': {
+      shadow(g, cx, cy + H * 0.3, W * 0.4, 14);
+      
+      // Base pool
+      const stoneGrad = g.createLinearGradient(0, cy, 0, cy + H * 0.4);
+      stoneGrad.addColorStop(0, '#a0a0a0'); stoneGrad.addColorStop(1, '#707070');
+      g.fillStyle = stoneGrad;
       g.beginPath(); g.ellipse(cx, cy + H * 0.3, W * 0.4, 14, 0, 0, Math.PI * 2); g.fill();
-      g.fillStyle = '#a0a0a0';
-      g.beginPath(); g.ellipse(cx, cy + H * 0.2, W * 0.35, 10, 0, 0, Math.PI * 2); g.fill();
+      
+      // Water in pool
+      g.fillStyle = '#5ab0d8';
+      g.beginPath(); g.ellipse(cx, cy + H * 0.28, W * 0.35, 11, 0, 0, Math.PI * 2); g.fill();
+      
+      // Central pillar
+      g.fillStyle = stoneGrad;
+      g.fillRect(cx - 6, cy - 10, 12, 28);
+      
+      // Upper tier
+      g.beginPath(); g.ellipse(cx, cy - 12, 16, 6, 0, 0, Math.PI * 2); g.fill();
       g.fillStyle = '#7ac0ef';
-      g.beginPath(); g.ellipse(cx, cy + H * 0.2, W * 0.28, 7, 0, 0, Math.PI * 2); g.fill();
-      g.fillStyle = '#a0a0a0';
-      g.fillRect(cx - 5, cy - 10, 10, 22);
-      g.fillStyle = '#888';
-      g.beginPath(); g.ellipse(cx, cy - 12, 14, 5, 0, 0, Math.PI * 2); g.fill();
-      g.fillStyle = '#7ac0ef';
-      g.beginPath(); g.ellipse(cx, cy - 13, 11, 3, 0, 0, Math.PI * 2); g.fill();
-      g.fillStyle = '#a8e0ff';
-      for (let i = 0; i < 3; i++) {
-        const x = cx + (i - 1) * 5;
+      g.beginPath(); g.ellipse(cx, cy - 13, 13, 4, 0, 0, Math.PI * 2); g.fill();
+      
+      // Water spout and cascades
+      g.strokeStyle = 'rgba(168,224,255,0.7)';
+      g.lineWidth = 2;
+      g.beginPath(); g.moveTo(cx, cy - 20); g.lineTo(cx, cy - 28); g.stroke(); // top spout
+      
+      for(let i=0; i<5; i++) {
+        const a = Math.PI + (i/4) * Math.PI;
         g.beginPath();
-        g.ellipse(x, cy - 22 + i * 2, 1.5, 5, 0, 0, Math.PI * 2);
-        g.fill();
+        g.moveTo(cx + Math.cos(a)*10, cy - 12);
+        g.quadraticCurveTo(cx + Math.cos(a)*15, cy - 5, cx + Math.cos(a)*12, cy + 10);
+        g.stroke();
       }
-      g.fillStyle = '#fff';
-      g.beginPath(); g.arc(cx, cy - 25, 2, 0, Math.PI * 2); g.fill();
       break;
-    case 'statue':
+    }
+    case 'statue': {
+      shadow(g, cx, cy + 16, 20, 8);
+      // Pedestal
+      const pGrad = g.createLinearGradient(0, cy, 0, cy + 20);
+      pGrad.addColorStop(0, '#a0a0a0'); pGrad.addColorStop(1, '#707070');
+      g.fillStyle = pGrad;
+      g.beginPath(); g.roundRect(cx - 14, cy + 10, 28, 10, 2); g.fill();
       g.fillStyle = '#888';
-      g.fillRect(cx - 12, cy + 12, 24, 14);
-      g.fillStyle = '#a0a0a0';
-      g.fillRect(cx - 14, cy + 12, 28, 4);
+      g.beginPath(); g.roundRect(cx - 10, cy + 2, 20, 10, 2); g.fill();
+      
+      // Statue Body (abstract human shape)
       g.fillStyle = '#c0c0c0';
-      g.beginPath(); g.arc(cx, cy - 8, 8, 0, Math.PI * 2); g.fill();
-      g.fillRect(cx - 6, cy - 2, 12, 14);
-      g.fillStyle = '#a0a0a0';
-      g.fillRect(cx - 9, cy - 14, 18, 3);
-      g.fillRect(cx - 5, cy - 22, 10, 8);
-      g.fillStyle = '#c0c0c0';
-      g.fillRect(cx - 10, cy, 4, 8);
-      g.fillRect(cx + 6, cy, 4, 8);
-      break;
-    case 'gazebo':
-      g.fillStyle = '#a87248';
-      g.fillRect(cx - W * 0.4, cy + H * 0.2, W * 0.8, 8);
-      g.fillStyle = '#8a5a30';
-      g.fillRect(cx - W * 0.4, cy - 10, 4, H * 0.3);
-      g.fillRect(cx + W * 0.4 - 4, cy - 10, 4, H * 0.3);
-      g.fillRect(cx - W * 0.15, cy - 10, 4, H * 0.3);
-      g.fillRect(cx + W * 0.15, cy - 10, 4, H * 0.3);
-      g.fillStyle = '#c44040';
-      g.beginPath();
-      g.moveTo(cx - W * 0.45, cy - 10);
-      g.lineTo(cx, cy - H * 0.35);
-      g.lineTo(cx + W * 0.45, cy - 10);
-      g.closePath(); g.fill();
-      g.fillStyle = '#a02828';
-      for (let i = 0; i < 6; i++) {
-        g.fillRect(cx - W * 0.4 + i * 8, cy - 12, 6, 2);
-      }
-      g.fillStyle = '#3a2410';
-      g.fillRect(cx - 1, cy - H * 0.45, 2, 10);
-      g.fillStyle = '#ffe040';
-      g.beginPath();
-      g.moveTo(cx, cy - H * 0.45);
-      g.lineTo(cx + 8, cy - H * 0.43);
-      g.lineTo(cx, cy - H * 0.41);
-      g.closePath(); g.fill();
-      break;
-    case 'pinwheel': {
-      g.fillStyle = '#7a4f2e';
-      g.fillRect(cx - 1, cy - 4, 2, 22);
-      const blades = ['#ff80c0', '#80c0ff', '#ffe080', '#80e080'];
-      for (let i = 0; i < 4; i++) {
-        const a = i / 4 * Math.PI * 2;
-        g.fillStyle = blades[i]!;
-        g.beginPath();
-        g.moveTo(cx, cy - 6);
-        g.lineTo(cx + Math.cos(a) * 10, cy - 6 + Math.sin(a) * 10);
-        g.lineTo(cx + Math.cos(a + 0.3) * 12, cy - 6 + Math.sin(a + 0.3) * 12);
-        g.closePath(); g.fill();
-      }
-      g.fillStyle = '#3a2410';
-      g.beginPath(); g.arc(cx, cy - 6, 2, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.arc(cx, cy - 12, 7, 0, Math.PI * 2); g.fill(); // head
+      g.beginPath(); g.roundRect(cx - 8, cy - 4, 16, 14, 4); g.fill(); // torso
+      g.beginPath(); g.roundRect(cx - 10, cy - 2, 4, 12, 2); g.fill(); // arm L
+      g.beginPath(); g.roundRect(cx + 6, cy - 2, 4, 12, 2); g.fill();  // arm R
+      
+      // Moss accents
+      g.fillStyle = 'rgba(92,176,64,0.4)';
+      softCircle(g, cx - 6, cy + 16, 4, 'rgba(92,176,64,0.4)');
+      softCircle(g, cx + 8, cy + 4, 3, 'rgba(92,176,64,0.4)');
+      softCircle(g, cx - 4, cy - 10, 2, 'rgba(92,176,64,0.4)');
       break;
     }
     case 'cherrytree': {
+      shadow(g, cx, cy + 20, 16, 6);
+      // Trunk
       g.fillStyle = '#5a3a18';
-      g.fillRect(cx - 2, cy + 6, 4, 18);
-      g.fillStyle = '#ff9bd6';
-      g.beginPath(); g.arc(cx - 10, cy - 6, 12, 0, Math.PI * 2); g.fill();
-      g.beginPath(); g.arc(cx + 10, cy - 6, 12, 0, Math.PI * 2); g.fill();
-      g.beginPath(); g.arc(cx, cy - 16, 14, 0, Math.PI * 2); g.fill();
-      g.fillStyle = '#ffe0e8';
-      g.beginPath(); g.arc(cx - 4, cy - 12, 4, 0, Math.PI * 2); g.fill();
-      g.beginPath(); g.arc(cx + 8, cy - 4, 3, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.moveTo(cx - 2, cy + 20); g.quadraticCurveTo(cx, cy, cx - 3, cy - 10); g.lineTo(cx + 3, cy - 10); g.quadraticCurveTo(cx, cy, cx + 2, cy + 20); g.fill();
+      
+      // Blossom canopy (overlapping pink puffs)
+      const puffs = [
+        [0, -15, 20, '#ff9bd6'], [-12, -8, 16, '#ff80c0'], [12, -8, 16, '#ff80c0'],
+        [0, -25, 18, '#ffb0e0'], [-15, -20, 14, '#ffb0e0'], [15, -20, 14, '#ffb0e0'],
+        [0, 0, 12, '#ff60a0']
+      ] as const;
+      
+      for(const [dx, dy, r, col] of puffs) {
+        const puffGrad = g.createRadialGradient(cx+dx-r*0.2, cy+dy-r*0.2, r*0.1, cx+dx, cy+dy, r);
+        puffGrad.addColorStop(0, '#ffe0f0'); puffGrad.addColorStop(0.6, col); puffGrad.addColorStop(1, 'rgba(255,100,160,0.5)');
+        g.fillStyle = puffGrad;
+        g.beginPath(); g.arc(cx+dx, cy+dy, r, 0, Math.PI * 2); g.fill();
+      }
+      
+      // Falling petals
+      g.fillStyle = '#ffb0e0';
+      g.save(); g.globalAlpha = 0.8;
+      [[cx-10, cy+5], [cx+15, cy+10], [cx+5, cy+18]].forEach(([px, py]) => {
+        g.beginPath(); g.ellipse(px, py, 2.5, 1.5, Math.PI/4, 0, Math.PI*2); g.fill();
+      });
+      g.restore();
       break;
     }
-    case 'petalpath': {
+    default:
+      // Fallback simple rendering for others (can be expanded later)
       g.fillStyle = '#d8b878';
-      g.fillRect(cx - 24, cy + 8, 48, 14);
-      g.fillStyle = '#ffc0d8';
-      for (let i = 0; i < 6; i++) {
-        g.beginPath();
-        g.arc(cx - 20 + i * 8, cy + 14 + (i % 2 === 0 ? 0 : 3), 2, 0, Math.PI * 2);
-        g.fill();
-      }
-      break;
-    }
-    case 'beachchair': {
-      g.fillStyle = '#f0e0a0';
-      g.fillRect(cx - 16, cy + 4, 32, 6);
-      g.fillStyle = '#3c8dbc';
-      g.fillRect(cx - 14, cy + 2, 28, 4);
-      g.fillStyle = '#a87248';
-      g.fillRect(cx - 14, cy + 10, 4, 8);
-      g.fillRect(cx + 10, cy + 10, 4, 8);
-      g.fillStyle = '#f0e0a0';
-      g.fillRect(cx - 14, cy - 10, 5, 14);
-      g.fillStyle = '#3c8dbc';
-      g.fillRect(cx - 14, cy - 10, 4, 10);
-      break;
-    }
-    case 'tikitorch': {
-      g.fillStyle = '#7a4f2e';
-      g.fillRect(cx - 1, cy - 16, 3, 32);
-      g.fillStyle = '#a87248';
-      g.fillRect(cx - 5, cy - 22, 10, 7);
-      g.fillStyle = '#ff8030';
-      g.beginPath(); g.arc(cx, cy - 26, 4, 0, Math.PI * 2); g.fill();
-      g.fillStyle = '#ffe040';
-      g.beginPath(); g.arc(cx, cy - 27, 2, 0, Math.PI * 2); g.fill();
-      break;
-    }
-    case 'pumpkinstack': {
-      g.fillStyle = '#e87018';
-      g.beginPath(); g.ellipse(cx, cy + 14, 14, 9, 0, 0, Math.PI * 2); g.fill();
-      g.beginPath(); g.ellipse(cx, cy + 2, 11, 7, 0, 0, Math.PI * 2); g.fill();
-      g.beginPath(); g.ellipse(cx, cy - 8, 8, 5, 0, 0, Math.PI * 2); g.fill();
-      g.fillStyle = '#3a6a20';
-      g.fillRect(cx - 1, cy - 14, 2, 4);
-      g.fillStyle = '#a04810';
-      for (let i = 0; i < 3; i++) {
-        const y = [14, 2, -8][i]!;
-        g.fillRect(cx - 1, y + cy - 4, 1, 8);
-      }
-      break;
-    }
-    case 'scarecrowhat': {
-      g.fillStyle = '#8a5a30';
-      g.fillRect(cx - 1, cy - 16, 3, 32);
-      g.fillRect(cx - 12, cy - 10, 24, 3);
-      g.fillStyle = '#e87018';
-      g.beginPath(); g.arc(cx, cy - 22, 6, 0, Math.PI * 2); g.fill();
-      g.fillStyle = '#3a2410';
-      g.fillRect(cx - 8, cy - 28, 16, 3);
-      g.fillRect(cx - 5, cy - 35, 10, 8);
-      g.fillStyle = '#ffe040';
-      g.fillRect(cx - 3, cy - 33, 6, 2);
-      break;
-    }
-    case 'snowman': {
-      g.fillStyle = '#fff';
-      g.beginPath(); g.arc(cx, cy + 12, 12, 0, Math.PI * 2); g.fill();
-      g.beginPath(); g.arc(cx, cy - 2, 9, 0, Math.PI * 2); g.fill();
-      g.beginPath(); g.arc(cx, cy - 14, 6, 0, Math.PI * 2); g.fill();
+      g.fillRect(cx - 10, cy - 10, 20, 20);
       g.fillStyle = '#000';
-      g.beginPath(); g.arc(cx - 2, cy - 15, 1, 0, Math.PI * 2); g.fill();
-      g.beginPath(); g.arc(cx + 2, cy - 15, 1, 0, Math.PI * 2); g.fill();
-      g.fillStyle = '#ff8030';
-      g.fillRect(cx, cy - 13, 4, 1);
-      g.fillStyle = '#3a2410';
-      g.fillRect(cx - 6, cy - 20, 12, 2);
-      g.fillRect(cx - 3, cy - 22, 6, 4);
+      g.fillText(type.substring(0,3), cx - 8, cy + 4);
       break;
-    }
-    case 'lanternice': {
-      g.fillStyle = '#7a4f2e';
-      g.fillRect(cx - 1, cy - 14, 3, 26);
-      g.fillStyle = '#a0d0f0';
-      g.beginPath(); g.arc(cx, cy - 18, 7, 0, Math.PI * 2); g.fill();
-      g.fillStyle = '#fff';
-      g.beginPath(); g.arc(cx, cy - 19, 3, 0, Math.PI * 2); g.fill();
-      g.strokeStyle = '#3070c0'; g.lineWidth = 1;
-      g.beginPath(); g.arc(cx, cy - 18, 7, 0, Math.PI * 2); g.stroke();
-      break;
-    }
   }
   return c;
 }

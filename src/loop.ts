@@ -12,6 +12,7 @@ import { updateWeatherAndSeason } from './systems/weather';
 import { tryTriggerEvent, updateEvent } from './systems/events';
 import { updateCrows } from './systems/crows';
 import { updateDog } from './systems/dog';
+import { updateAmbient } from './systems/ambient';
 import { updatePenFeed } from './systems/pens';
 import { maybeUnlockOrders } from './systems/orders';
 import { saveGame } from './save';
@@ -113,6 +114,7 @@ export function update(dt: number): void {
   updateWeatherAndSeason();
   tryTriggerEvent(dt);
   updateEvent(dt);
+  updateAmbient(dt);
 
   if (state.crows.length > 0) updateCrows(dt);
   updateDog(dt);
