@@ -462,6 +462,27 @@ button {
   background: linear-gradient(180deg, #f4faff, #cfe2ee);
   border-color: #8aaac6;
 }
+.weather-badge.grid-active {
+  animation: gridBadgePulse 2.4s ease-in-out infinite;
+  position: relative;
+}
+.weather-badge.grid-active::after {
+  content: '✨';
+  position: absolute;
+  top: -6px; right: -4px;
+  font-size: 13px;
+  animation: gridBadgeSpark 1.8s ease-in-out infinite;
+  filter: drop-shadow(0 0 4px rgba(244, 185, 66, 0.85));
+  pointer-events: none;
+}
+@keyframes gridBadgePulse {
+  0%, 100% { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset, 0 2px 4px rgba(244, 185, 66, 0.3); }
+  50%      { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset, 0 0 14px rgba(244, 185, 66, 0.85), 0 0 6px rgba(154, 124, 204, 0.65); }
+}
+@keyframes gridBadgeSpark {
+  0%, 100% { transform: scale(1) rotate(0); opacity: 0.95; }
+  50%      { transform: scale(1.2) rotate(15deg); opacity: 1; }
+}
 .season-badge[data-season="winter"] {
   background: linear-gradient(180deg, #f4faff, #cfe2ee);
   border-color: #8aaac6;
@@ -720,14 +741,56 @@ button {
   background:
     linear-gradient(180deg, #fffdf2, #fbe9c0);
   border: 1.5px solid var(--paper-edge);
+  border-left: 4px solid var(--cust-accent, var(--honey-600));
   border-radius: var(--r-sm);
   padding: 8px 10px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   font-size: var(--fs-12);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.55) inset,
     0 2px 4px rgba(60, 30, 10, 0.12);
 }
+.order-customer {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px;
+}
+.order-portrait {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  border: 2px solid var(--cust-accent, var(--honey-600));
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 2px 3px rgba(60, 30, 10, 0.18);
+}
+.order-portrait-emoji {
+  font-size: 22px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.5));
+}
+.order-customer-text { flex: 1; min-width: 0; }
+.order-customer-name {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.1;
+}
+.order-customer-name small {
+  font-size: 10px;
+  color: var(--ink-mute);
+  font-weight: 600;
+  font-style: italic;
+}
+.order-customer-greet {
+  font-size: 11px;
+  font-style: italic;
+  color: var(--ink-soft);
+  line-height: 1.25;
+  margin-top: 1px;
+}
+.order-itemset { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 2px; }
 .order-items { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
 .order-item {
   background: #fff7da;
@@ -2517,6 +2580,60 @@ button {
   font-size: var(--fs-12);
   color: var(--sage-700);
 }
+.wgrid-card-icon {
+  font-size: 26px;
+  line-height: 1;
+  margin-bottom: 4px;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.5));
+}
+.wgrid-slot-filled {
+  border-style: solid;
+  border-color: var(--honey-600);
+  background: linear-gradient(180deg, #fff7da, #ffe9b0);
+  box-shadow:
+    0 1px 0 rgba(255, 250, 200, 0.6) inset,
+    0 0 12px rgba(244, 185, 66, 0.35);
+}
+.wgrid-preview {
+  background: linear-gradient(180deg, #f3eaff, #d8c4ee);
+  border: 2px solid var(--plum-500, #9a7ccc);
+  border-radius: var(--r-md);
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 2px 4px rgba(60, 30, 60, 0.18);
+}
+.wgrid-preview-title {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #5a3680;
+  margin-bottom: 4px;
+}
+.wgrid-preview-list {
+  margin: 0; padding-left: 16px;
+  font-size: var(--fs-12);
+  color: var(--ink);
+  font-weight: 600;
+  line-height: 1.5;
+}
+.wgrid-effects-summary {
+  display: flex; flex-wrap: wrap; gap: 4px 6px;
+  margin: 6px 0 10px;
+}
+.wgrid-eff-pill {
+  background: linear-gradient(180deg, #fff7da, #f4cb6a);
+  border: 1.5px solid var(--honey-600);
+  border-radius: var(--r-pill);
+  padding: 3px 9px;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  color: #4a2f08;
+}
 .shop-item.rarity-rare { border-color: var(--sky-500); }
 .shop-item.rarity-epic { border-color: var(--plum-500); }
 
@@ -3165,6 +3282,47 @@ button {
   color: var(--honey-700);
   margin: 10px 0;
 }
+.wb-greet {
+  font-size: var(--fs-13);
+  font-style: italic;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+  padding: 8px 12px;
+  background: linear-gradient(180deg, #fff7da66, #ffe9b066);
+  border-radius: var(--r-pill);
+  border: 1.5px solid var(--paper-edge);
+  display: inline-block;
+}
+.wb-tomorrow {
+  margin: 14px auto 8px;
+  padding: 12px 16px;
+  background: linear-gradient(180deg, #e6f3ff, #c4d8f0);
+  border: 2px solid var(--sky-500, #5a8acf);
+  border-radius: var(--r-md);
+  text-align: left;
+  max-width: 480px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 2px 4px rgba(40, 60, 100, 0.18);
+}
+.wb-tomorrow-title {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #2a5680;
+  margin-bottom: 6px;
+}
+.wb-tomorrow-list {
+  margin: 0; padding-left: 18px;
+  font-size: var(--fs-13);
+  color: var(--ink);
+  font-weight: 600;
+  line-height: 1.6;
+}
+.wb-tomorrow-list li { margin-bottom: 3px; }
+.wb-tomorrow-list b { color: var(--honey-800); }
 
 /* =====================================================================
    EMPTY STATE

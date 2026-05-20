@@ -1,5 +1,6 @@
 import { state } from '../state';
 import { ITEMS } from '../data/items';
+import { VILLAGERS, pickVillagerFor, pickRandomVillager } from '../data/characters';
 import { sprites } from '../sprites';
 import { rand, randi, choice } from '../utils';
 import { sfx } from '../audio/sfx';
@@ -29,7 +30,22 @@ export function generateOrder(): Order {
   }
   const reward = Math.floor(totalVal * (1.4 + rand(0.5)));
   const xp = Math.max(1, Math.floor(totalVal / 12));
-  return { id: 'o' + Date.now() + randi(1e6), items, reward, xp };
+  const villager = pickVillagerFor(Object.keys(items));
+  const greet = choice(villager.greet);
+  return {
+    id: 'o' + Date.now() + randi(1e6),
+    items, reward, xp,
+    customerId: villager.id,
+    greet,
+  };
+}
+
+/** Backfill customer info on legacy orders (saved before villagers existed). */
+function ensureCustomer(o: Order): void {
+  if (o.customerId && VILLAGERS[o.customerId]) return;
+  const v = pickVillagerFor(Object.keys(o.items));
+  o.customerId = v.id;
+  if (!o.greet) o.greet = choice(v.greet);
 }
 
 export function maybeUnlockOrders(): void {
@@ -44,15 +60,30 @@ export function fulfillOrder(orderId: string): void {
   if (idx < 0) return;
   const o = state.orders[idx]!;
   if (!hasItems(o.items)) { sfx.error(); return; }
+  const wasFirst = state.stats.ordersFulfilled === 0;
   for (const k in o.items) removeItem(k, o.items[k]!);
   state.coins += o.reward;
   state.stats.earned += o.reward;
   state.stats.ordersFulfilled += 1;
   addXP(o.xp);
   sfx.order(); sfx.coin();
-  toast(`Order fulfilled! +${o.reward}`, 'gold');
+  // Personalised thank-you toast — pulls a line from the customer.
+  ensureCustomer(o);
+  const v = VILLAGERS[o.customerId!];
+  if (v) {
+    const thanks = choice(v.thanks);
+    toast(`${v.emoji} ${v.name}: "${thanks}" +${o.reward}💰`, 'gold');
+  } else {
+    toast(`Order fulfilled! +${o.reward}`, 'gold');
+  }
   spawnHUDBurst('coin', Math.min(8, 3 + Math.floor(o.reward / 25)));
   spawnHUDBurst('xp', Math.min(4, 1 + Math.floor(o.xp / 6)));
+  if (wasFirst) {
+    // The first delivery is a milestone — give the player extra fanfare and
+    // a tiny "you did it!" pop so the loop feels conquered.
+    setTimeout(() => toast('🌟 First delivery! More customers will arrive.', 'gold'), 700);
+    spawnHUDBurst('coin', 6);
+  }
   state.orders.splice(idx, 1);
   setTimeout(() => {
     state.orders.push(generateOrder());
@@ -72,12 +103,15 @@ export function renderOrders(): void {
   const list = document.getElementById('orders-list')!;
   list.innerHTML = '';
   if (state.orders.length === 0) {
-    list.innerHTML = '<div style="text-align:center;color:#888;padding:8px;font-size:11px">No orders. Level up to attract customers!</div>';
+    list.innerHTML = '<div style="text-align:center;color:#888;padding:8px;font-size:11px">No customers waiting. Level up to attract more!</div>';
     return;
   }
   for (const o of state.orders) {
+    ensureCustomer(o);
+    const v = VILLAGERS[o.customerId!] ?? pickRandomVillager();
     const card = document.createElement('div');
     card.className = 'order-card';
+    card.style.setProperty('--cust-accent', v.accent);
     const itemsHTML = Object.entries(o.items).map(([k, q]) => {
       const have = state.inv[k] ?? 0;
       const ok = have >= q;
@@ -88,8 +122,18 @@ export function renderOrders(): void {
       </div>`;
     }).join('');
     const can = hasItems(o.items);
+    const greet = o.greet ?? choice(v.greet);
     card.innerHTML = `
-      <div>${itemsHTML}</div>
+      <div class="order-customer">
+        <div class="order-portrait" style="background:${v.accent}33;border-color:${v.accent}">
+          <span class="order-portrait-emoji">${v.emoji}</span>
+        </div>
+        <div class="order-customer-text">
+          <div class="order-customer-name">${v.name} <small>· ${v.role}</small></div>
+          <div class="order-customer-greet">"${greet}"</div>
+        </div>
+      </div>
+      <div class="order-itemset">${itemsHTML}</div>
       <div class="order-items">
         <div class="order-reward">
           <img class="ico-mini" src="${sprites.item.coin!.toDataURL()}">+${o.reward}
@@ -99,7 +143,7 @@ export function renderOrders(): void {
         </div>
       </div>
       <button class="order-fulfill" ${can ? '' : 'disabled'} data-id="${o.id}">
-        ${can ? 'Deliver' : 'Need items'}
+        ${can ? `🚚 Deliver to ${v.name}` : 'Need items'}
       </button>
     `;
     list.appendChild(card);

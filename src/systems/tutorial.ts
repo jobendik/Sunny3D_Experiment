@@ -13,14 +13,18 @@ export interface TutorialStep {
 }
 
 export const TUTORIAL_STEPS: TutorialStep[] = [
-  { id: 'plow', text: 'Tap the Plow tool, then tap a green tile to plow it.',
+  { id: 'plow', text: 'Tap the Plow tool, then tap a green tile to till the soil.',
     done: s => s.stats.plowed >= 1 },
-  { id: 'plant', text: 'Tap the Seeds tool, then tap plowed soil to plant.',
+  { id: 'plant', text: 'Tap the Seeds tool, then tap plowed soil to plant wheat.',
     done: s => s.stats.planted >= 1 },
-  { id: 'harvest', text: 'Wait for crops to mature, then tap them with Hand.',
+  { id: 'harvest', text: 'Wait for the crop to ripen, then tap it with the Hand tool.',
     done: s => s.stats.harvested >= 1 },
-  { id: 'sell', text: 'Open Shop → Sell to convert harvest into coins.',
+  { id: 'sell', text: 'Tap Shop, then the Sell tab, to turn wheat into coins.',
     done: s => s.stats.sold >= 1 },
+  { id: 'orders', text: 'A neighbor needs goods — open Orders and tap "Deliver".',
+    done: s => s.stats.ordersFulfilled >= 1 },
+  { id: 'build', text: 'Build a Feed Mill to turn wheat into livestock feed.',
+    done: s => s.buildings.some(b => b.type !== 'fishingdock') },
 ];
 
 export function initTutorial(): void {

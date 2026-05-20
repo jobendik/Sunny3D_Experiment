@@ -161,6 +161,10 @@ export interface Order {
   items: OrderItem;
   reward: number;
   xp: number;
+  // Customer info — set by generator. Legacy saves may omit and we hydrate
+  // a default on load so renderers can rely on it.
+  customerId?: string;
+  greet?: string;
 }
 
 export interface QuestReward {

@@ -8,12 +8,18 @@ import { currentStep, dismissTutorial, tutorialAdvance, TUTORIAL_STEPS } from '.
 
 let lastStepId: string | null = null;
 
-/** Each tutorial step's target DOM selector (the button to highlight). */
+/** Each tutorial step's target DOM selector (the button to highlight).
+ *  When the player is on mobile and the orders side-panel is closed, the
+ *  Orders FAB (#open-quests-fab) is the right target; on desktop the panel
+ *  is always docked open so we fall back to the FAB too — the spotlight is
+ *  off-screen safely when the element isn't visible. */
 const STEP_TARGETS: Record<string, string> = {
   plow:    '[data-tool="plow"]',
   plant:   '[data-tool="seed"]',
   harvest: '[data-tool="hand"]',
   sell:    '#open-shop',
+  orders:  '#open-quests-fab',
+  build:   '#open-buildings',
 };
 
 function placeSpotlightAndArrow(targetSel: string): void {

@@ -15,6 +15,10 @@ import { toast } from '../ui/toasts';
 import { sfx } from '../audio/sfx';
 import { updateHUD } from '../ui/hud';
 import { localDayIndex } from './daily';
+import { triggerFlash, triggerShake } from './juice';
+import { spawnParticles } from './particles';
+import { SW, SH } from '../canvas';
+import { screenToWorld } from './camera';
 
 export function initWeatherGrid(): void {
   if (!state.weatherGrid) {
@@ -123,11 +127,37 @@ export function castGrid(): boolean {
     until: earliestEnd,
     startedAt: now,
   });
+  // Casting is the signature beat — flash + shake + farm-wide particle storm
+  // and a clear toast naming the cards so the player remembers what they did.
   sfx.bell();
-  toast(`Cast ${slotted.length} weather card${slotted.length > 1 ? 's' : ''}!`, 'gold');
+  triggerFlash('#cfe9ff', 0.45, 0.55);
+  triggerShake(5, 0.35);
+  // Spawn a wash of weather-themed particles across the visible world.
+  const colors = ['#a6d8f0', '#fff5c0', '#7fb957', '#efdcff'];
+  for (let i = 0; i < 80; i++) {
+    const sx = Math.random() * SW();
+    const sy = Math.random() * SH();
+    const w = screenToWorld(sx, sy);
+    const col = colors[Math.floor(Math.random() * colors.length)]!;
+    spawnParticles(w.x, w.y, col, 1, true);
+  }
+  const cardNames = slotted.map(id => WEATHER_CARDS[id]!.name).join(' + ');
+  toast(`🌦️ Cast: ${cardNames}`, 'gold');
   track('weather_grid_cast', { slotted: slotted.length, charges_left: g.charges });
   updateHUD();
   return true;
+}
+
+/** Total seconds remaining on the longest active activation, or 0. */
+export function activeRemainingSeconds(): number {
+  const g = state.weatherGrid;
+  if (!g) return 0;
+  const now = nowSeconds();
+  let best = 0;
+  for (const a of g.activations) {
+    if (a.until > now) best = Math.max(best, a.until - now);
+  }
+  return best;
 }
 
 export function pruneExpired(): void {

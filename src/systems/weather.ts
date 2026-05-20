@@ -5,6 +5,7 @@ import { rand, nowSeconds } from '../utils';
 import { sfx } from '../audio/sfx';
 import { toast } from '../ui/toasts';
 import { track } from './telemetry';
+import { activeRemainingSeconds } from './weather-grid';
 import type { Season, Weather } from '../types';
 
 export function getSeasonIcon(season: Season): string {
@@ -60,6 +61,20 @@ export function updateWeatherAndSeason(): void {
   // Reflect current weather/season on the HUD chips so CSS can tint them.
   document.getElementById('weather-badge')?.setAttribute('data-weather', state.weather);
   document.getElementById('season-badge')?.setAttribute('data-season', state.season);
+  // Glow + label badge when Weather Grid effects are active. This is the
+  // signature feedback that makes a cast feel "alive" past the cast moment.
+  const wb = document.getElementById('weather-badge');
+  if (wb) {
+    const remain = activeRemainingSeconds();
+    if (remain > 0) {
+      wb.classList.add('grid-active');
+      const remStr = remain > 60 ? `${Math.ceil(remain / 60)}m` : `${Math.ceil(remain)}s`;
+      wb.title = `Weather Grid active — ${remStr} left`;
+    } else {
+      wb.classList.remove('grid-active');
+      wb.title = 'Weather';
+    }
+  }
 }
 
 // Seasonal arc events — strategic, set the tone for the new season.

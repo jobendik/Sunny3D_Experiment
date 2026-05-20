@@ -13,6 +13,8 @@ import { isEvent } from '../systems/events';
 import { getSeasonIcon } from '../systems/weather';
 import { dailyMarketSnapshot, scarcityActive } from '../systems/market';
 import { currentTheme } from '../systems/weekly';
+import { VILLAGERS, VILLAGER_IDS } from '../data/characters';
+import { nextBigUnlock } from '../systems/unlocks';
 
 export function openNews(): void {
   openModal('📰 The Daily Acre', null);
@@ -94,23 +96,45 @@ export function openNews(): void {
         <h4>⭐ Today's Goals</h4>
         <p style="margin:4px 0;font-size:13px">${todayQuests || 'No active quests.'}</p>
       </div>
-      <div class="news-section">
-        <h4>💡 Tip of the Day</h4>
-        <p style="margin:4px 0;font-size:13px">
-          ${choice([
-            'Rain speeds up crop growth by 50%!',
-            'Build a scarecrow to scare away crows.',
-            'Animals stop producing when their pen is hungry.',
-            'Plant apple trees for long-term passive income.',
-            'Complete quests for big rewards and XP.',
-            'Fishing dock offers high-value catches!',
-            'Look for the traveling merchant — they have rare items.',
-            "Withered crops give no harvest. Don't leave them too long.",
-            'Your dog finds bonus coins around the farm!',
-            'Storm weather may slow growth but rewards bigger XP later.',
-          ])}
-        </p>
-      </div>
+      ${(() => {
+        // Half the time, surface a villager quote; otherwise a tip. Either
+        // way it's short and warm so the news feels lived-in.
+        if (Math.random() < 0.55) {
+          const v = VILLAGERS[VILLAGER_IDS[Math.floor(Math.random() * VILLAGER_IDS.length)]!]!;
+          const line = v.tip ?? choice(v.greet);
+          return `<div class="news-section">
+            <h4>${v.emoji} ${v.name} says</h4>
+            <p style="margin:4px 0;font-size:13px;font-style:italic">"${line}"</p>
+          </div>`;
+        }
+        return `<div class="news-section">
+          <h4>💡 Tip of the Day</h4>
+          <p style="margin:4px 0;font-size:13px">
+            ${choice([
+              'Rain speeds up crop growth by 50%!',
+              'Build a scarecrow to scare away crows.',
+              'Animals stop producing when their pen is hungry.',
+              'Plant apple trees for long-term passive income.',
+              'Complete quests for big rewards and XP.',
+              'Fishing dock offers high-value catches!',
+              'Look for the traveling merchant — they have rare items.',
+              "Withered crops give no harvest. Don't leave them too long.",
+              'Your dog finds bonus coins around the farm!',
+              'Storm weather may slow growth but rewards bigger XP later.',
+              'Slot a Weather Card before a big harvest for huge yield gains.',
+              'Decorate your farm — beauty actually boosts global yield!',
+            ])}
+          </p>
+        </div>`;
+      })()}
+      ${(() => {
+        const next = nextBigUnlock();
+        if (!next) return '';
+        return `<div class="news-section" style="background:linear-gradient(180deg, #f3eaff, #d8c4ee);border-color:#9a7ccc">
+          <h4>🔮 Coming Soon</h4>
+          <p style="margin:4px 0;font-size:13px">At <b>Level ${next.level}</b> you'll unlock: ${next.icon} <b>${next.label}</b></p>
+        </div>`;
+      })()}
     </div>
   `;
   body.querySelectorAll<HTMLButtonElement>('button[data-merchant-item]').forEach(btn => {
