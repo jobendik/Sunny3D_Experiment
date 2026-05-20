@@ -1,0 +1,183 @@
+// =============================================================
+//  CROPS MANAGER
+//
+//  Walks state.grid each frame and ensures each plowed-with-crop
+//  tile has a small mesh sitting on it. The mesh swaps between 4
+//  growth stages mirroring cropStage() from the gameplay code.
+//
+//  Crop visual = a tuft scaled per stage, with a per-crop color.
+//  Withered tiles get tilted & desaturated; wilting tiles bob.
+// =============================================================
+
+import { Group, Mesh } from 'three';
+import { state } from '../../state';
+import { GRID_W, GRID_H } from '../../constants';
+import { getSceneRoot } from '../scene-root';
+import { cropStage, isWithered, isWilting } from '../../systems/crops';
+import { sphere, cone, box, cyl } from '../procgen/geometries';
+import { mat } from '../procgen/materials';
+
+interface CropMounted {
+  key: string;     // "gx,gy"
+  crop: string;
+  stage: number;
+  root: Group;
+}
+
+const mounted = new Map<string, CropMounted>();
+
+const CROP_COLORS: Record<string, { stem: string; head: string }> = {
+  wheat:      { stem: '#3a7a30', head: '#e8c64a' },
+  corn:       { stem: '#3a7a30', head: '#f4d160' },
+  carrot:     { stem: '#3a7a30', head: '#f48a2a' },
+  tomato:     { stem: '#3a7a30', head: '#e63a3a' },
+  pumpkin:    { stem: '#3a7a30', head: '#f4742a' },
+  strawberry: { stem: '#3a7a30', head: '#e63a4a' },
+  sugarcane:  { stem: '#5aa850', head: '#8ac86a' },
+  lavender:   { stem: '#3a7a30', head: '#a070d4' },
+  blueberry:  { stem: '#3a7a30', head: '#4a78c4' },
+};
+
+function makeCropMesh(crop: string, stage: number): Group {
+  const g = new Group();
+  const c = CROP_COLORS[crop] ?? CROP_COLORS.wheat!;
+  if (stage === 0) {
+    // Tiny seedling: 2 small green leaves
+    const s1 = new Mesh(sphere(0.04, 6, 4), mat(c.stem));
+    s1.scale.set(1.4, 0.6, 1);
+    s1.position.y = 0.06;
+    g.add(s1);
+  } else if (stage === 1) {
+    // Sprout: small stalk + bud
+    const stem = new Mesh(cyl(0.02, 0.02, 0.18, 6), mat(c.stem));
+    stem.position.y = 0.09;
+    g.add(stem);
+    const bud = new Mesh(sphere(0.06, 8, 6), mat(c.stem));
+    bud.position.y = 0.21;
+    g.add(bud);
+  } else if (stage === 2) {
+    // Growing: bigger stalk + leaves
+    const stem = new Mesh(cyl(0.03, 0.03, 0.32, 6), mat(c.stem));
+    stem.position.y = 0.16;
+    g.add(stem);
+    const leaves = new Mesh(sphere(0.13, 10, 8), mat(c.stem));
+    leaves.scale.set(1.2, 0.8, 1.2);
+    leaves.position.y = 0.32;
+    g.add(leaves);
+  } else {
+    // Ripe: full plant + colored head
+    if (crop === 'wheat') {
+      // Wheat = 3 stalks with golden heads
+      for (let i = 0; i < 3; i++) {
+        const stalk = new Mesh(cyl(0.012, 0.012, 0.4, 6), mat('#9aa54a'));
+        stalk.position.set(-0.08 + i * 0.08, 0.2, 0);
+        const head = new Mesh(cone(0.04, 0.16, 6), mat(c.head));
+        head.position.set(-0.08 + i * 0.08, 0.4, 0);
+        g.add(stalk, head);
+      }
+    } else if (crop === 'corn') {
+      const stalk = new Mesh(cyl(0.03, 0.03, 0.5, 6), mat('#5aa850'));
+      stalk.position.y = 0.25;
+      g.add(stalk);
+      for (let i = 0; i < 2; i++) {
+        const cob = new Mesh(cyl(0.07, 0.06, 0.18, 8), mat(c.head));
+        cob.position.set(0.06, 0.28 + i * 0.13, 0);
+        cob.rotation.z = -0.1;
+        g.add(cob);
+      }
+    } else if (crop === 'pumpkin') {
+      const pump = new Mesh(sphere(0.22, 12, 10), mat(c.head));
+      pump.scale.set(1, 0.85, 1);
+      pump.position.y = 0.2;
+      g.add(pump);
+      const stem = new Mesh(cyl(0.022, 0.022, 0.08, 6), mat(c.stem));
+      stem.position.y = 0.42;
+      g.add(stem);
+    } else if (crop === 'sugarcane') {
+      // 3 tall canes
+      for (let i = 0; i < 3; i++) {
+        const cane = new Mesh(cyl(0.025, 0.025, 0.55, 6), mat(c.head));
+        cane.position.set(-0.06 + i * 0.06, 0.28, 0);
+        g.add(cane);
+      }
+    } else if (crop === 'lavender') {
+      for (let i = 0; i < 3; i++) {
+        const stalk = new Mesh(cyl(0.015, 0.015, 0.32, 6), mat(c.stem));
+        stalk.position.set(-0.06 + i * 0.06, 0.16, 0);
+        const head = new Mesh(cone(0.04, 0.12, 6), mat(c.head));
+        head.position.set(-0.06 + i * 0.06, 0.36, 0);
+        g.add(stalk, head);
+      }
+    } else if (crop === 'tomato' || crop === 'strawberry' || crop === 'blueberry') {
+      const bush = new Mesh(sphere(0.18, 12, 10), mat(c.stem));
+      bush.scale.set(1.1, 0.8, 1.1);
+      bush.position.y = 0.2;
+      g.add(bush);
+      for (let i = 0; i < 4; i++) {
+        const fruit = new Mesh(sphere(0.06, 8, 6), mat(c.head));
+        const angle = (i / 4) * Math.PI * 2;
+        fruit.position.set(Math.cos(angle) * 0.13, 0.22, Math.sin(angle) * 0.13);
+        g.add(fruit);
+      }
+    } else {
+      // carrot: green tops only above ground
+      const leaves = new Mesh(sphere(0.15, 10, 8), mat(c.stem));
+      leaves.scale.set(1.2, 1.0, 1.2);
+      leaves.position.y = 0.2;
+      g.add(leaves);
+      const tip = new Mesh(cone(0.05, 0.1, 6), mat(c.head));
+      tip.position.y = 0.07;
+      g.add(tip);
+    }
+  }
+  return g;
+}
+
+export function updateCrops(timeS: number): void {
+  const { entities } = getSceneRoot();
+  const seen = new Set<string>();
+  for (let gy = 0; gy < GRID_H; gy++) {
+    for (let gx = 0; gx < GRID_W; gx++) {
+      const t = state.grid[gy]?.[gx];
+      if (!t || !t.crop) continue;
+      const stage = cropStage(t);
+      if (stage < 0) continue;
+      const key = `${gx},${gy}`;
+      seen.add(key);
+      let m = mounted.get(key);
+      if (!m || m.crop !== t.crop || m.stage !== stage) {
+        if (m) {
+          entities.remove(m.root);
+        }
+        const root = makeCropMesh(t.crop, stage);
+        root.position.set(gx + 0.5, 0, gy + 0.5);
+        entities.add(root);
+        m = { key, crop: t.crop, stage, root };
+        mounted.set(key, m);
+      }
+      // Animate state on top of the static base mesh
+      const withered = isWithered(t);
+      const wilting = !withered && isWilting(t);
+      if (withered) {
+        m.root.rotation.z = 0.4;
+        m.root.position.y = -0.02;
+      } else if (wilting) {
+        m.root.rotation.z = 0.1 + 0.05 * Math.sin(timeS * 2 + gx + gy);
+        m.root.position.y = 0;
+      } else {
+        m.root.rotation.z = 0;
+        // Ripe stage gentle bob
+        if (stage === 3) m.root.position.y = Math.sin(timeS * 2 + gx + gy) * 0.02;
+        else m.root.position.y = 0;
+      }
+    }
+  }
+  // Remove stale crops
+  for (const [k, m] of mounted) {
+    if (!seen.has(k)) {
+      entities.remove(m.root);
+      mounted.delete(k);
+    }
+  }
+  void box;
+}

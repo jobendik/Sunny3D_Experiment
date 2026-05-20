@@ -20,7 +20,7 @@ import { checkAchievements } from './systems/achievements';
 import { tryHookFish, cancelFishing } from './systems/fishing';
 import { attachInput } from './input';
 import { saveGame, loadGame } from './save';
-import { render } from './render';
+import { init3d, render3d } from './three';
 import { update } from './loop';
 import { updateHUD } from './ui/hud';
 import { setTool, updateSeedBtnLabel, attachToolButtons } from './ui/tools';
@@ -38,7 +38,6 @@ import {
   updateQuestsFabBadge,
   updatePlacingBanner,
 } from './ui/mobile-shell';
-import { initDecor } from './decor';
 // Phase 0–4 retention/diff/meta systems
 import { initDaily, dailyTick } from './systems/daily';
 import { initWeekly, weeklyTick } from './systems/weekly';
@@ -230,7 +229,7 @@ function frame(now: number): void {
   lastTime = now;
   tickCameraIntro(dt);
   update(dt);
-  render();
+  render3d(dt);
   updateHUD();
   updatePlacingBanner();
   badgeT += dt;
@@ -280,7 +279,7 @@ function init(): void {
     maybeUnlockOrders();
   }
   markBuildingTiles();
-  initDecor();
+  init3d();
   setTool('hand');
   updateSeedBtnLabel();
 
