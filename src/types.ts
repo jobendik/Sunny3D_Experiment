@@ -902,6 +902,8 @@ export interface GameState {
   camX: number;
   camY: number;
   camScale: number;
+  camYaw: number;
+  camPitch: number;
   particles: Particle[];
   floats: FloatText[];
   stats: GameStats;

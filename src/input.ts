@@ -5,9 +5,11 @@
 
 import { state } from './state';
 import { cv } from './canvas';
+import { TILE } from './constants';
 import { clamp } from './utils';
 import { ensureAudio } from './audio/sfx';
 import { screenToWorld, clampCamera } from './systems/camera';
+import { PITCH_MIN, PITCH_MAX } from './three/camera-rig';
 import { tileAt, buildingAt } from './systems/grid';
 import { shooCrow } from './systems/crows';
 import { tryPlow, tryPlant, tryHarvestOrInteract, tryPlaceDecoration } from './systems/actions';
@@ -23,11 +25,30 @@ import { updateHoverTooltip, showTooltipAt, hideTooltip } from './ui/tooltip';
 import type { ToolKind } from './types';
 
 export const mousePos = { x: 0, y: 0 };
+// Free-cam mode (preview.html-style): primary drag = orbit (yaw + pitch).
+// `dragging` tracks the "tap-or-orbit" state for left-mouse / single touch.
 let dragging = false;
-let dragStart: { x: number; y: number; camX: number; camY: number } | null = null;
+let dragStart: { x: number; y: number; yaw: number; pitch: number } | null = null;
 let didDrag = false;
 let isTouch = false;
 let dragThreshold = 4;
+const ORBIT_YAW_SPEED = 0.008;   // rad per screen pixel
+const ORBIT_PITCH_SPEED = 0.005; // rad per screen pixel
+
+// Right-mouse drag pan — secondary "shove the world" input.
+let panning = false;
+let panStart: { x: number; y: number; camX: number; camY: number } | null = null;
+
+// Held movement keys (per-frame ticked from loop.ts via tickCameraInput).
+const heldKeys = {
+  yawL: false, yawR: false,   // Q / E
+  pitchUp: false, pitchDown: false, // R / F
+  panFwd: false, panBack: false,    // W / S
+  panLeft: false, panRight: false,  // A / D
+};
+const KEY_YAW_SPEED = 1.8;   // rad/sec
+const KEY_PITCH_SPEED = 1.2; // rad/sec
+const KEY_PAN_SPEED = 12;    // world tiles/sec at camScale=1
 
 // Multi-touch state for pinch-zoom / two-finger pan
 interface TouchPoint { id: number; x: number; y: number }
@@ -42,6 +63,37 @@ const LONG_PRESS_MOVE = 10;
 
 export function isDragging(): boolean {
   return dragging;
+}
+
+/** Apply held-key camera motion. Called once per frame from loop.ts.
+ *  Pan is camera-relative so WASD always moves "as the player sees it". */
+export function tickCameraInput(dt: number): void {
+  // Yaw (Q/E)
+  if (heldKeys.yawL) state.camYaw -= KEY_YAW_SPEED * dt;
+  if (heldKeys.yawR) state.camYaw += KEY_YAW_SPEED * dt;
+
+  // Pitch (R/F) — clamped to the rig's safe range.
+  if (heldKeys.pitchUp) state.camPitch -= KEY_PITCH_SPEED * dt;
+  if (heldKeys.pitchDown) state.camPitch += KEY_PITCH_SPEED * dt;
+  state.camPitch = clamp(state.camPitch, PITCH_MIN, PITCH_MAX);
+
+  // Pan (WASD) — camera-relative axes projected to ground. State maps:
+  // state.camX → world X, state.camY → world Z.
+  const fwdX   = -Math.cos(state.camYaw);
+  const fwdZ   = -Math.sin(state.camYaw);
+  const rightX =  Math.sin(state.camYaw); // screen-right in world
+  const rightZ = -Math.cos(state.camYaw);
+  let dwx = 0, dwz = 0;
+  if (heldKeys.panFwd)   { dwx += fwdX;   dwz += fwdZ;   }
+  if (heldKeys.panBack)  { dwx -= fwdX;   dwz -= fwdZ;   }
+  if (heldKeys.panRight) { dwx += rightX; dwz += rightZ; }
+  if (heldKeys.panLeft)  { dwx -= rightX; dwz -= rightZ; }
+  if (dwx !== 0 || dwz !== 0) {
+    const speed = KEY_PAN_SPEED * dt * TILE / state.camScale;
+    state.camX += dwx * speed;
+    state.camY += dwz * speed;
+    clampCamera();
+  }
 }
 
 export function haptic(ms: number = 8): void {
@@ -60,7 +112,12 @@ function onPointerDown(e: PointerLike): void {
   ensureAudio();
   dragging = true;
   didDrag = false;
-  dragStart = { x: e.clientX, y: e.clientY, camX: state.camX, camY: state.camY };
+  // Primary drag is now ORBIT. dragStart snapshots yaw/pitch so the
+  // orbit is absolute relative to where the drag began — drift-free.
+  dragStart = {
+    x: e.clientX, y: e.clientY,
+    yaw: state.camYaw, pitch: state.camPitch,
+  };
   cv.classList.add('dragging');
 }
 
@@ -72,13 +129,33 @@ function onPointerMove(e: PointerLike): void {
     const dy = e.clientY - dragStart.y;
     if (Math.abs(dx) > dragThreshold || Math.abs(dy) > dragThreshold) didDrag = true;
     if (didDrag) {
-      state.camX = dragStart.camX - dx / state.camScale;
-      state.camY = dragStart.camY - dy / state.camScale;
-      clampCamera();
+      // Free-cam orbit: drag horizontally rotates yaw, vertically
+      // pitches. Pitch is clamped to PITCH_MIN/PITCH_MAX in the rig.
+      state.camYaw = dragStart.yaw - dx * ORBIT_YAW_SPEED;
+      state.camPitch = clamp(
+        dragStart.pitch - dy * ORBIT_PITCH_SPEED,
+        PITCH_MIN, PITCH_MAX,
+      );
       cancelLongPress();
     }
   }
   if (!isTouch) updateHoverTooltip();
+}
+
+// Right-mouse pan: rotates the screen delta by (yaw - π/4) so the
+// world shifts under the cursor in roughly the cursor's direction.
+function onPanMove(e: PointerLike): void {
+  if (!panning || !panStart) return;
+  const dx = e.clientX - panStart.x;
+  const dy = e.clientY - panStart.y;
+  const da = state.camYaw - Math.PI / 4;
+  const c = Math.cos(da);
+  const s = Math.sin(da);
+  const dxw = dx * c - dy * s;
+  const dyw = dx * s + dy * c;
+  state.camX = panStart.camX - dxw / state.camScale;
+  state.camY = panStart.camY - dyw / state.camScale;
+  clampCamera();
 }
 
 function onPointerUp(_e: unknown): void {
@@ -94,7 +171,8 @@ function onWheel(e: WheelEvent): void {
   e.preventDefault();
   const factor = e.deltaY > 0 ? 0.88 : 1.12;
   const before = screenToWorld(e.clientX, e.clientY);
-  state.camScale = clamp(state.camScale * factor, 0.4, 2.4);
+  // Wider zoom range for free-cam — get up close or float high above.
+  state.camScale = clamp(state.camScale * factor, 0.25, 3.5);
   const after = screenToWorld(e.clientX, e.clientY);
   state.camX += before.x - after.x;
   state.camY += before.y - after.y;
@@ -280,14 +358,41 @@ export function attachInput(): void {
   cv.addEventListener('mousedown', e => {
     isTouch = false;
     dragThreshold = 4;
+    if (e.button === 2 || e.button === 1) {
+      // Right-click or middle-click drag = pan.
+      panning = true;
+      panStart = {
+        x: e.clientX, y: e.clientY,
+        camX: state.camX, camY: state.camY,
+      };
+      e.preventDefault();
+      return;
+    }
     onPointerDown(e);
   });
   cv.addEventListener('mousemove', e => {
     isTouch = false;
+    if (panning) {
+      onPanMove(e);
+      return;
+    }
     onPointerMove(e);
   });
-  cv.addEventListener('mouseup', onPointerUp);
-  cv.addEventListener('mouseleave', onPointerUp);
+  cv.addEventListener('mouseup', e => {
+    if (panning) {
+      panning = false;
+      panStart = null;
+      return;
+    }
+    onPointerUp(e);
+  });
+  cv.addEventListener('mouseleave', e => {
+    if (panning) {
+      panning = false;
+      panStart = null;
+    }
+    onPointerUp(e);
+  });
   cv.addEventListener('wheel', onWheel, { passive: false });
 
   // ----- Touch -----
@@ -355,6 +460,15 @@ export function attachInput(): void {
       setTool(tool);
       return;
     }
+    // Camera — WASD pan, Q/E yaw, R/F pitch (camera-relative).
+    if (e.key === 'w' || e.key === 'W') { heldKeys.panFwd = true; return; }
+    if (e.key === 's' || e.key === 'S') { heldKeys.panBack = true; return; }
+    if (e.key === 'a' || e.key === 'A') { heldKeys.panLeft = true; return; }
+    if (e.key === 'd' || e.key === 'D') { heldKeys.panRight = true; return; }
+    if (e.key === 'q' || e.key === 'Q') { heldKeys.yawL = true; return; }
+    if (e.key === 'e' || e.key === 'E') { heldKeys.yawR = true; return; }
+    if (e.key === 'r' || e.key === 'R') { heldKeys.pitchUp = true; return; }
+    if (e.key === 'f' || e.key === 'F') { heldKeys.pitchDown = true; return; }
     if (e.key === 'Escape') {
       if (state.placing) {
         state.placing = null;
@@ -378,7 +492,19 @@ export function attachInput(): void {
     }
   });
 
-  // ----- Block iOS context menu on long-press of canvas -----
+  window.addEventListener('keyup', e => {
+    if (e.key === 'w' || e.key === 'W') heldKeys.panFwd = false;
+    if (e.key === 's' || e.key === 'S') heldKeys.panBack = false;
+    if (e.key === 'a' || e.key === 'A') heldKeys.panLeft = false;
+    if (e.key === 'd' || e.key === 'D') heldKeys.panRight = false;
+    if (e.key === 'q' || e.key === 'Q') heldKeys.yawL = false;
+    if (e.key === 'e' || e.key === 'E') heldKeys.yawR = false;
+    if (e.key === 'r' || e.key === 'R') heldKeys.pitchUp = false;
+    if (e.key === 'f' || e.key === 'F') heldKeys.pitchDown = false;
+  });
+
+  // ----- Block iOS context menu on long-press of canvas (also
+  //       suppresses right-click menu so right-drag = orbit). -----
   cv.addEventListener('contextmenu', e => e.preventDefault());
 
   // ----- Block iOS double-tap zoom on UI -----

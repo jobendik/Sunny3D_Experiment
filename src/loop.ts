@@ -4,6 +4,7 @@
 
 import { state } from './state';
 import { SW, SH } from './canvas';
+import { tickCameraInput } from './input';
 import { TILE, DAY_SECONDS } from './constants';
 import { BUILDINGS } from './data/buildings';
 import { rand, nowSeconds } from './utils';
@@ -46,6 +47,9 @@ import { checkMilestones as checkJournalMilestones } from './systems/journal';
 let smokeT = 0;
 
 export function update(dt: number): void {
+  // Camera (held-key yaw rotation)
+  tickCameraInput(dt);
+
   // Particles
   for (let i = state.particles.length - 1; i >= 0; i--) {
     const p = state.particles[i]!;
