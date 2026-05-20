@@ -797,4 +797,120 @@ Sunny Acres does not need more features right now.
 
 It needs clarity, pacing, polish, and confidence.
 
+
+Sunny Acres — Full Game Analysis
+What's Already Excellent
+Architecture & Tech
+
+Zero-dependency stack (vanilla canvas, Web Audio, localStorage) — perfect for CrazyGames, loads instantly
+Procedural sprites are smart: no CDN/asset pipeline, consistent art style, tiny bundle
+Telemetry hooks baked in from day one — critical for data-driven balancing
+Save/load with timer rebasing means offline progress actually works correctly
+70+ systems with clean separation (data tables → systems → UI) — very maintainable
+Gameplay Depth
+
+The production chain (crop → mill → bakery → order) is the game's strongest loop — satisfying and well-layered
+Weather Mastery Grid is a genuinely unique mechanic no other browser farming game has
+Friendship/village/reputation system gives orders emotional weight (personalised toasts are a nice touch)
+Prestige with perks gives long-term players a meta-progression reason to replay
+Specializations, clubs, season pass, live events, expeditions — the retention toolkit is remarkably complete for a browser game
+What Needs Improvement
+1. First-Session Onboarding (Critical)
+The tutorial is 6 text-string steps with no visual indicators on the actual canvas. CrazyGames players will quit in under 2 minutes if nothing highlights where to click.
+
+Missing: Animated arrows or tile-glow on the specific tile/button to interact with
+Missing: A "skip" that actually keeps context (right now dismiss just hides the step)
+Missing: Secondary tutorial for key unlocks (Weather Grid at level 5 has zero guidance)
+The tutorial's step 6 ("Build a Feed Mill") fires before the player even knows what feed does
+2. UI Overload / HUD Clarity (High Priority)
+The toolbar has 20+ buttons visible immediately. A new player has no idea what 70% of them are for before level 5.
+
+Problem: Gazette, Boat, Train, Balloon, Club, Expedition, Market Stall, Live Events, Leaderboard, Snapshot, Recipe Book, Museum, Contracts, Hazards, Tool Shed — all visible and clickable from session 1
+Fix: Progressive disclosure — only show buttons as their system unlocks at the relevant level
+The HUD XP bar tooltip for "next unlock" is a great idea but the tooltip won't work on mobile (touchscreen has no hover)
+No visual distinction between "available" and "locked-but-visible" buttons
+3. Grid Size vs. Content (High Priority)
+The farm is 18×18 = 324 tiles, but:
+
+Lake takes ~21 tiles (upper-left)
+Path takes ~18 tiles
+Water + soil zones leave roughly 240 usable tiles
+A 3×3 building uses 9 tiles; with 15 buildings that's 135 tiles consumed
+Players who invest in buildings, pens, orchards, and decor run out of space very quickly at mid-level
+Fix: Land expansion (system exists in expansion.ts) needs to unlock earlier and grant meaningful extra space, not just cosmetic plots.
+
+4. Day Speed vs. Crop Timers (Balance)
+DAY_SECONDS = 90 means one in-game day = 90 real seconds. But:
+
+Wheat grows in 18 seconds (= 0.2 game-days) — too fast, no anticipation
+Sugarcane grows in 280 seconds = 3.1 game-days — fine but late-game
+The "I want to check back tomorrow" loop is broken for early crops — everything resolves within a single session
+Fix: Either slow early crop timers so they span at least 1-2 real days for casual players, OR keep the fast loop but add a second "slow" crop tier that incentivises returning tomorrow.
+
+5. Multiplayer / Social Layer (Big Gap)
+The "leaderboard" is entirely simulated peers — simulated names, simulated scores, no actual sharing. The Club system uses SIM_NAMES bots. There is no real multiplayer at all.
+
+For CrazyGames retention this is a significant missed opportunity:
+
+Friend codes exist (friend-codes.ts) but there's no real sync mechanism — it's localStorage-only
+Fix short-term: Add a CrazyGames SDK share button that posts a farm screenshot with the player's score — virality hook
+Fix long-term: Use the CrazyGames SDK's user system for real leaderboards (just a top-10 weekly score POST)
+6. Fishing Minigame
+The minigame is a single bouncing marker on a 280px bar. That's it. For a game with a full fishingdock building and 3 fish species including a rare Goldfish, the minigame doesn't match the promise.
+
+The zoneWidth is always 28-80px on a 280px bar — statistically guaranteed ~25-28% hit rate regardless of bait
+No tension: the marker bounces at constant speed; there's no acceleration, no directional surprise
+Fix: Multi-phase catch (hook → reel → land), or at minimum add random speed changes and a narrowing window under a time limit
+7. Prestige Reset is Too Destructive
+doPrestige() wipes: buildings, animals, trees, decorations, quests, achievements, inventory, and grid. Players who have spent hours decorating their farm lose everything for a modest talent currency bonus.
+
+Hay Day (the stated inspiration) never resets the farm
+Fix: Prestige should reset progression metrics (level, XP, coins) but keep the physical farm layout, buildings, and decorations. Or make it opt-in per category ("reset crops and coins, keep buildings")
+8. Mobile UX Gaps
+The mobile-shell.ts exists but there's no swipe-up gesture sheet for the bottom panels
+Tool switching (hand/plow/seed) requires keyboard 1/2/3 — the DOM buttons exist but aren't prominently accessible on a small touch screen
+Tooltip system relies on mousemove — on mobile no tooltip fires, so tile status is invisible
+Pinch-to-zoom isn't implemented (only scroll wheel zoom)
+9. Animal Feed Friction
+The feed system requires: grow wheat → build feedmill → craft feed → open pen panel → feed animals. That's 5 steps, and if animals run out of feed their production just stops silently. A CrazyGames casual player will wonder why their chickens stopped producing eggs.
+
+Fix: Add a visible hunger warning on the pen tile (sprite overlay) much earlier
+Fix: Allow auto-feed as an unlockable pen upgrade so mid-game players don't micromanage
+10. Economy Balance Issues
+Wheat sells for 3 coins, but a cookie (3 wheat → flour → egg → cookie) sells for 50 — that's the right direction, but the intermediate items (flour: 12 coins, bread: 20 coins) actually lose money vs. just selling wheat raw once building costs are factored in early
+Ribs (250 coins) and Pie (310 coins) are late-game but feel too similar in reward vs. the investment required
+The hot-item gazette bonus (+25%) is the right idea but 25% is too small to meaningfully change player behaviour
+11. Weather Grid Discoverability
+The Weather Mastery Grid is the game's "signature identity" (per the roadmap) yet:
+
+It unlocks at level 5 with no in-game tutorial
+The charge system (limited activations per day) can silently prevent the player from using their cards
+Weather Cards aren't explained anywhere in the help modal
+No visual indicator on the main canvas that the grid is active
+12. Visual Polish / Juice
+The procedural sprite system is architecturally smart but visually the game looks like coloured rectangles compared to the CSS design system which is genuinely beautiful (honey/sage/cherry palette, bevels, paper textures).
+
+The canvas farm tiles and sprites feel disconnected from the polished HTML UI
+Buildings are indistinct rectangles with a label — hard to tell a Bakery from a Sugar Mill at a glance
+No idle animations on animals or crops (slight sway, blinking)
+Combo meter exists but the visual is minimal
+Prioritised Action Plan for CrazyGames
+Priority	Area	Change
+🔴 Must	Tutorial	Add canvas-layer spotlight/arrow overlay on the exact tile/button for each step
+🔴 Must	UI clutter	Gate buttons behind level unlock — show "🔒 Lv X" placeholder, not a clickable panel
+🔴 Must	Mobile	Add pinch-to-zoom and long-press tooltip fallback
+🟠 High	Onboarding	Add contextual tooltip bubbles for the Weather Grid, Season Pass, Specializations on first open
+🟠 High	Social	Integrate CrazyGames SDK share (screenshot + score); even a static share button dramatically improves virality
+🟠 High	Prestige	Make prestige keep physical farm (buildings + decor), only reset progression
+🟠 High	Feed	Add hunger warning sprite overlay on pens; add auto-feed upgrade
+🟡 Medium	Fishing	Add at least one difficulty escalation (speed ramp, time limit) to make goldfish feel earned
+🟡 Medium	Grid size	Make land expansion unlock at level 6 (not deep into roadmap) with clear visual locked-plot indicators on the farm
+🟡 Medium	Day speed	Add a "slow mode" toggle (longer crop timers) for players who don't want a speed-run pace
+🟡 Medium	Economy	Adjust bread/flour sell prices to always beat raw wheat; ensure every processed item beats raw at the same input quantity
+🟢 Low	Canvas juice	Add 1-frame idle bobbing on animals and a subtle wind-sway on mature crops
+🟢 Low	Real social	Week 2+: hook into CrazyGames SDK getUser() for a real weekly top-10 board
+The game's core loop and feature depth are genuinely impressive for a browser game. The biggest CrazyGames-specific risks are: new-player confusion in the first 2 minutes (too many unlocked buttons, text-only tutorial) and no real social/share hook. Fix those two and the retention foundation is already solid.
+
+
+
 Make the game feel like a polished farming adventure, not a feature checklist.
