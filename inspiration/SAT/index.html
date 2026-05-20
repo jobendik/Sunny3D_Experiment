@@ -1,0 +1,1591 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Sunny Acres — Three.js Vertical Slice V2</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(to bottom, #bfe9ff 0%, #eefbff 46%, #ffffff 100%);
+      color: #28483b;
+    }
+
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      outline: none;
+    }
+
+    .hud {
+      position: fixed;
+      left: 20px;
+      top: 20px;
+      z-index: 5;
+      width: min(640px, calc(100vw - 40px));
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .tag,
+    .hint,
+    .legend-item,
+    .button-fake {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid rgba(82, 134, 99, 0.16);
+      box-shadow: 0 8px 28px rgba(82, 134, 99, 0.12);
+      backdrop-filter: blur(10px);
+    }
+
+    .tag {
+      margin-bottom: 12px;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-weight: 850;
+      color: #2e6d52;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(34px, 7vw, 86px);
+      line-height: 0.92;
+      letter-spacing: -0.055em;
+      color: #28483b;
+      text-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.68),
+        0 10px 35px rgba(83, 135, 99, 0.15);
+    }
+
+    .sub {
+      margin-top: 14px;
+      max-width: 540px;
+      font-size: 14px;
+      line-height: 1.55;
+      color: rgba(40, 72, 59, 0.82);
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+    }
+
+    .legend {
+      margin-top: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-width: 620px;
+    }
+
+    .legend-item {
+      font-size: 12px;
+      color: rgba(40, 72, 59, 0.84);
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #75c96a;
+      box-shadow: 0 0 0 4px rgba(117, 201, 106, 0.18);
+    }
+
+    .hint {
+      position: fixed;
+      left: 20px;
+      bottom: 16px;
+      z-index: 5;
+      font-size: 12px;
+      color: rgba(40, 72, 59, 0.82);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .right-panel {
+      position: fixed;
+      right: 20px;
+      top: 20px;
+      z-index: 5;
+      width: min(280px, calc(100vw - 40px));
+      padding: 14px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(82, 134, 99, 0.16);
+      box-shadow: 0 14px 45px rgba(82, 134, 99, 0.14);
+      backdrop-filter: blur(12px);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .panel-title {
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #2e6d52;
+      margin-bottom: 10px;
+    }
+
+    .task {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 8px 0;
+      border-top: 1px solid rgba(66, 112, 82, 0.12);
+      font-size: 13px;
+      color: rgba(40, 72, 59, 0.86);
+    }
+
+    .task:first-of-type {
+      border-top: 0;
+    }
+
+    .task strong {
+      color: #28483b;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 4;
+      background:
+        radial-gradient(circle at 50% 67%, rgba(255, 246, 224, 0.22), transparent 28%),
+        radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.5), transparent 18%),
+        radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.32), transparent 15%),
+        linear-gradient(to top, rgba(255, 255, 255, 0.09), transparent 28%);
+    }
+
+    .unsupported {
+      position: fixed;
+      inset: 0;
+      display: none;
+      place-items: center;
+      z-index: 30;
+      padding: 24px;
+      background: #eefbff;
+      color: #28483b;
+      text-align: center;
+      font-size: 18px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 800px) {
+      .right-panel {
+        display: none;
+      }
+
+      .hud {
+        top: 14px;
+        left: 14px;
+        width: calc(100vw - 28px);
+      }
+
+      .sub {
+        max-width: 430px;
+      }
+
+      .legend {
+        display: none;
+      }
+
+      .hint {
+        left: 14px;
+        bottom: 14px;
+        right: 14px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="hud">
+    <div class="tag">Sunny Acres · Three.js vertical slice V2</div>
+
+    <h1>SUNNY<br>ACRES</h1>
+
+    <div class="sub">
+      A cleaner, more polished Three.js prototype for a cozy isometric farm game:
+      crop fields, orchard, barnyard, chicken coop, dairy, bakery, windmill, market,
+      truck delivery zone, pond, bridge, signs, animals, fences and decorative scenery.
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><span class="legend-dot"></span> Fields</div>
+      <div class="legend-item"><span class="legend-dot"></span> Orchard</div>
+      <div class="legend-item"><span class="legend-dot"></span> Barn</div>
+      <div class="legend-item"><span class="legend-dot"></span> Cow Pen</div>
+      <div class="legend-item"><span class="legend-dot"></span> Pig Pen</div>
+      <div class="legend-item"><span class="legend-dot"></span> Chicken Coop</div>
+      <div class="legend-item"><span class="legend-dot"></span> Dairy</div>
+      <div class="legend-item"><span class="legend-dot"></span> Bakery</div>
+      <div class="legend-item"><span class="legend-dot"></span> Market</div>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div class="panel-title">Prototype read</div>
+    <div class="task"><span>Plant crops</span><strong>Fields</strong></div>
+    <div class="task"><span>Collect milk</span><strong>Dairy</strong></div>
+    <div class="task"><span>Bake bread</span><strong>Bakery</strong></div>
+    <div class="task"><span>Sell goods</span><strong>Market</strong></div>
+    <div class="task"><span>Deliver orders</span><strong>Truck</strong></div>
+  </div>
+
+  <div class="hint">Drag to rotate · wheel to zoom · press R to reset camera · press 1/2/3 for camera presets</div>
+  <div class="overlay"></div>
+  <div class="unsupported" id="unsupported">
+    <div>
+      <strong>Three.js could not be loaded.</strong><br />
+      The local Three.js bundle could not be loaded. Serve this folder and keep [three.module.js] next to this page.
+    </div>
+  </div>
+
+  <script type="module">
+    (async () => {
+      "use strict";
+
+      // ---------------------------------------------------------------------------
+      // SUNNY ACRES — THREE.JS VERTICAL SLICE V2
+      // ---------------------------------------------------------------------------
+      // This is intentionally still a single HTML file, but the JavaScript is now
+      // organized as if it were a small game prototype:
+      //
+      // - Config / palette
+      // - Scene setup
+      // - Camera controller
+      // - Reusable mesh/building/prop factories
+      // - Tile map / production zones
+      // - World composition
+      // - Animation loop
+      //
+      // The scene is still only a visual mockup. No gameplay state exists yet.
+      // ---------------------------------------------------------------------------
+
+      const unsupported = document.getElementById("unsupported");
+      const THREE = await import("./three.module.js").catch(() => null);
+
+      if (!THREE) {
+        unsupported.style.display = "grid";
+        return;
+      }
+
+      const CONFIG = {
+        tileSize: 1.8,
+        mapMinX: -19,
+        mapMaxX: 17,
+        mapMinZ: -11,
+        mapMaxZ: 14,
+        pixelRatioMax: 2,
+        camera: {
+          yaw: Math.PI / 4,
+          pitch: 0.62,
+          distance: 46,
+          size: 21,
+          target: new THREE.Vector3(0, 0, 0)
+        }
+      };
+
+      const Palette = {
+        sky: 0xc4ebff,
+        fog: 0xe8f8ff,
+
+        grass: 0x7fd06b,
+        grass2: 0x8ad46e,
+        grassDark: 0x62b158,
+
+        path: 0xe5c98f,
+        soil: 0x9c6636,
+        water: 0x63bbe6,
+
+        fence: 0xefddb1,
+        wood: 0xb27b46,
+        darkWood: 0x8e6235,
+
+        barn: 0xd64d43,
+        barnDark: 0xb33d39,
+        roofCream: 0xfaf3e4,
+
+        coop: 0xf3c756,
+        house: 0xf2cf76,
+        mill: 0xe3d3b6,
+        bakery: 0xf2b980,
+        dairy: 0x8bc7ff,
+
+        hay: 0xe8c156,
+        leaf: 0x56b652,
+        leaf2: 0x72c55d,
+        trunk: 0x8e6235,
+
+        marketRed: 0xe75c4f,
+        flowerPink: 0xf16d86,
+        flowerYellow: 0xf4cb43,
+        flowerPurple: 0x9b7bff,
+
+        white: 0xf6f8fb,
+        black: 0x333333,
+        cowAccent: 0xc79a8a,
+        pig: 0xf6a8bc,
+        pigAccent: 0xde8ea2,
+        chicken: 0xffeb8f,
+        chickenAccent: 0xf0b03a,
+        orange: 0xf18c36,
+        redFruit: 0xdb4d46,
+        berry: 0xe14950
+      };
+
+      const ZoneColors = {
+        fields: "#59b950",
+        orchard: "#65bb5d",
+        barn: "#d64d43",
+        coop: "#efb54a",
+        dairy: "#6db7f2",
+        bakery: "#e39a52",
+        market: "#de6155",
+        house: "#64b85a",
+        truck: "#e75c4f"
+      };
+
+      const materialCache = new Map();
+      const geometries = {
+        box: new THREE.BoxGeometry(1, 1, 1),
+        sphereLow: new THREE.SphereGeometry(1, 16, 12),
+        plane: new THREE.PlaneGeometry(1, 1),
+        cone4: new THREE.ConeGeometry(1, 1, 4),
+        cone12: new THREE.ConeGeometry(1, 1, 12),
+        cylinder8: new THREE.CylinderGeometry(1, 1, 1, 8),
+        cylinder12: new THREE.CylinderGeometry(1, 1, 1, 12),
+        cylinder16: new THREE.CylinderGeometry(1, 1, 1, 16)
+      };
+
+      const state = {
+        time: 0,
+        drag: {
+          active: false,
+          x: 0,
+          y: 0
+        },
+        camera: {
+          yaw: CONFIG.camera.yaw,
+          pitch: CONFIG.camera.pitch,
+          distance: CONFIG.camera.distance,
+          size: CONFIG.camera.size,
+          targetYaw: CONFIG.camera.yaw,
+          targetPitch: CONFIG.camera.pitch,
+          targetDistance: CONFIG.camera.distance,
+          targetSize: CONFIG.camera.size,
+          target: CONFIG.camera.target.clone()
+        },
+        animated: {
+          animals: [],
+          windmillBlades: [],
+          clouds: [],
+          bees: [],
+          floatingSigns: []
+        }
+      };
+
+      function lerp(a, b, t) {
+        return a + (b - a) * t;
+      }
+
+      function hash(n) {
+        const x = Math.sin(n * 127.1) * 43758.5453;
+        return x - Math.floor(x);
+      }
+
+      function baseHeight(x, z) {
+        return Math.sin(x * 0.18) * 0.08 +
+               Math.cos(z * 0.14) * 0.08 +
+               Math.sin((x + z) * 0.08) * 0.05;
+      }
+
+      function getMaterial(color, options = {}) {
+        const key = `${color}:${JSON.stringify(options)}`;
+
+        if (materialCache.has(key)) {
+          return materialCache.get(key);
+        }
+
+        const material = new THREE.MeshLambertMaterial({
+          color,
+          ...options
+        });
+
+        materialCache.set(key, material);
+        return material;
+      }
+
+      function createMesh(geometry, color, options = {}) {
+        const mesh = new THREE.Mesh(geometry, getMaterial(color, options));
+        mesh.castShadow = options.castShadow ?? true;
+        mesh.receiveShadow = options.receiveShadow ?? true;
+        return mesh;
+      }
+
+      function createBox(width, height, depth, color, options = {}) {
+        const mesh = createMesh(geometries.box, color, options);
+        mesh.scale.set(width, height, depth);
+        return mesh;
+      }
+
+      function createCylinder(radiusTop, radiusBottom, height, color, sides = 12, options = {}) {
+        const key = sides === 8 ? "cylinder8" : sides === 16 ? "cylinder16" : "cylinder12";
+        const mesh = createMesh(geometries[key], color, options);
+        mesh.scale.set(radiusTop, height, radiusBottom);
+        return mesh;
+      }
+
+      function createCone(radius, height, color, sides = 12, options = {}) {
+        const mesh = createMesh(sides === 4 ? geometries.cone4 : geometries.cone12, color, options);
+        mesh.scale.set(radius, height, radius);
+        return mesh;
+      }
+
+      function createPanel(width, height, color, options = {}) {
+        const mesh = createMesh(geometries.plane, color, {
+          side: THREE.DoubleSide,
+          ...options
+        });
+        mesh.scale.set(width, height, 1);
+        return mesh;
+      }
+
+      function createGroup(name) {
+        const group = new THREE.Group();
+        group.name = name;
+        return group;
+      }
+
+      function placeOnWorld(group, x, z, yOffset = 0) {
+        const tileX = x / CONFIG.tileSize;
+        const tileZ = z / CONFIG.tileSize;
+        group.position.set(x, baseHeight(tileX, tileZ) + yOffset, z);
+        return group;
+      }
+
+      // ---------------------------------------------------------------------------
+      // SCENE / RENDERER
+      // ---------------------------------------------------------------------------
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(Palette.sky);
+      scene.fog = new THREE.Fog(Palette.fog, 52, 120);
+
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        powerPreference: "high-performance"
+      });
+
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, CONFIG.pixelRatioMax));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      document.body.appendChild(renderer.domElement);
+
+      const camera = new THREE.OrthographicCamera();
+
+      const world = createGroup("World");
+      const tileLayer = createGroup("Tile Layer");
+      const buildingLayer = createGroup("Buildings");
+      const propLayer = createGroup("Props");
+      const animalLayer = createGroup("Animals");
+      const signLayer = createGroup("Signs");
+
+      world.add(tileLayer, buildingLayer, propLayer, animalLayer, signLayer);
+      scene.add(world);
+
+      setupLights();
+
+      function setupLights() {
+        const ambient = new THREE.AmbientLight(0xffffff, 0.48);
+        scene.add(ambient);
+
+        const hemi = new THREE.HemisphereLight(0xf5fbff, 0x8cc87a, 1.05);
+        scene.add(hemi);
+
+        const sun = new THREE.DirectionalLight(0xfff3d9, 1.32);
+        sun.position.set(28, 34, 18);
+        sun.castShadow = true;
+        sun.shadow.mapSize.set(2048, 2048);
+
+        const shadowSize = 52;
+        sun.shadow.camera.left = -shadowSize;
+        sun.shadow.camera.right = shadowSize;
+        sun.shadow.camera.top = shadowSize;
+        sun.shadow.camera.bottom = -shadowSize;
+        sun.shadow.camera.near = 1;
+        sun.shadow.camera.far = 110;
+
+        scene.add(sun);
+      }
+
+      // ---------------------------------------------------------------------------
+      // CAMERA
+      // ---------------------------------------------------------------------------
+
+      function updateCamera() {
+        const c = state.camera;
+        const aspect = window.innerWidth / window.innerHeight;
+
+        camera.left = -c.size * aspect;
+        camera.right = c.size * aspect;
+        camera.top = c.size;
+        camera.bottom = -c.size;
+        camera.near = 0.1;
+        camera.far = 240;
+
+        camera.position.set(
+          c.target.x + Math.cos(c.yaw) * Math.cos(c.pitch) * c.distance,
+          c.target.y + Math.sin(c.pitch) * c.distance,
+          c.target.z + Math.sin(c.yaw) * Math.cos(c.pitch) * c.distance
+        );
+
+        camera.lookAt(c.target);
+        camera.updateProjectionMatrix();
+      }
+
+      function resetCamera(preset = 1) {
+        const c = state.camera;
+
+        if (preset === 1) {
+          c.targetYaw = Math.PI / 4;
+          c.targetPitch = 0.62;
+          c.targetDistance = 46;
+          c.targetSize = 21;
+          c.target.set(0, 0, 0);
+        }
+
+        if (preset === 2) {
+          c.targetYaw = Math.PI * 0.2;
+          c.targetPitch = 0.72;
+          c.targetDistance = 36;
+          c.targetSize = 15.5;
+          c.target.set(-8, 0, 1);
+        }
+
+        if (preset === 3) {
+          c.targetYaw = Math.PI * 0.38;
+          c.targetPitch = 0.55;
+          c.targetDistance = 52;
+          c.targetSize = 24;
+          c.target.set(8, 0, 6);
+        }
+      }
+
+      // ---------------------------------------------------------------------------
+      // TILE MAP
+      // ---------------------------------------------------------------------------
+
+      function getTileKind(tileX, tileZ) {
+        // Main crop production area
+        if (tileX >= -10 && tileX <= -4 && tileZ >= -1 && tileZ <= 5) {
+          return "field";
+        }
+
+        // Fruit trees
+        if (tileX >= 1 && tileX <= 5 && tileZ >= -2 && tileZ <= 3) {
+          return "orchard";
+        }
+
+        // Barn and storage area
+        if (tileX >= -17 && tileX <= -11 && tileZ >= -8 && tileZ <= -3) {
+          return "barnyard";
+        }
+
+        // Cow / pig / chicken area
+        if (tileX >= -16 && tileX <= -10 && tileZ >= 1 && tileZ <= 4) {
+          return "animals";
+        }
+
+        // Production buildings
+        if (tileX >= 8 && tileX <= 13 && tileZ >= -7 && tileZ <= -4) {
+          return "dairy";
+        }
+
+        if (tileX >= 9 && tileX <= 14 && tileZ >= 2 && tileZ <= 5) {
+          return "bakery";
+        }
+
+        // Market
+        if (tileX >= -1 && tileX <= 3 && tileZ >= 8 && tileZ <= 11) {
+          return "market";
+        }
+
+        // Farmhouse area
+        if (tileX >= 10 && tileX <= 14 && tileZ >= 8 && tileZ <= 12) {
+          return "house";
+        }
+
+        // Pond
+        if (tileX >= 7 && tileX <= 11 && tileZ >= -1 && tileZ <= 1) {
+          return "pond";
+        }
+
+        // Paths connecting areas
+        if (
+          (tileZ === 6 && tileX >= -12 && tileX <= 14) ||
+          (tileX === -3 && tileZ >= -1 && tileZ <= 11) ||
+          (tileX === 6 && tileZ >= -7 && tileZ <= 11) ||
+          (tileZ === 0 && tileX >= -10 && tileX <= 13) ||
+          (tileZ === -3 && tileX >= -17 && tileX <= 5)
+        ) {
+          return "path";
+        }
+
+        return "grass";
+      }
+
+      function getTileColor(kind) {
+        switch (kind) {
+          case "field": return Palette.soil;
+          case "pond": return Palette.water;
+          case "path": return Palette.path;
+          case "orchard": return Palette.grass2;
+          case "barnyard": return 0xc6d688;
+          case "animals": return 0x8cd173;
+          case "dairy": return 0x87c9f2;
+          case "bakery": return 0xf0c486;
+          case "market": return 0x89d56e;
+          case "house": return 0x8cd377;
+          default: return Palette.grass;
+        }
+      }
+
+      function createTile(tileX, tileZ) {
+        const kind = getTileKind(tileX, tileZ);
+        const tileSize = CONFIG.tileSize;
+        const group = createGroup(`Tile ${tileX},${tileZ} (${kind})`);
+
+        const height = kind === "pond" ? 0.18 : kind === "field" ? 0.28 : 0.24;
+        const yOffset = kind === "pond" ? -0.2 : kind === "field" ? -0.08 : kind === "path" ? -0.07 : -0.05;
+
+        const tile = createBox(tileSize * 0.98, height, tileSize * 0.98, getTileColor(kind));
+        tile.position.y = height * 0.5 + yOffset;
+        group.add(tile);
+
+        group.position.set(
+          tileX * tileSize,
+          baseHeight(tileX, tileZ),
+          tileZ * tileSize
+        );
+
+        if (kind === "field") {
+          addCropsToTile(group, tileX, tileZ);
+        }
+
+        if (kind === "pond") {
+          addWaterHighlight(group);
+        }
+
+        return group;
+      }
+
+      function addWaterHighlight(group) {
+        const shine = createPanel(1.05, 0.22, 0xffffff, {
+          transparent: true,
+          opacity: 0.35,
+          depthWrite: false
+        });
+
+        shine.rotation.x = -Math.PI / 2;
+        shine.rotation.z = -0.5;
+        shine.position.set(0.1, 0.01, -0.15);
+        group.add(shine);
+      }
+
+      function addCropsToTile(group, tileX, tileZ) {
+        const cropType = ((tileX + tileZ) % 4 + 4) % 4;
+
+        for (let rz = -1; rz <= 1; rz++) {
+          for (let rx = -1; rx <= 1; rx++) {
+            const x = rx * 0.42 + ((rz & 1) ? 0.08 : -0.08);
+            const z = rz * 0.42;
+
+            const crop = createCrop(cropType);
+            crop.position.set(x, 0.18, z);
+            group.add(crop);
+          }
+        }
+      }
+
+      function createCrop(type) {
+        const group = createGroup("Crop");
+
+        if (type === 0) {
+          group.add(createCrossPlant(0.54, 0.08, 0x5fc44c));
+        }
+
+        if (type === 1) {
+          group.add(createCrossPlant(0.72, 0.07, 0xb5cf4a));
+
+          const cob = createBox(0.08, 0.45, 0.08, 0xe5ad3b);
+          cob.position.y = 0.17;
+          group.add(cob);
+        }
+
+        if (type === 2) {
+          group.add(createCrossPlant(0.58, 0.08, 0x51c044));
+
+          const pumpkin = createBox(0.14, 0.14, 0.14, Palette.orange);
+          pumpkin.position.y = 0.07;
+          group.add(pumpkin);
+        }
+
+        if (type === 3) {
+          group.add(createCrossPlant(0.46, 0.09, 0x6cc95b));
+
+          const berry = createBox(0.12, 0.12, 0.12, Palette.berry);
+          berry.position.y = 0.08;
+          group.add(berry);
+        }
+
+        return group;
+      }
+
+      function createCrossPlant(height, width, color) {
+        const group = createGroup("Cross Plant");
+        const material = new THREE.MeshLambertMaterial({
+          color,
+          side: THREE.DoubleSide
+        });
+
+        const panelGeometry = new THREE.PlaneGeometry(width * 2, height);
+
+        const p1 = new THREE.Mesh(panelGeometry, material);
+        p1.position.y = height * 0.5;
+        p1.rotation.y = Math.PI / 4;
+        p1.castShadow = true;
+
+        const p2 = new THREE.Mesh(panelGeometry, material);
+        p2.position.y = height * 0.5;
+        p2.rotation.y = -Math.PI / 4;
+        p2.castShadow = true;
+
+        group.add(p1, p2);
+        return group;
+      }
+
+      // ---------------------------------------------------------------------------
+      // PROPS / BUILDINGS
+      // ---------------------------------------------------------------------------
+
+      function createGableRoof(width, height, depth, color) {
+        const roof = createCone(1, 1, color, 4);
+        roof.rotation.z = Math.PI / 2;
+        roof.rotation.y = Math.PI / 4;
+        roof.scale.set(depth * 0.5, height, width * 0.5);
+        roof.castShadow = true;
+        roof.receiveShadow = true;
+        return roof;
+      }
+
+      function createBarn() {
+        const group = createGroup("Barn");
+
+        const base = createBox(6.6, 3.8, 4.8, Palette.barn);
+        base.position.y = 1.9;
+
+        const roof = createGableRoof(6.8, 2.0, 5.0, Palette.roofCream);
+        roof.position.y = 4.7;
+
+        const door = createBox(1.6, 2.4, 0.22, 0xe8d9ad);
+        door.position.set(0, 1.2, 2.41);
+
+        const topWindow = createBox(0.85, 0.65, 0.18, 0xf8efd8);
+        topWindow.position.set(0, 2.85, 2.42);
+
+        const leftTrim = createBox(0.12, 3.7, 0.18, Palette.roofCream);
+        leftTrim.position.set(-2.7, 1.9, 2.46);
+
+        const rightTrim = createBox(0.12, 3.7, 0.18, Palette.roofCream);
+        rightTrim.position.set(2.7, 1.9, 2.46);
+
+        group.add(base, roof, door, topWindow, leftTrim, rightTrim);
+        return group;
+      }
+
+      function createSilo() {
+        const group = createGroup("Silo");
+
+        const body = createCylinder(1.2, 1.2, 5.2, 0xdce5ee, 12);
+        body.position.y = 2.6;
+
+        const roof = createCone(1.36, 1.6, 0xe45f54, 12);
+        roof.position.y = 5.95;
+
+        group.add(body, roof);
+        return group;
+      }
+
+      function createCoop() {
+        const group = createGroup("Chicken Coop");
+
+        const base = createBox(3.4, 1.9, 2.8, Palette.coop);
+        base.position.y = 0.95;
+
+        const roof = createGableRoof(3.5, 1.5, 3.1, 0xde7054);
+        roof.position.y = 2.2;
+
+        const door = createBox(0.65, 1.0, 0.18, Palette.darkWood);
+        door.position.set(0.8, 0.5, 1.42);
+
+        group.add(base, roof, door);
+        return group;
+      }
+
+      function createHouse() {
+        const group = createGroup("Farmhouse");
+
+        const base = createBox(4.8, 2.9, 4.4, Palette.house);
+        base.position.y = 1.45;
+
+        const roof = createGableRoof(5.1, 2.1, 4.8, 0xda6f55);
+        roof.position.y = 3.8;
+
+        const door = createBox(0.75, 1.45, 0.18, Palette.wood);
+        door.position.set(0, 0.72, 2.22);
+
+        const leftWindow = createBox(0.66, 0.62, 0.16, 0xd9f4ff);
+        leftWindow.position.set(-1.35, 1.62, 2.24);
+
+        const rightWindow = createBox(0.66, 0.62, 0.16, 0xd9f4ff);
+        rightWindow.position.set(1.35, 1.62, 2.24);
+
+        group.add(base, roof, door, leftWindow, rightWindow);
+        return group;
+      }
+
+      function createMill() {
+        const group = createGroup("Windmill");
+
+        const base = createBox(3.2, 3.2, 3.0, Palette.mill);
+        base.position.y = 1.6;
+
+        const roof = createGableRoof(3.5, 1.6, 3.3, 0xd28a53);
+        roof.position.y = 4.0;
+
+        const hub = createCylinder(0.16, 0.16, 0.18, Palette.wood, 8);
+        hub.rotation.z = Math.PI / 2;
+        hub.position.set(1.75, 4.2, 0);
+
+        const blades = createGroup("Windmill Blades");
+        const bladeMaterial = getMaterial(0xf8f4ea);
+
+        for (let i = 0; i < 4; i++) {
+          const arm = createGroup("Blade Arm");
+          const blade = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.08, 0.22), bladeMaterial);
+          blade.position.y = 0.56;
+          blade.castShadow = true;
+          arm.rotation.z = i * Math.PI * 0.5;
+          arm.add(blade);
+          blades.add(arm);
+        }
+
+        blades.position.copy(hub.position);
+        blades.rotation.x = Math.PI / 2;
+        state.animated.windmillBlades.push(blades);
+
+        group.add(base, roof, hub, blades);
+        return group;
+      }
+
+      function createDairy() {
+        const group = createGroup("Dairy");
+
+        const base = createBox(4.0, 2.7, 3.6, Palette.dairy);
+        base.position.y = 1.35;
+
+        const roof = createGableRoof(4.4, 1.6, 4.0, Palette.white);
+        roof.position.y = 3.3;
+
+        const sign = createBox(1.4, 0.4, 0.16, Palette.white);
+        sign.position.set(0, 2.2, 1.85);
+
+        const milkTank = createCylinder(0.52, 0.52, 1.35, 0xf3f8fb, 16);
+        milkTank.position.set(-1.45, 0.68, -1.25);
+
+        group.add(base, roof, sign, milkTank);
+        return group;
+      }
+
+      function createBakery() {
+        const group = createGroup("Bakery");
+
+        const base = createBox(4.2, 2.8, 3.8, Palette.bakery);
+        base.position.y = 1.4;
+
+        const roof = createGableRoof(4.5, 1.8, 4.1, 0xc96c49);
+        roof.position.y = 3.45;
+
+        const chimney = createBox(0.42, 1.2, 0.42, 0xdde5ed);
+        chimney.position.set(1.1, 3.7, -0.8);
+
+        const oven = createBox(0.9, 0.7, 0.22, 0x8b5a36);
+        oven.position.set(-1.25, 0.8, 1.95);
+
+        group.add(base, roof, chimney, oven);
+        return group;
+      }
+
+      function createMarketStall() {
+        const group = createGroup("Market Stall");
+
+        const table = createBox(3.8, 1.1, 2.2, Palette.wood);
+        table.position.y = 0.55;
+
+        const awning = createBox(4.0, 0.16, 2.4, Palette.marketRed);
+        awning.position.y = 1.72;
+
+        group.add(table, awning);
+
+        [
+          [-1.28, -0.9],
+          [1.28, -0.9],
+          [-1.28, 0.9],
+          [1.28, 0.9]
+        ].forEach(([x, z]) => {
+          const post = createBox(0.1, 1.24, 0.1, Palette.wood);
+          post.position.set(x, 0.62, z * 0.78);
+          group.add(post);
+        });
+
+        [
+          [-1.1, 0.0, 0xde4f44],
+          [-0.1, 0.25, 0xf1b03c],
+          [0.9, -0.05, 0x6ac24b],
+          [0.2, -0.35, 0xa06fff]
+        ].forEach(([x, z, color]) => {
+          const crate = createBox(0.45, 0.22, 0.45, color);
+          crate.position.set(x, 1.22, z);
+          group.add(crate);
+        });
+
+        return group;
+      }
+
+      function createDeliveryTruck() {
+        const group = createGroup("Delivery Truck");
+
+        const body = createBox(2.4, 0.9, 1.4, Palette.marketRed);
+        body.position.y = 0.8;
+
+        const cab = createBox(1.0, 0.8, 1.2, Palette.white);
+        cab.position.set(0.8, 1.15, 0);
+
+        const bed = createBox(1.2, 0.6, 1.2, 0xc44a40);
+        bed.position.set(-0.55, 1.0, 0);
+
+        const windshield = createBox(0.45, 0.36, 0.08, 0xb7ecff);
+        windshield.position.set(1.31, 1.27, 0);
+
+        group.add(body, cab, bed, windshield);
+
+        [
+          [-0.8, -0.55],
+          [-0.8, 0.55],
+          [0.8, -0.55],
+          [0.8, 0.55]
+        ].forEach(([x, z]) => {
+          const wheel = createCylinder(0.28, 0.28, 0.18, Palette.black, 16);
+          wheel.rotation.z = Math.PI / 2;
+          wheel.position.set(x, 0.32, z);
+          group.add(wheel);
+        });
+
+        return group;
+      }
+
+      function createHayBale() {
+        const group = createGroup("Hay Bale");
+
+        const bale = createBox(1.1, 0.7, 1.1, Palette.hay);
+        bale.position.y = 0.35;
+
+        const stripe1 = createBox(1.12, 0.06, 0.08, 0xc99b2d);
+        stripe1.position.set(0, 0.56, -0.28);
+
+        const stripe2 = createBox(1.12, 0.06, 0.08, 0xc99b2d);
+        stripe2.position.set(0, 0.56, 0.28);
+
+        group.add(bale, stripe1, stripe2);
+        return group;
+      }
+
+      function createTree(scale = 1, fruit = false) {
+        const group = createGroup("Tree");
+
+        const trunk = createBox(0.42 * scale, 1.7 * scale, 0.42 * scale, Palette.trunk);
+        trunk.position.y = 0.85 * scale;
+
+        const crown1 = createCylinder(1.08 * scale, 1.18 * scale, 0.78 * scale, Palette.leaf, 8);
+        crown1.position.y = 1.7 * scale;
+
+        const crown2 = createCylinder(0.82 * scale, 0.92 * scale, 0.72 * scale, Palette.leaf2, 8);
+        crown2.position.y = 2.28 * scale;
+
+        group.add(trunk, crown1, crown2);
+
+        if (fruit) {
+          for (let i = 0; i < 5; i++) {
+            const angle = (i / 5) * Math.PI * 2;
+            const fruitMesh = createBox(0.14 * scale, 0.14 * scale, 0.14 * scale, Palette.redFruit);
+
+            fruitMesh.position.set(
+              Math.cos(angle) * 0.52 * scale,
+              1.9 * scale + hash(i * 2.7) * 0.35,
+              Math.sin(angle) * 0.48 * scale
+            );
+
+            group.add(fruitMesh);
+          }
+        }
+
+        return group;
+      }
+
+      function createAnimal(type = "cow") {
+        const group = createGroup(`Animal ${type}`);
+
+        let bodyColor = Palette.cow;
+        let accent = Palette.cowAccent;
+        let scale = 1;
+
+        if (type === "pig") {
+          bodyColor = Palette.pig;
+          accent = Palette.pigAccent;
+          scale = 0.95;
+        }
+
+        if (type === "chicken") {
+          bodyColor = Palette.chicken;
+          accent = Palette.chickenAccent;
+          scale = 0.58;
+        }
+
+        const body = createBox(0.92 * scale, 0.45 * scale, 0.5 * scale, bodyColor);
+        body.position.y = 0.5 * scale;
+
+        const head = createBox(0.34 * scale, 0.26 * scale, 0.28 * scale, accent);
+        head.position.set(0.36 * scale, 0.7 * scale, 0);
+
+        group.add(body, head);
+
+        [-0.26, 0.26].forEach(dx => {
+          [-0.14, 0.14].forEach(dz => {
+            const leg = createBox(0.08 * scale, 0.34 * scale, 0.08 * scale, accent);
+            leg.position.set(dx * scale, 0.17 * scale, dz * scale);
+            group.add(leg);
+          });
+        });
+
+        if (type === "cow") {
+          const spot = createBox(0.22, 0.24, 0.04, 0x7b5b4f);
+          spot.position.set(-0.15, 0.58, 0.27);
+          group.add(spot);
+        }
+
+        group.userData.phase = Math.random() * Math.PI * 2;
+        group.userData.home = new THREE.Vector3();
+
+        state.animated.animals.push(group);
+        return group;
+      }
+
+      function createFenceRect(centerX, centerZ, width, depth) {
+        const group = createGroup("Fence Rect");
+
+        function addPost(x, z) {
+          const post = createBox(0.16, 0.8, 0.16, Palette.fence);
+          post.position.set(x, 0.4, z);
+          group.add(post);
+        }
+
+        function addRail(x, z, sx, sz) {
+          [0.42, 0.64].forEach(y => {
+            const rail = createBox(sx, 0.1, sz, Palette.fence);
+            rail.position.set(x, y, z);
+            group.add(rail);
+          });
+        }
+
+        const minX = centerX - width / 2;
+        const maxX = centerX + width / 2;
+        const minZ = centerZ - depth / 2;
+        const maxZ = centerZ + depth / 2;
+
+        for (let x = minX; x <= maxX + 0.001; x += CONFIG.tileSize) {
+          addPost(x, minZ);
+          addPost(x, maxZ);
+        }
+
+        for (let z = minZ; z <= maxZ + 0.001; z += CONFIG.tileSize) {
+          addPost(minX, z);
+          addPost(maxX, z);
+        }
+
+        for (let x = minX + CONFIG.tileSize / 2; x < maxX; x += CONFIG.tileSize) {
+          addRail(x, minZ, CONFIG.tileSize, 0.1);
+          addRail(x, maxZ, CONFIG.tileSize, 0.1);
+        }
+
+        for (let z = minZ + CONFIG.tileSize / 2; z < maxZ; z += CONFIG.tileSize) {
+          addRail(minX, z, 0.1, CONFIG.tileSize);
+          addRail(maxX, z, 0.1, CONFIG.tileSize);
+        }
+
+        return group;
+      }
+
+      // ---------------------------------------------------------------------------
+      // LABELS / DECOR
+      // ---------------------------------------------------------------------------
+
+      function createSignSprite(text, color) {
+        const canvas = document.createElement("canvas");
+        canvas.width = 256;
+        canvas.height = 96;
+
+        const ctx = canvas.getContext("2d");
+        const radius = 24;
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(radius, 0);
+        ctx.lineTo(canvas.width - radius, 0);
+        ctx.quadraticCurveTo(canvas.width, 0, canvas.width, radius);
+        ctx.lineTo(canvas.width, canvas.height - radius);
+        ctx.quadraticCurveTo(canvas.width, canvas.height, canvas.width - radius, canvas.height);
+        ctx.lineTo(radius, canvas.height);
+        ctx.quadraticCurveTo(0, canvas.height, 0, canvas.height - radius);
+        ctx.lineTo(0, radius);
+        ctx.quadraticCurveTo(0, 0, radius, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = "rgba(255,255,255,0.65)";
+        ctx.lineWidth = 5;
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(255,255,255,0.96)";
+        ctx.font = "850 34px Inter, system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(text, canvas.width / 2, canvas.height / 2 + 2);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.colorSpace = THREE.SRGBColorSpace;
+
+        const material = new THREE.SpriteMaterial({
+          map: texture,
+          transparent: true,
+          depthWrite: false
+        });
+
+        const sprite = new THREE.Sprite(material);
+        sprite.scale.set(3.7, 1.4, 1);
+        sprite.userData.baseY = 0;
+        state.animated.floatingSigns.push(sprite);
+
+        return sprite;
+      }
+
+      function addAreaSign(text, color, x, z, y) {
+        const sprite = createSignSprite(text, color);
+        sprite.position.set(x, y, z);
+        sprite.userData.baseY = y;
+        signLayer.add(sprite);
+        return sprite;
+      }
+
+      function createCloud(x, y, z, scale = 1) {
+        const group = createGroup("Cloud");
+        const cloudMaterial = new THREE.MeshLambertMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0.86
+        });
+
+        [
+          [0, 0, 0, 1.8],
+          [1.2, 0.25, 0.3, 1.4],
+          [-1.1, 0.2, -0.1, 1.3],
+          [0.2, 0.45, -0.5, 1.15]
+        ].forEach(([px, py, pz, r]) => {
+          const part = new THREE.Mesh(geometries.sphereLow, cloudMaterial);
+          part.scale.setScalar(r * scale);
+          part.position.set(px * scale, py * scale, pz * scale);
+          group.add(part);
+        });
+
+        group.position.set(x, y, z);
+        group.userData.baseX = x;
+        group.userData.phase = Math.random() * Math.PI * 2;
+
+        state.animated.clouds.push(group);
+        scene.add(group);
+
+        return group;
+      }
+
+      function createBeeSprite() {
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+          color: 0xf2cf43,
+          depthWrite: false
+        }));
+
+        sprite.scale.set(0.22, 0.22, 0.22);
+        scene.add(sprite);
+
+        return sprite;
+      }
+
+      // ---------------------------------------------------------------------------
+      // WORLD BUILD
+      // ---------------------------------------------------------------------------
+
+      function buildWorld() {
+        buildTiles();
+        buildBuildings();
+        buildProductionFences();
+        buildTrees();
+        buildAnimals();
+        buildProps();
+        buildSigns();
+        buildSky();
+      }
+
+      function buildTiles() {
+        for (let z = CONFIG.mapMinZ; z <= CONFIG.mapMaxZ; z++) {
+          for (let x = CONFIG.mapMinX; x <= CONFIG.mapMaxX; x++) {
+            tileLayer.add(createTile(x, z));
+          }
+        }
+      }
+
+      function buildBuildings() {
+        const buildings = [
+          [createBarn(), -24.0, -10.8],
+          [createSilo(), -18.8, -12.8],
+          [createCoop(), -22.4, 5.0],
+          [createDairy(), 20.0, -10.2],
+          [createBakery(), 22.0, 8.6],
+          [createMarketStall(), 1.8, 18.2],
+          [createHouse(), 22.2, 18.8],
+          [createMill(), 10.8, 4.8],
+          [createDeliveryTruck(), 11.2, 18.0]
+        ];
+
+        buildings.forEach(([building, x, z]) => {
+          buildingLayer.add(placeOnWorld(building, x, z));
+        });
+      }
+
+      function buildProductionFences() {
+        [
+          [createFenceRect(-12.6, 3.6, 12.2, 12.2), -12.6, 3.6],
+          [createFenceRect(-23.4, 5.4, 6.8, 5.0), -23.4, 5.4],
+          [createFenceRect(-16.2, 6.0, 6.8, 5.0), -16.2, 6.0]
+        ].forEach(([fence, x, z]) => {
+          propLayer.add(placeOnWorld(fence, x, z));
+        });
+      }
+
+      function buildTrees() {
+        const trees = [
+          // Orchard
+          [3.8, -1.8, 0.95, true],
+          [7.2, -1.8, 0.95, true],
+          [10.6, -1.8, 0.95, true],
+          [3.8, 1.6, 0.95, true],
+          [7.2, 1.6, 0.95, true],
+          [10.6, 1.6, 0.95, true],
+          [3.8, 5.0, 0.95, true],
+          [7.2, 5.0, 0.95, true],
+          [10.6, 5.0, 0.95, true],
+
+          // Borders
+          [-30, -2, 1.05, false],
+          [-28, 8, 1.0, false],
+          [-18, 18, 1.0, false],
+          [-8, 22, 1.0, false],
+          [10, -16, 1.0, false],
+          [18, -18, 1.0, false],
+          [28, -2, 1.0, false],
+          [30, 8, 1.0, false],
+          [30, 18, 1.0, false],
+          [-31, -10, 1.12, false],
+          [-2, -18, 1.04, false],
+          [16, 23, 0.98, false]
+        ];
+
+        trees.forEach(([x, z, scale, fruit]) => {
+          propLayer.add(placeOnWorld(createTree(scale, fruit), x, z));
+        });
+      }
+
+      function buildAnimals() {
+        const animals = [
+          [-24.4, 4.8, "cow"],
+          [-22.2, 5.6, "cow"],
+          [-24.0, 6.6, "cow"],
+          [-16.6, 5.4, "pig"],
+          [-14.4, 6.0, "pig"],
+          [-15.2, 7.0, "pig"],
+          [-23.0, 3.0, "chicken"],
+          [-22.0, 2.8, "chicken"],
+          [-21.0, 3.6, "chicken"]
+        ];
+
+        animals.forEach(([x, z, type]) => {
+          const animal = createAnimal(type);
+          placeOnWorld(animal, x, z);
+          animal.userData.home.copy(animal.position);
+          animalLayer.add(animal);
+        });
+      }
+
+      function buildProps() {
+        // Hay bales
+        [
+          [-24.0, -5.5],
+          [-22.4, -7.0],
+          [-20.6, -5.8],
+          [-17.8, -7.2]
+        ].forEach(([x, z]) => {
+          propLayer.add(placeOnWorld(createHayBale(), x, z));
+        });
+
+        // Market flowers
+        for (let i = 0; i < 48; i++) {
+          const x = -2.6 + (i % 8) * 1.05;
+          const z = 14.6 + Math.floor(i / 8) * 0.62;
+          const colors = [Palette.flowerPink, Palette.flowerYellow, Palette.flowerPurple];
+
+          const flower = createBox(0.12, 0.18, 0.12, colors[i % 3]);
+          flower.position.y = 0.09;
+
+          const flowerGroup = createGroup("Flower");
+          flowerGroup.add(flower);
+          propLayer.add(placeOnWorld(flowerGroup, x, z, 0.15));
+        }
+
+        // Bridge over pond
+        const bridge = createBox(5.2, 0.16, 1.2, Palette.wood);
+        const bridgeGroup = createGroup("Bridge");
+        bridge.position.y = 0.08;
+        bridgeGroup.add(bridge);
+        propLayer.add(placeOnWorld(bridgeGroup, 16.6, 0, 0.1));
+
+        // Crates near truck
+        [
+          [8.8, 16.6, 0xde4f44],
+          [9.7, 16.9, 0xf1b03c],
+          [8.9, 17.6, 0x6ac24b],
+          [10.1, 17.8, 0xa06fff]
+        ].forEach(([x, z, color]) => {
+          const crate = createBox(0.55, 0.42, 0.55, color);
+          crate.position.y = 0.21;
+          const g = createGroup("Delivery Crate");
+          g.add(crate);
+          propLayer.add(placeOnWorld(g, x, z, 0.16));
+        });
+
+        // Tiny decorative barrels
+        [
+          [-19.0, -8.5],
+          [-18.2, -8.0],
+          [19.2, -7.4],
+          [20.0, -7.8]
+        ].forEach(([x, z]) => {
+          const barrel = createCylinder(0.32, 0.32, 0.64, Palette.wood, 12);
+          barrel.position.y = 0.32;
+          const g = createGroup("Barrel");
+          g.add(barrel);
+          propLayer.add(placeOnWorld(g, x, z, 0.12));
+        });
+      }
+
+      function buildSigns() {
+        addAreaSign("Fields", ZoneColors.fields, -18.8, 0.8, 3.5);
+        addAreaSign("Orchard", ZoneColors.orchard, 8.2, -4.5, 3.5);
+        addAreaSign("Barn", ZoneColors.barn, -24.0, -14.5, 3.5);
+        addAreaSign("Coop", ZoneColors.coop, -23.0, 0.2, 3.1);
+        addAreaSign("Dairy", ZoneColors.dairy, 20.0, -15.0, 3.4);
+        addAreaSign("Bakery", ZoneColors.bakery, 22.5, 4.0, 3.4);
+        addAreaSign("Market", ZoneColors.market, 1.8, 13.7, 3.4);
+        addAreaSign("Truck", ZoneColors.truck, 11.2, 14.7, 3.2);
+      }
+
+      function buildSky() {
+        createCloud(-18, 14, -20, 1.2);
+        createCloud(8, 15, -24, 1.0);
+        createCloud(28, 13, -8, 1.1);
+        createCloud(-31, 12, 10, 0.9);
+
+        for (let i = 0; i < 16; i++) {
+          const bee = createBeeSprite();
+
+          bee.userData = {
+            x: 0.5 + Math.random() * 7,
+            z: 17 + Math.random() * 2.8,
+            y: 2.3 + Math.random() * 0.8,
+            phase: Math.random() * Math.PI * 2
+          };
+
+          state.animated.bees.push(bee);
+        }
+      }
+
+      // ---------------------------------------------------------------------------
+      // INPUT
+      // ---------------------------------------------------------------------------
+
+      renderer.domElement.addEventListener("mousedown", event => {
+        state.drag.active = true;
+        state.drag.x = event.clientX;
+        state.drag.y = event.clientY;
+      });
+
+      window.addEventListener("mouseup", () => {
+        state.drag.active = false;
+      });
+
+      window.addEventListener("mousemove", event => {
+        if (!state.drag.active) return;
+
+        const dx = event.clientX - state.drag.x;
+        const dy = event.clientY - state.drag.y;
+
+        state.drag.x = event.clientX;
+        state.drag.y = event.clientY;
+
+        state.camera.targetYaw -= dx * 0.008;
+        state.camera.targetPitch = THREE.MathUtils.clamp(
+          state.camera.targetPitch - dy * 0.005,
+          0.32,
+          1.02
+        );
+      });
+
+      renderer.domElement.addEventListener("wheel", event => {
+        event.preventDefault();
+
+        state.camera.targetDistance = THREE.MathUtils.clamp(
+          state.camera.targetDistance + event.deltaY * 0.016,
+          28,
+          66
+        );
+
+        state.camera.targetSize = THREE.MathUtils.clamp(
+          state.camera.targetSize + event.deltaY * 0.008,
+          14,
+          30
+        );
+      }, { passive: false });
+
+      window.addEventListener("keydown", event => {
+        if (event.key.toLowerCase() === "r") {
+          resetCamera(1);
+        }
+
+        if (event.key === "1") resetCamera(1);
+        if (event.key === "2") resetCamera(2);
+        if (event.key === "3") resetCamera(3);
+      });
+
+      window.addEventListener("resize", () => {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, CONFIG.pixelRatioMax));
+        updateCamera();
+      });
+
+      // ---------------------------------------------------------------------------
+      // ANIMATION
+      // ---------------------------------------------------------------------------
+
+      const clock = new THREE.Clock();
+
+      function updateAnimation(time) {
+        if (!state.drag.active) {
+          state.camera.targetYaw += 0.00075;
+        }
+
+        state.camera.yaw = lerp(state.camera.yaw, state.camera.targetYaw, 0.08);
+        state.camera.pitch = lerp(state.camera.pitch, state.camera.targetPitch, 0.08);
+        state.camera.distance = lerp(state.camera.distance, state.camera.targetDistance, 0.08);
+        state.camera.size = lerp(state.camera.size, state.camera.targetSize, 0.08);
+
+        state.animated.animals.forEach((animal, index) => {
+          const home = animal.userData.home;
+          const phase = animal.userData.phase;
+
+          animal.position.y = home.y + Math.sin(time * 2.0 + phase) * 0.03;
+          animal.rotation.y = Math.sin(time * 1.2 + index) * 0.14;
+        });
+
+        state.animated.windmillBlades.forEach((blades, index) => {
+          blades.rotation.z += 0.018 + index * 0.002;
+        });
+
+        state.animated.clouds.forEach(cloud => {
+          cloud.position.x = cloud.userData.baseX + Math.sin(time * 0.1 + cloud.userData.phase) * 4;
+        });
+
+        state.animated.bees.forEach(sprite => {
+          const data = sprite.userData;
+
+          sprite.position.set(
+            data.x + Math.cos(time * 1.8 + data.phase) * 0.7,
+            data.y + Math.sin(time * 3.0 + data.phase) * 0.18,
+            data.z + Math.sin(time * 2.2 + data.phase) * 0.55
+          );
+        });
+
+        state.animated.floatingSigns.forEach((sign, index) => {
+          sign.position.y = sign.userData.baseY + Math.sin(time * 1.2 + index) * 0.05;
+        });
+      }
+
+      function render() {
+        requestAnimationFrame(render);
+
+        state.time = clock.getElapsedTime();
+
+        updateAnimation(state.time);
+        updateCamera();
+
+        renderer.render(scene, camera);
+      }
+
+      // ---------------------------------------------------------------------------
+      // BOOT
+      // ---------------------------------------------------------------------------
+
+      buildWorld();
+      resetCamera(1);
+      updateCamera();
+      render();
+    })();
+  </script>
+</body>
+</html>

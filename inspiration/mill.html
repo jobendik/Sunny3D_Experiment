@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Windmill Scene</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #87CEEB; /* Fallback color */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.5);
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+        #instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+        }
+    </style>
+    <!-- Import maps polyfill -->
+    <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+    <!-- Setup Three.js Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="loading">Generating 3D Scene...</div>
+    <div id="canvas-container"></div>
+    <div id="instructions">
+        🖱️ <b>Left Click + Drag</b> to rotate camera<br>
+        🖱️ <b>Right Click + Drag</b> to pan<br>
+        🖱️ <b>Scroll</b> to zoom
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- SCENE SETUP ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        
+        // Beautiful bright sky blue color
+        const skyColor = new THREE.Color(0x6ec0ff);
+        scene.background = skyColor;
+        
+        // Add fog to blend the horizon softly
+        scene.fog = new THREE.FogExp2(skyColor, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        // Position camera for a cinematic angled view
+        camera.position.set(15, 12, 25);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Optimize for high DPI
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Softer, better looking shadows
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+        container.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxPolarAngle = Math.PI / 2 - 0.05; // Prevent going below ground
+        controls.target.set(0, 4, 0);
+
+        // --- LIGHTING ---
+        // Soft ambient fill light (slightly blueish to simulate sky bounce)
+        const ambientLight = new THREE.HemisphereLight(0xffffff, 0x446688, 0.4);
+        scene.add(ambientLight);
+
+        // Main directional light (The Sun)
+        const sunLight = new THREE.DirectionalLight(0xfff5b6, 2.5);
+        sunLight.position.set(-30, 40, -20);
+        sunLight.castShadow = true;
+        
+        // Optimize shadow map resolution and coverage
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.camera.near = 0.5;
+        sunLight.shadow.camera.far = 150;
+        const shadowSize = 30;
+        sunLight.shadow.camera.left = -shadowSize;
+        sunLight.shadow.camera.right = shadowSize;
+        sunLight.shadow.camera.top = shadowSize;
+        sunLight.shadow.camera.bottom = -shadowSize;
+        sunLight.shadow.bias = -0.001; // Reduce shadow acne
+        scene.add(sunLight);
+
+        // --- MATERIALS ALIASES ---
+        // Using flatShading gives that crisp, stylized low-poly look without textures
+        const matWoodDark = new THREE.MeshStandardMaterial({ color: 0x4a3b2c, flatShading: true });
+        const matWoodLight = new THREE.MeshStandardMaterial({ color: 0x8b7355, flatShading: true });
+        const matWhite = new THREE.MeshStandardMaterial({ color: 0xf5f5f5, flatShading: true });
+        const matFabric = new THREE.MeshStandardMaterial({ color: 0xffffff, flatShading: true, side: THREE.DoubleSide });
+        const matGrass = new THREE.MeshStandardMaterial({ color: 0x6bb342, flatShading: true });
+        const matStone = new THREE.MeshStandardMaterial({ color: 0x888888, flatShading: true });
+
+        // --- SCENE OBJECTS ---
+
+        // 1. The Sun
+        const sunGeo = new THREE.SphereGeometry(4, 32, 32);
+        const sunMat = new THREE.MeshBasicMaterial({ color: 0xffeab0 }); // Basic material so it glows regardless of light
+        const sunMesh = new THREE.Mesh(sunGeo, sunMat);
+        sunMesh.position.copy(sunLight.position);
+        scene.add(sunMesh);
+
+        // 2. The Ground / Terrain
+        // Creating an undulating terrain using a large plane with randomized vertices
+        const groundGeo = new THREE.CylinderGeometry(40, 40, 2, 64);
+        const ground = new THREE.Mesh(groundGeo, matGrass);
+        ground.position.y = -1;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // 3. The Windmill
+        const windmillGroup = new THREE.Group();
+        scene.add(windmillGroup);
+
+        // Windmill Base (Tapered cylinder)
+        const baseGeo = new THREE.CylinderGeometry(1.8, 2.8, 8, 8);
+        const baseMesh = new THREE.Mesh(baseGeo, matWhite);
+        baseMesh.position.y = 4;
+        baseMesh.castShadow = true;
+        baseMesh.receiveShadow = true;
+        windmillGroup.add(baseMesh);
+
+        // Windmill Roof (Cone)
+        const roofGeo = new THREE.ConeGeometry(2.2, 3, 8);
+        const roofMesh = new THREE.Mesh(roofGeo, matWoodDark);
+        roofMesh.position.y = 9.5;
+        roofMesh.castShadow = true;
+        windmillGroup.add(roofMesh);
+
+        // Windmill Door
+        const doorGeo = new THREE.BoxGeometry(0.8, 1.5, 0.2);
+        const doorMesh = new THREE.Mesh(doorGeo, matWoodDark);
+        doorMesh.position.set(0, 0.75, 2.7);
+        doorMesh.rotation.y = Math.PI;
+        windmillGroup.add(doorMesh);
+
+        // Windmill Balcony / Walkway
+        const balconyGeo = new THREE.CylinderGeometry(3.2, 3.2, 0.2, 8);
+        const balconyMesh = new THREE.Mesh(balconyGeo, matWoodDark);
+        balconyMesh.position.y = 3.5;
+        balconyMesh.castShadow = true;
+        balconyMesh.receiveShadow = true;
+        windmillGroup.add(balconyMesh);
+
+        // Windmill Rotor Mechanism (This is what will spin)
+        const rotorGroup = new THREE.Group();
+        rotorGroup.position.set(0, 8.5, 2.0); // Offset to the front
+        windmillGroup.add(rotorGroup);
+
+        // Rotor Hub
+        const hubGeo = new THREE.CylinderGeometry(0.4, 0.4, 1.2, 8);
+        hubGeo.rotateX(Math.PI / 2); // Orient correctly
+        const hubMesh = new THREE.Mesh(hubGeo, matWoodDark);
+        hubMesh.castShadow = true;
+        rotorGroup.add(hubMesh);
+
+        // Rotor Blades (4 of them)
+        const numBlades = 4;
+        for (let i = 0; i < numBlades; i++) {
+            const bladePivot = new THREE.Group();
+            bladePivot.rotation.z = (Math.PI * 2 / numBlades) * i;
+            
+            // The wooden main arm of the blade
+            const armGeo = new THREE.BoxGeometry(0.15, 6, 0.15);
+            const armMesh = new THREE.Mesh(armGeo, matWoodLight);
+            armMesh.position.y = 3; // Shift up so pivot is at bottom
+            armMesh.castShadow = true;
+            bladePivot.add(armMesh);
+
+            // The fabric/sail of the blade
+            const sailGeo = new THREE.BoxGeometry(1.2, 5.5, 0.05);
+            const sailMesh = new THREE.Mesh(sailGeo, matFabric);
+            sailMesh.position.set(0.6, 3.2, 0); // Offset to side and up
+            // Angle the sail slightly to catch the "wind"
+            sailMesh.rotation.y = Math.PI / 8;
+            sailMesh.castShadow = true;
+            bladePivot.add(sailMesh);
+
+            rotorGroup.add(bladePivot);
+        }
+
+        // 4. Low-Poly Trees
+        function createTree(x, z, scale = 1) {
+            const treeGroup = new THREE.Group();
+            
+            // Trunk
+            const trunkGeo = new THREE.CylinderGeometry(0.2, 0.3, 1.5, 5);
+            const trunkMesh = new THREE.Mesh(trunkGeo, matWoodDark);
+            trunkMesh.position.y = 0.75;
+            trunkMesh.castShadow = true;
+            trunkMesh.receiveShadow = true;
+            treeGroup.add(trunkMesh);
+
+            // Leaves (overlapping icosahedrons for a stylized look)
+            const leafGeo = new THREE.IcosahedronGeometry(1, 0); // 0 detail = low poly
+            const leafMat = new THREE.MeshStandardMaterial({ color: 0x4caf50, flatShading: true });
+            
+            const leaf1 = new THREE.Mesh(leafGeo, leafMat);
+            leaf1.position.set(0, 2, 0);
+            leaf1.scale.set(1.2, 1.5, 1.2);
+            leaf1.castShadow = true;
+            treeGroup.add(leaf1);
+            
+            const leaf2 = new THREE.Mesh(leafGeo, leafMat);
+            leaf2.position.set(0.5, 1.5, 0);
+            leaf2.scale.set(0.8, 0.8, 0.8);
+            leaf2.castShadow = true;
+            treeGroup.add(leaf2);
+
+            const leaf3 = new THREE.Mesh(leafGeo, leafMat);
+            leaf3.position.set(-0.5, 1.6, 0.5);
+            leaf3.scale.set(0.9, 0.9, 0.9);
+            leaf3.castShadow = true;
+            treeGroup.add(leaf3);
+
+            treeGroup.position.set(x, 0, z);
+            treeGroup.scale.set(scale, scale, scale);
+            scene.add(treeGroup);
+        }
+
+        // Scatter some trees around
+        createTree(-8, -5, 1.2);
+        createTree(-10, -2, 0.8);
+        createTree(7, -8, 1.5);
+        createTree(10, 4, 1.0);
+        createTree(-5, 12, 1.3);
+
+        // 5. Rocks
+        function createRock(x, z, scale) {
+            const rockGeo = new THREE.DodecahedronGeometry(1, 0);
+            const rockMesh = new THREE.Mesh(rockGeo, matStone);
+            rockMesh.position.set(x, 0.2, z);
+            rockMesh.scale.set(scale, scale * 0.6, scale * 1.2);
+            rockMesh.rotation.set(Math.random(), Math.random(), Math.random());
+            rockMesh.castShadow = true;
+            rockMesh.receiveShadow = true;
+            scene.add(rockMesh);
+        }
+        
+        createRock(4, 5, 0.8);
+        createRock(5, 4.5, 0.5);
+        createRock(-6, 2, 1.1);
+
+        // 6. Moving Clouds
+        const clouds = [];
+        const cloudMat = new THREE.MeshStandardMaterial({ 
+            color: 0xffffff, 
+            flatShading: true,
+            transparent: true,
+            opacity: 0.9
+        });
+
+        function createCloud() {
+            const cloudGroup = new THREE.Group();
+            // A cloud is made of 3 to 6 overlapping spheres
+            const numParts = 3 + Math.floor(Math.random() * 4);
+            
+            for (let i = 0; i < numParts; i++) {
+                // Low poly spheres
+                const partGeo = new THREE.IcosahedronGeometry(1.5 + Math.random() * 2, 1);
+                const partMesh = new THREE.Mesh(partGeo, cloudMat);
+                
+                partMesh.position.set(
+                    (Math.random() - 0.5) * 4,
+                    (Math.random() - 0.5) * 2,
+                    (Math.random() - 0.5) * 3
+                );
+                partMesh.castShadow = true;
+                cloudGroup.add(partMesh);
+            }
+            
+            // Randomize starting position
+            resetCloudPosition(cloudGroup, true);
+            
+            // Attach a random speed property
+            cloudGroup.userData.speed = 0.01 + Math.random() * 0.02;
+            
+            scene.add(cloudGroup);
+            clouds.push(cloudGroup);
+        }
+
+        function resetCloudPosition(cloud, initial = false) {
+            cloud.position.x = initial ? (Math.random() * 80 - 40) : -45;
+            cloud.position.y = 15 + Math.random() * 10;
+            cloud.position.z = -10 - Math.random() * 30;
+            
+            // Random scale
+            const scale = 0.8 + Math.random() * 1.5;
+            cloud.scale.set(scale, scale * 0.6, scale); // Flatten clouds slightly
+        }
+
+        // Generate 8 clouds
+        for (let i = 0; i < 8; i++) {
+            createCloud();
+        }
+
+        // --- ANIMATION LOOP ---
+        const clock = new THREE.Clock();
+
+        // Hide loading text once everything is generated
+        document.getElementById('loading').style.opacity = '0';
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+            const time = clock.getElapsedTime();
+
+            // 1. Rotate Windmill Blades
+            // Smooth constant rotation
+            rotorGroup.rotation.z -= delta * 1.5;
+
+            // 2. Animate Clouds (Move left to right)
+            clouds.forEach(cloud => {
+                cloud.position.x += cloud.userData.speed;
+                // Slowly bob up and down
+                cloud.position.y += Math.sin(time * 2 + cloud.position.x) * 0.005;
+
+                // Reset position if it goes too far off-screen
+                if (cloud.position.x > 45) {
+                    resetCloudPosition(cloud);
+                }
+            });
+
+            // Update controls for damping
+            controls.update();
+
+            renderer.render(scene, camera);
+        }
+
+        // Start animation
+        animate();
+
+        // --- WINDOW RESIZE HANDLER ---
+        window.addEventListener('resize', onWindowResize, false);
+        
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sunny Acres — Offline Self-Contained Farm Scene</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; font-family: Inter, system-ui, sans-serif; }
+    body {
+      background: linear-gradient(to bottom, #b9e7ff 0%, #e8f8ff 45%, #ffffff 100%);
+      color: #254538;
+    }
+    canvas { display: block; width: 100vw; height: 100vh; cursor: grab; }
+    canvas:active { cursor: grabbing; }
+    .hud {
+      position: fixed; left: 20px; top: 20px; z-index: 3; width: min(520px, calc(100vw - 40px));
+      user-select: none; pointer-events: none;
+    }
+    .chip {
+      display: inline-block; padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,0.75);
+      border: 1px solid rgba(71,130,89,0.15); box-shadow: 0 10px 30px rgba(79,130,95,0.12);
+      font-size: 11px; letter-spacing: .14em; text-transform: uppercase; font-weight: 800; color: #2c6b4e; backdrop-filter: blur(12px);
+      margin-bottom: 12px;
+    }
+    h1 { margin: 0; font-size: clamp(34px, 7vw, 84px); line-height: .94; letter-spacing: -.05em; }
+    .sub { margin-top: 14px; font-size: 14px; line-height: 1.5; color: rgba(37,69,56,.82); max-width: 460px; }
+    .legend { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,0.74);
+      border: 1px solid rgba(71,130,89,0.15); box-shadow: 0 10px 28px rgba(79,130,95,0.1); font-size: 12px; color: rgba(34,64,49,.84);
+      backdrop-filter: blur(10px);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #76c96a; box-shadow: 0 0 0 4px rgba(118,201,106,.18); }
+    .bottom {
+      position: fixed; left: 20px; bottom: 16px; z-index: 3; padding: 10px 12px; border-radius: 14px; background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(71,130,89,0.14); box-shadow: 0 8px 28px rgba(79,130,95,0.1); font-size: 12px; color: rgba(37,69,56,.8);
+      backdrop-filter: blur(10px); pointer-events: none;
+    }
+    .overlay { position: fixed; inset: 0; z-index: 2; pointer-events: none; background:
+      radial-gradient(circle at 50% 70%, rgba(255, 245, 220, .22), transparent 26%),
+      radial-gradient(circle at 83% 18%, rgba(255,255,255,.5), transparent 18%),
+      radial-gradient(circle at 15% 16%, rgba(255,255,255,.28), transparent 16%),
+      linear-gradient(to top, rgba(255,255,255,.08), transparent 28%);
+    }
+  </style>
+</head>
+<body>
+<canvas id="glcanvas"></canvas>
+<div class="hud">
+  <div class="chip">Sunny Acres · offline self-contained fallback</div>
+  <h1>SUNNY<br>ACRES</h1>
+  <div class="sub">This version does not use a CDN. It is fully self-contained and should open directly from the file, even when the app/browser blocks external Three.js loading. It keeps the same isometric 3D farm direction: fields, orchard, barn, silo, animals, pond, market and cozy decoration.</div>
+  <div class="legend">
+    <div class="pill"><span class="dot"></span> pure HTML / CSS / JS</div>
+    <div class="pill"><span class="dot"></span> no CDN · raw WebGL fallback</div>
+    <div class="pill"><span class="dot"></span> drag to rotate · wheel to zoom</div>
+  </div>
+</div>
+<div class="bottom">Offline/self-contained version — no CDN, no external assets, no gameplay systems yet.</div>
+<div class="overlay"></div>
+<script>
+"use strict";
+const canvas = document.getElementById('glcanvas');
+const gl = canvas.getContext('webgl', { antialias: true, alpha: false, powerPreference: 'high-performance' });
+if (!gl) throw new Error('WebGL not supported');
+const TAU = Math.PI * 2;
+const Vec3 = { sub:(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]], cross:(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]], normalize(v){const l=Math.hypot(v[0],v[1],v[2])||1;return[v[0]/l,v[1]/l,v[2]/l];} };
+const Mat4 = {
+  identity(){return new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);},
+  multiply(a,b){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)o[c*4+r]=a[0*4+r]*b[c*4+0]+a[1*4+r]*b[c*4+1]+a[2*4+r]*b[c*4+2]+a[3*4+r]*b[c*4+3];return o;},
+  perspective(fovy,aspect,near,far){const f=1/Math.tan(fovy/2),nf=1/(near-far),o=new Float32Array(16);o[0]=f/aspect;o[5]=f;o[10]=(far+near)*nf;o[11]=-1;o[14]=2*far*near*nf;return o;},
+  lookAt(eye,center,up){const z=Vec3.normalize(Vec3.sub(eye,center)),x=Vec3.normalize(Vec3.cross(up,z)),y=Vec3.cross(z,x),o=new Float32Array(16);o[0]=x[0];o[1]=y[0];o[2]=z[0];o[3]=0;o[4]=x[1];o[5]=y[1];o[6]=z[1];o[7]=0;o[8]=x[2];o[9]=y[2];o[10]=z[2];o[11]=0;o[12]=-(x[0]*eye[0]+x[1]*eye[1]+x[2]*eye[2]);o[13]=-(y[0]*eye[0]+y[1]*eye[1]+y[2]*eye[2]);o[14]=-(z[0]*eye[0]+z[1]*eye[1]+z[2]*eye[2]);o[15]=1;return o;}
+};
+const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+const mix=(a,b,t)=>a+(b-a)*t;
+const hash=n=>{const x=Math.sin(n*127.1)*43758.5453123;return x-Math.floor(x);};
+function h(x,z){return Math.sin(x*.22)*.09+Math.cos(z*.18)*.09+Math.sin((x+z)*.11)*.03;}
+function makeShader(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s;}
+function makeProgram(vs,fs){const p=gl.createProgram();gl.attachShader(p,makeShader(gl.VERTEX_SHADER,vs));gl.attachShader(p,makeShader(gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));return p;}
+const meshProgram = makeProgram(`
+attribute vec3 aPosition; attribute vec3 aNormal; attribute vec4 aColor;
+uniform mat4 uProjection; uniform mat4 uView; uniform mat4 uModel; uniform vec3 uCamera;
+varying vec3 vWorld; varying vec3 vNormal; varying vec4 vColor;
+void main(){vec4 world=uModel*vec4(aPosition,1.0);vWorld=world.xyz;vNormal=normalize((uModel*vec4(aNormal,0.0)).xyz);vColor=aColor;gl_Position=uProjection*uView*world;}
+`, `
+precision mediump float; varying vec3 vWorld; varying vec3 vNormal; varying vec4 vColor; uniform vec3 uCamera;
+void main(){vec3 n=normalize(vNormal);vec3 l1=normalize(vec3(-0.4,1.0,0.3));vec3 l2=normalize(vec3(0.6,0.4,-0.5));float d1=max(dot(n,l1),0.0);float d2=max(dot(n,l2),0.0)*0.18;float rim=pow(1.0-max(dot(normalize(uCamera-vWorld),n),0.0),2.0);vec3 color=vColor.rgb*(0.56+d1*0.72+d2)+vec3(1.0,0.95,0.88)*rim*0.08+vColor.rgb*vColor.a*0.15;float fog=smoothstep(22.0,52.0,distance(uCamera,vWorld));vec3 fogColor=vec3(0.86,0.95,0.99);color=mix(color,fogColor,fog*0.23);gl_FragColor=vec4(color,1.0);}
+`);
+const pointProgram = makeProgram(`
+attribute vec3 aPosition; attribute vec4 aColor; attribute float aSize; varying vec4 vColor; uniform mat4 uProjection; uniform mat4 uView; uniform float uPixelRatio;
+void main(){vec4 viewPos=uView*vec4(aPosition,1.0);vColor=aColor;gl_Position=uProjection*viewPos;gl_PointSize=aSize*uPixelRatio*clamp(16.0/-viewPos.z,0.45,3.0);}
+`, `
+precision mediump float; varying vec4 vColor; void main(){vec2 p=gl_PointCoord-vec2(0.5);float a=smoothstep(0.5,0.0,length(p));gl_FragColor=vec4(vColor.rgb,vColor.a*a);} 
+`);
+function createMesh(vertices){const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.STATIC_DRAW);return{buffer:b,count:vertices.length/10,stride:10*4};}
+function createDynamicBuffer(maxFloats){const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,maxFloats*4,gl.DYNAMIC_DRAW);return b;}
+function pushVertex(out,p,n,c){out.push(p[0],p[1],p[2],n[0],n[1],n[2],c[0],c[1],c[2],c[3]);}
+function pushTri(out,a,b,c,col){const n=Vec3.normalize(Vec3.cross(Vec3.sub(b,a),Vec3.sub(c,a)));pushVertex(out,a,n,col);pushVertex(out,b,n,col);pushVertex(out,c,n,col);} 
+function pushQuad(out,a,b,c,d,col){pushTri(out,a,b,c,col);pushTri(out,a,c,d,col);} 
+function pushBox(out,x,y,z,sx,sy,sz,top,side){const x0=x-sx/2,x1=x+sx/2,y0=y,y1=y+sy,z0=z-sz/2,z1=z+sz/2;pushQuad(out,[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1],side);pushQuad(out,[x1,y0,z0],[x0,y0,z0],[x0,y1,z0],[x1,y1,z0],side);pushQuad(out,[x0,y0,z0],[x0,y0,z1],[x0,y1,z1],[x0,y1,z0],side);pushQuad(out,[x1,y0,z1],[x1,y0,z0],[x1,y1,z0],[x1,y1,z1],side);pushQuad(out,[x0,y1,z1],[x1,y1,z1],[x1,y1,z0],[x0,y1,z0],top);} 
+function pushPrism(out,x,y,z,r,h,sides,top,side){const topRing=[],bot=[];for(let i=0;i<sides;i++){const a=i/sides*TAU,px=x+Math.cos(a)*r,pz=z+Math.sin(a)*r;bot.push([px,y,pz]);topRing.push([px,y+h,pz]);}for(let i=0;i<sides;i++){const ni=(i+1)%sides;pushQuad(out,bot[i],bot[ni],topRing[ni],topRing[i],side);}for(let i=1;i<sides-1;i++)pushTri(out,topRing[0],topRing[i],topRing[i+1],top);} 
+function pushCone(out,x,y,z,r,h,sides,col){const tip=[x,y+h,z],ring=[];for(let i=0;i<sides;i++){const a=i/sides*TAU;ring.push([x+Math.cos(a)*r,y,z+Math.sin(a)*r]);}for(let i=0;i<sides;i++){const ni=(i+1)%sides;pushTri(out,ring[i],ring[ni],tip,col);} }
+function pushGableRoof(out,x,y,z,sx,sy,sz,col){const x0=x-sx/2,x1=x+sx/2,z0=z-sz/2,z1=z+sz/2;pushQuad(out,[x0,y,z0],[x,y+sy,z0],[x,y+sy,z1],[x0,y,z1],col);pushQuad(out,[x,y+sy,z0],[x1,y,z0],[x1,y,z1],[x,y+sy,z1],col);pushTri(out,[x0,y,z1],[x1,y,z1],[x,y+sy,z1],col);pushTri(out,[x1,y,z0],[x0,y,z0],[x,y+sy,z0],col);} 
+function pushCrossPlant(out,x,y,z,h,w,c){pushQuad(out,[x-w,y,z-w],[x+w,y,z+w],[x+w,y+h,z+w],[x-w,y+h,z-w],c);pushQuad(out,[x-w,y,z+w],[x+w,y,z-w],[x+w,y+h,z-w],[x-w,y+h,z+w],c);} 
+function buildScene(){const out=[];const tile=1.8;const grassT=[0.53,0.82,0.46,0.05],grassS=[0.40,0.67,0.34,0.02],pathT=[0.89,0.79,0.59,0.02],pathS=[0.75,0.64,0.45,0.01],soilT=[0.64,0.43,0.25,0.03],soilS=[0.50,0.33,0.18,0.01],waterT=[0.43,0.80,0.96,0.22],waterS=[0.29,0.66,0.82,0.02];
+  function type(tx,tz){if(tx>=-4&&tx<=1&&tz>=-1&&tz<=4)return 'field'; if(tx>=4&&tx<=6&&tz>=-5&&tz<=-2)return 'pond'; if(tx>=-9&&tx<=-5&&tz>=-6&&tz<=-2)return 'barnyard'; if(tx>=4&&tx<=8&&tz>=1&&tz<=5)return 'orchard'; if(tx>=-2&&tx<=2&&tz>=6&&tz<=8)return 'market'; if((tx===-5&&tz>=-1&&tz<=4)||(tz===5&&tx>=-5&&tx<=8)||(tx===2&&tz>=0&&tz<=8)||(tz===0&&tx>=-4&&tx<=6)) return 'path'; return 'grass';}
+  for(let tz=-8;tz<=9;tz++)for(let tx=-10;tx<=10;tx++){const x=tx*tile,z=tz*tile,y=h(tx,tz),t=type(tx,tz);if(t==='pond')pushBox(out,x,y-.22,z,tile*.98,.18,tile*.98,waterT,waterS);else if(t==='path')pushBox(out,x,y-.07,z,tile*.98,.24,tile*.98,pathT,pathS);else if(t==='field'){pushBox(out,x,y-.08,z,tile*.98,.28,tile*.98,soilT,soilS);const crop=((tx+tz)%3+3)%3;for(let rz=-1;rz<=1;rz++)for(let rx=-1;rx<=1;rx++){const cx=x+rx*.42+((rz&1)?.08:-.08),cz=z+rz*.42,cy=y+.2;if(crop===0)pushCrossPlant(out,cx,cy,cz,.52,.08,[0.43,0.84,0.32,0.08]);else if(crop===1){pushCrossPlant(out,cx,cy,cz,.72,.06,[0.66,0.83,0.28,0.08]);pushBox(out,cx,cy,cz,.1,.48,.1,[0.91,0.67,0.16,0.05],[0.68,0.44,0.09,0.01]);} else {pushCrossPlant(out,cx,cy,cz,.58,.07,[0.31,0.79,0.26,0.08]);pushBox(out,cx,cy+.09,cz,.14,.14,.14,[0.95,0.45,0.15,0.05],[0.80,0.31,0.09,0.01]);}}} else pushBox(out,x,y-.05,z,tile*.98,.22,tile*.98,grassT,grassS);} 
+  // fences around field
+  const postT=[0.94,0.86,0.69,0.02],postS=[0.79,0.71,0.54,0.01];
+  function post(x,z){pushBox(out,x,h(x/tile,z/tile)+.15,z,.16,.8,.16,postT,postS);} function rail(x,z,sx,sz){const y=h(x/tile,z/tile)+.42;pushBox(out,x,y,z,sx,.1,sz,postT,postS);pushBox(out,x,y+.22,z,sx,.1,sz,postT,postS);} const minX=-4*tile-tile*.52,maxX=1*tile+tile*.52,minZ=-1*tile-tile*.52,maxZ=4*tile+tile*.52;for(let i=0;i<=6;i++){const x=minX+i*tile;post(x,minZ);post(x,maxZ);}for(let i=0;i<=6;i++){const z=minZ+i*tile;post(minX,z);post(maxX,z);}for(let i=0;i<6;i++){const x=minX+i*tile+tile*.5;rail(x,minZ,tile,.1);rail(x,maxZ,tile,.1);}for(let i=0;i<6;i++){const z=minZ+i*tile+tile*.5;rail(minX,z,.1,tile);rail(maxX,z,.1,tile);} 
+  // barn / silo / coop / farmhouse / market stall / mill
+  const barnX=-12,barnZ=-7,barnY=h(barnX/tile,barnZ/tile)+.1; pushBox(out,barnX,barnY,barnZ,6.4,3.8,4.8,[0.88,0.22,0.21,0.06],[0.77,0.16,0.15,0.02]); pushGableRoof(out,barnX,barnY+3.75,barnZ,7.0,1.8,5.2,[0.98,0.93,0.88,0.03]); pushBox(out,barnX,barnY,barnZ+2.42,1.7,2.4,.25,[0.96,0.89,0.70,0.02],[0.85,0.77,0.57,0.01]);
+  const siloX=-7.2,siloZ=-7.6,siloY=h(siloX/tile,siloZ/tile)+.1; pushPrism(out,siloX,siloY,siloZ,1.2,5.2,12,[0.88,0.93,0.96,0.04],[0.76,0.84,0.90,0.02]); pushCone(out,siloX,siloY+5.2,siloZ,1.35,1.6,12,[0.95,0.31,0.24,0.05]);
+  const coopX=-9.6,coopZ=0.4,coopY=h(coopX/tile,coopZ/tile)+.08; pushBox(out,coopX,coopY,coopZ,3.2,1.9,2.8,[0.99,0.83,0.39,0.03],[0.92,0.72,0.28,0.01]); pushGableRoof(out,coopX,coopY+1.85,coopZ,3.7,1.05,3.2,[0.90,0.35,0.24,0.04]);
+  const houseX=10.2,houseZ=8.2,houseY=h(houseX/tile,houseZ/tile)+.08; pushBox(out,houseX,houseY,houseZ,4.6,2.9,4.2,[0.98,0.88,0.54,0.03],[0.92,0.80,0.49,0.01]); pushGableRoof(out,houseX,houseY+2.85,houseZ,5.0,1.25,4.7,[0.89,0.37,0.26,0.04]);
+  const marketX=.2,marketZ=12.6,marketY=h(marketX/tile,marketZ/tile)+.08; pushBox(out,marketX,marketY,marketZ,3.6,1.1,2.1,[0.91,0.69,0.34,0.03],[0.80,0.60,0.24,0.01]); pushBox(out,marketX,marketY+1.1,marketZ,3.8,.14,2.3,[0.92,0.28,0.25,0.05],[0.80,0.18,0.18,0.01]);
+  const millX=4.4,millZ=8.8,millY=h(millX/tile,millZ/tile)+.08; pushBox(out,millX,millY,millZ,3.0,3.1,2.8,[0.97,0.88,0.72,0.03],[0.89,0.78,0.61,0.01]); pushGableRoof(out,millX,millY+3.0,millZ,3.4,1.1,3.1,[0.90,0.53,0.25,0.04]);
+  // windmill blades as thin boxes
+  const hubY=millY+4.1; pushBox(out,millX+1.65,hubY,millZ,0.18,0.18,0.18,[0.70,0.50,0.24,0.01],[0.70,0.50,0.24,0.01]); pushBox(out,millX+1.98,hubY,millZ,1.0,0.08,0.2,[0.98,0.97,0.93,0.01],[0.98,0.97,0.93,0.01]); pushBox(out,millX+1.65,hubY+.35,millZ,0.2,1.0,0.08,[0.98,0.97,0.93,0.01],[0.98,0.97,0.93,0.01]);
+  // orchard trees & perimeter trees
+  function tree(x,z,s,fruit){const y=h(x/tile,z/tile)+.1;pushBox(out,x,y,z,.42*s,1.7*s,.42*s,[0.67,0.47,0.28,0.02],[0.57,0.39,0.22,0.01]);pushPrism(out,x,y+1.4*s,z,1.1*s,.75*s,8,[0.39,0.75,0.33,0.08],[0.31,0.63,0.26,0.02]);pushPrism(out,x,y+2.0*s,z,.8*s,.65*s,8,[0.45,0.80,0.37,0.08],[0.34,0.68,0.29,0.02]);if(fruit){for(let i=0;i<5;i++){const a=i/5*TAU+hash(x*3+z*5+i)*.3;pushBox(out,x+Math.cos(a)*.6*s,y+1.75*s+hash(i*12.1)*.35,z+Math.sin(a)*.55*s,.15*s,.15*s,.15*s,[0.92,0.23,0.19,0.05],[0.78,0.18,0.15,0.01]);}}}
+  [[6,2,.95,true],[8,2,.95,true],[10,2,.95,true],[6,4,.95,true],[8,4,.95,true],[10,4,.95,true],[6,6,.95,true],[8,6,.95,true],[10,6,.95,true],[-15,4,1,false],[-14,-2,1.1,false],[13,-3,1,false],[14,1,1,false],[14,6,1,false],[-2,15,1,false],[7,14,1,false],[-6,13,1,false]].forEach(p=>tree(p[0],p[1],p[2],p[3]));
+  // hay bales and crates
+  const hayT=[0.95,0.81,0.32,0.04], hayS=[0.86,0.67,0.21,0.01]; [[-9.2,-2.8],[-8.0,-3.6],[-8.7,-4.5],[-6.9,-2.7]].forEach(([x,z])=>pushBox(out,x,h(x/tile,z/tile)+.08,z,1.1,.7,1.1,hayT,hayS));
+  [[-1.0,12.2,[0.93,0.28,0.21,0.05]],[0.0,12.7,[0.93,0.66,0.19,0.05]],[1.0,12.3,[0.48,0.82,0.34,0.05]],[.4,13.0,[0.78,0.49,0.94,0.05]]].forEach(([x,z,c])=>pushBox(out,x,h(x/tile,z/tile)+1.15,z,.45,.22,.45,c,c));
+  // animals (simple chunky forms)
+  function animal(x,z,body,accent,scale){const y=h(x/tile,z/tile)+.08; pushBox(out,x,y+.32*scale,z,.9*scale,.45*scale,.48*scale,body,body); pushBox(out,x+.33*scale,y+.55*scale,z,.34*scale,.26*scale,.28*scale,accent,accent);[-.28,.28].forEach(dx=>pushBox(out,x+dx*scale,y,z-.12*scale,.08*scale,.34*scale,.08*scale,accent,accent));[-.28,.28].forEach(dx=>pushBox(out,x+dx*scale,y,z+.12*scale,.08*scale,.34*scale,.08*scale,accent,accent)); }
+  animal(-11.4,-.2,[0.98,0.96,0.95,0.03],[0.88,0.71,0.63,0.01],1.2); animal(-12.8,.7,[0.98,0.96,0.95,0.03],[0.88,0.71,0.63,0.01],1.0); animal(-9.2,1.0,[0.98,0.78,0.82,0.03],[0.87,0.59,0.69,0.01],1.0); animal(-8.2,.2,[0.98,0.78,0.82,0.03],[0.87,0.59,0.69,0.01],.95); animal(-8.8,1.9,[0.98,0.97,0.82,0.03],[0.95,0.66,0.18,0.01],.6); animal(-10.0,2.2,[0.98,0.97,0.82,0.03],[0.95,0.66,0.18,0.01],.55);
+  // flower rows
+  for(let i=0;i<24;i++){const x=-4.2+(i%6)*1.1,z=10.8+Math.floor(i/6)*.62,y=h(x/tile,z/tile)+.14;const cols=[[0.97,0.31,0.46,0.05],[1.0,0.81,0.22,0.05],[0.58,0.38,1.0,0.05]][i%3];pushBox(out,x,y,z,.12,.18,.12,cols,cols);} 
+  // bridge
+  const bx=9.8,bz=-6.4; pushBox(out,bx,h(bx/tile,bz/tile)+0.0,bz,4.2,.16,1.1,[0.74,0.53,0.29,0.03],[0.62,0.44,0.23,0.01]);
+  return createMesh(out);
+}
+const farmMesh = buildScene();
+const pointBuffer = createDynamicBuffer(2000*8); let pointCount=0; const cloudPts=[], fireflies=[];
+for(let i=0;i<120;i++)cloudPts.push({x:-22+hash(i*1.3)*46,y:10+hash(i*2.7)*14,z:-14+hash(i*4.9)*36,size:10+hash(i*6.5)*24,alpha:.14+hash(i*3.1)*.12,phase:hash(i*8.8)*TAU});
+for(let i=0;i<26;i++)fireflies.push({x:-2+hash(i*2.1)*8,z:10+hash(i*3.3)*5,y:2.3+hash(i*4.7)*1.1,phase:hash(i*5.1)*TAU,size:4+hash(i*6.2)*4});
+function updatePoints(t){const d=[];for(const c of cloudPts){d.push(c.x+Math.sin(t*.07+c.phase)*2.2,c.y+Math.cos(t*.11+c.phase)*.35,c.z+Math.sin(t*.09+c.phase)*1.6,1,1,1,c.alpha,c.size);}for(const f of fireflies){d.push(f.x+Math.cos(t*1.5+f.phase)*.7,f.y+Math.sin(t*3.0+f.phase)*.25,f.z+Math.sin(t*1.8+f.phase)*.55,1,.88,.34,.9,f.size);}pointCount=d.length/8;gl.bindBuffer(gl.ARRAY_BUFFER,pointBuffer);gl.bufferSubData(gl.ARRAY_BUFFER,0,new Float32Array(d));}
+let width=1,height=1,pixelRatio=1,projection=Mat4.identity(),view=Mat4.identity(),camera=[18,16,18],target=[0,2,0],yaw=Math.PI*.25,pitch=.58,distance=31,targetYaw=yaw,targetPitch=pitch,targetDistance=distance,time=0,last=performance.now()*0.001,dragging=false,px=0,py=0;
+function resize(){pixelRatio=Math.min(window.devicePixelRatio||1,2);width=Math.floor(innerWidth*pixelRatio);height=Math.floor(innerHeight*pixelRatio);canvas.width=width;canvas.height=height;gl.viewport(0,0,width,height);projection=Mat4.perspective(34*Math.PI/180,width/height,.1,120);} 
+function setMeshAttrs(){gl.bindBuffer(gl.ARRAY_BUFFER,farmMesh.buffer);const s=farmMesh.stride;const p=gl.getAttribLocation(meshProgram,'aPosition'),n=gl.getAttribLocation(meshProgram,'aNormal'),c=gl.getAttribLocation(meshProgram,'aColor');gl.enableVertexAttribArray(p);gl.enableVertexAttribArray(n);gl.enableVertexAttribArray(c);gl.vertexAttribPointer(p,3,gl.FLOAT,false,s,0);gl.vertexAttribPointer(n,3,gl.FLOAT,false,s,3*4);gl.vertexAttribPointer(c,4,gl.FLOAT,false,s,6*4);} 
+function setPointAttrs(){gl.bindBuffer(gl.ARRAY_BUFFER,pointBuffer);const p=gl.getAttribLocation(pointProgram,'aPosition'),c=gl.getAttribLocation(pointProgram,'aColor'),s=gl.getAttribLocation(pointProgram,'aSize');gl.enableVertexAttribArray(p);gl.enableVertexAttribArray(c);gl.enableVertexAttribArray(s);gl.vertexAttribPointer(p,3,gl.FLOAT,false,8*4,0);gl.vertexAttribPointer(c,4,gl.FLOAT,false,8*4,3*4);gl.vertexAttribPointer(s,1,gl.FLOAT,false,8*4,7*4);} 
+function render(ms){const now=ms*.001,dt=Math.min(now-last,.05);last=now;time+=dt;if(!dragging)targetYaw+=dt*.08;yaw=mix(yaw,targetYaw,.12);pitch=mix(pitch,targetPitch,.12);distance=mix(distance,targetDistance,.12);camera=[target[0]+Math.cos(yaw)*Math.cos(pitch)*distance,target[1]+Math.sin(pitch)*distance,target[2]+Math.sin(yaw)*Math.cos(pitch)*distance];view=Mat4.lookAt(camera,target,[0,1,0]);updatePoints(time);gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);gl.cullFace(gl.BACK);gl.depthMask(true);gl.disable(gl.BLEND);gl.clearColor(.73,.90,1.0,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(meshProgram);setMeshAttrs();gl.uniformMatrix4fv(gl.getUniformLocation(meshProgram,'uProjection'),false,projection);gl.uniformMatrix4fv(gl.getUniformLocation(meshProgram,'uView'),false,view);gl.uniformMatrix4fv(gl.getUniformLocation(meshProgram,'uModel'),false,Mat4.identity());gl.uniform3fv(gl.getUniformLocation(meshProgram,'uCamera'),new Float32Array(camera));gl.drawArrays(gl.TRIANGLES,0,farmMesh.count);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);gl.useProgram(pointProgram);setPointAttrs();gl.uniformMatrix4fv(gl.getUniformLocation(pointProgram,'uProjection'),false,projection);gl.uniformMatrix4fv(gl.getUniformLocation(pointProgram,'uView'),false,view);gl.uniform1f(gl.getUniformLocation(pointProgram,'uPixelRatio'),pixelRatio);gl.drawArrays(gl.POINTS,0,pointCount);gl.depthMask(true);requestAnimationFrame(render);} 
+addEventListener('resize',resize);canvas.addEventListener('mousedown',e=>{dragging=true;px=e.clientX;py=e.clientY;});addEventListener('mouseup',()=>dragging=false);addEventListener('mousemove',e=>{if(!dragging)return;const dx=e.clientX-px,dy=e.clientY-py;px=e.clientX;py=e.clientY;targetYaw-=dx*.008;targetPitch=clamp(targetPitch-dy*.005,.32,1.02);});canvas.addEventListener('wheel',e=>{e.preventDefault();targetDistance=clamp(targetDistance+e.deltaY*.015,18,48);},{passive:false});
+resize();requestAnimationFrame(render);
+</script>
+</body>
+</html>

@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sunny Acres — Isometric 2.5D Canvas Demo</title>
+<style>
+  :root {
+    --ui: rgba(255,255,255,.82);
+    --ink: #244734;
+    --muted: #5f746b;
+    --accent: #55b96f;
+  }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    background: linear-gradient(#c8f0ff, #ecfbff 60%, #d8f9c8);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: var(--ink);
+  }
+
+  canvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    cursor: grab;
+  }
+
+  canvas:active {
+    cursor: grabbing;
+  }
+
+  .hud {
+    position: fixed;
+    left: 24px;
+    top: 24px;
+    max-width: 460px;
+    padding: 18px 20px;
+    border-radius: 22px;
+    background: var(--ui);
+    box-shadow: 0 18px 45px rgba(35, 72, 60, .16);
+    backdrop-filter: blur(10px);
+    pointer-events: none;
+  }
+
+  .kicker {
+    font-size: 12px;
+    letter-spacing: .18em;
+    font-weight: 800;
+    color: #2f7a4c;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin: 8px 0 6px;
+    font-size: clamp(36px, 6vw, 82px);
+    line-height: .86;
+    letter-spacing: -.06em;
+  }
+
+  p {
+    margin: 0;
+    line-height: 1.45;
+    color: var(--muted);
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .chip {
+    padding: 7px 11px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.72);
+    box-shadow: inset 0 0 0 1px rgba(44, 96, 64, .08);
+    font-size: 13px;
+    font-weight: 650;
+  }
+
+  .footer {
+    position: fixed;
+    left: 24px;
+    bottom: 20px;
+    padding: 10px 14px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.75);
+    color: #607469;
+    font-size: 13px;
+    box-shadow: 0 12px 30px rgba(35, 72, 60, .12);
+    pointer-events: none;
+  }
+
+  .panel {
+    position: fixed;
+    right: 24px;
+    top: 24px;
+    width: 260px;
+    padding: 16px;
+    border-radius: 22px;
+    background: rgba(255,255,255,.82);
+    box-shadow: 0 18px 45px rgba(35, 72, 60, .14);
+    backdrop-filter: blur(10px);
+    pointer-events: none;
+  }
+
+  .panel h2 {
+    margin: 0 0 10px;
+    font-size: 13px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: #2f7a4c;
+  }
+
+  .row {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid rgba(38, 83, 61, .12);
+    padding: 8px 0;
+    font-size: 14px;
+  }
+
+  .row b {
+    color: #254936;
+  }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div class="hud">
+  <div class="kicker">Procedural Canvas · Isometric 2.5D</div>
+  <h1>SUNNY<br>ACRES</h1>
+  <p>
+    Dette er ikke ekte 3D. Det er 2D Canvas med isometrisk projeksjon,
+    høyde, depth sorting og kodegenererte objekter.
+  </p>
+  <div class="chips">
+    <span class="chip">grid-basert</span>
+    <span class="chip">ingen sprites</span>
+    <span class="chip">ingen modeller</span>
+    <span class="chip">klikkbare tiles</span>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>Hva dette viser</h2>
+  <div class="row"><span>2D-logikk</span><b>ja</b></div>
+  <div class="row"><span>Isometrisk visning</span><b>ja</b></div>
+  <div class="row"><span>Høyde på bygg</span><b>ja</b></div>
+  <div class="row"><span>Depth sorting</span><b>ja</b></div>
+  <div class="row"><span>Procedural assets</span><b>ja</b></div>
+</div>
+
+<div class="footer">
+  Dra for å panorere · musehjul for zoom · klikk på tiles
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+
+  const TILE_W = 84;
+  const TILE_H = 42;
+  const MAP_W = 18;
+  const MAP_H = 14;
+
+  const camera = {
+    x: 0,
+    y: 0,
+    zoom: 1,
+    dragging: false,
+    lastX: 0,
+    lastY: 0
+  };
+
+  let selectedTile = { x: 5, y: 7 };
+  let time = 0;
+
+  const rand = mulberry32(1337);
+
+  function resize() {
+    const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    canvas.width = Math.floor(innerWidth * dpr);
+    canvas.height = Math.floor(innerHeight * dpr);
+    canvas.style.width = innerWidth + "px";
+    canvas.style.height = innerHeight + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    if (camera.x === 0 && camera.y === 0) {
+      camera.x = innerWidth * 0.54;
+      camera.y = innerHeight * 0.23;
+      camera.zoom = Math.min(1.08, Math.max(.72, innerWidth / 1500));
+    }
+  }
+
+  window.addEventListener("resize", resize);
+  resize();
+
+  // ------------------------------------------------------------
+  // KJERNEN I 2.5D:
+  // En vanlig 2D-gridposisjon (x, y) projiseres til skjermkoordinat.
+  //
+  // x - y bestemmer horisontal isometrisk posisjon.
+  // x + y bestemmer vertikal isometrisk posisjon.
+  // z trekkes fra skjerm-y for å gi høyde.
+  // ------------------------------------------------------------
+  function iso(x, y, z = 0) {
+    return {
+      x: (x - y) * TILE_W * 0.5,
+      y: (x + y) * TILE_H * 0.5 - z
+    };
+  }
+
+  function worldToScreen(x, y, z = 0) {
+    const p = iso(x, y, z);
+    return {
+      x: camera.x + p.x * camera.zoom,
+      y: camera.y + p.y * camera.zoom
+    };
+  }
+
+  function screenToTile(screenX, screenY) {
+    const x = (screenX - camera.x) / camera.zoom;
+    const y = (screenY - camera.y) / camera.zoom;
+
+    const tx = y / TILE_H + x / TILE_W;
+    const ty = y / TILE_H - x / TILE_W;
+
+    return {
+      x: Math.floor(tx),
+      y: Math.floor(ty)
+    };
+  }
+
+  function withCamera(draw) {
+    ctx.save();
+    ctx.translate(camera.x, camera.y);
+    ctx.scale(camera.zoom, camera.zoom);
+    draw();
+    ctx.restore();
+  }
+
+  function diamondPath(cx, cy, w = TILE_W, h = TILE_H) {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - h / 2);
+    ctx.lineTo(cx + w / 2, cy);
+    ctx.lineTo(cx, cy + h / 2);
+    ctx.lineTo(cx - w / 2, cy);
+    ctx.closePath();
+  }
+
+  function fillDiamond(cx, cy, color, stroke = "rgba(38, 91, 53, .16)") {
+    diamondPath(cx, cy);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  function drawTile(x, y, type) {
+    const p = iso(x, y);
+    const palette = {
+      grass: "#78c76a",
+      grass2: "#70bd61",
+      soil: "#a8784c",
+      path: "#dfc287",
+      water: "#78cde0",
+      field: "#b98755"
+    };
+
+    fillDiamond(p.x, p.y, palette[type] || palette.grass);
+
+    // Litt procedural variasjon inne i hver tile.
+    if (type === "grass" || type === "grass2") {
+      ctx.globalAlpha = .18;
+      for (let i = 0; i < 3; i++) {
+        const ox = (randFrom(x, y, i) - .5) * 42;
+        const oy = (randFrom(y, x, i + 5) - .5) * 18;
+        ctx.fillStyle = i % 2 ? "#2f8d4b" : "#d8e48f";
+        ctx.beginPath();
+        ctx.arc(p.x + ox, p.y + oy, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    if (type === "water") {
+      ctx.globalAlpha = .25;
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 1.5;
+      const wave = Math.sin(time * 2 + x * 1.7 + y) * 3;
+      ctx.beginPath();
+      ctx.moveTo(p.x - 22, p.y + wave);
+      ctx.quadraticCurveTo(p.x, p.y - 8 + wave, p.x + 22, p.y + wave);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // Kodegenerert "3D-boks" tegnet som 3 flater.
+  function drawBox(x, y, w, d, h, colors) {
+    const a = iso(x, y, h);
+    const b = iso(x + w, y, h);
+    const c = iso(x + w, y + d, h);
+    const d0 = iso(x, y + d, h);
+
+    const ab = iso(x, y, 0);
+    const bb = iso(x + w, y, 0);
+    const cb = iso(x + w, y + d, 0);
+    const db = iso(x, y + d, 0);
+
+    // høyre side
+    ctx.beginPath();
+    ctx.moveTo(b.x, b.y);
+    ctx.lineTo(c.x, c.y);
+    ctx.lineTo(cb.x, cb.y);
+    ctx.lineTo(bb.x, bb.y);
+    ctx.closePath();
+    ctx.fillStyle = colors.right;
+    ctx.fill();
+
+    // venstre/front side
+    ctx.beginPath();
+    ctx.moveTo(d0.x, d0.y);
+    ctx.lineTo(c.x, c.y);
+    ctx.lineTo(cb.x, cb.y);
+    ctx.lineTo(db.x, db.y);
+    ctx.closePath();
+    ctx.fillStyle = colors.front;
+    ctx.fill();
+
+    // topp
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.lineTo(c.x, c.y);
+    ctx.lineTo(d0.x, d0.y);
+    ctx.closePath();
+    ctx.fillStyle = colors.top;
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(55, 72, 51, .18)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  function drawRoof(x, y, w, d, h, roofH, color) {
+    const left = iso(x, y + d, h);
+    const right = iso(x + w, y + d, h);
+    const back = iso(x + w, y, h);
+    const front = iso(x, y, h);
+    const ridge1 = iso(x + w * .5, y, h + roofH);
+    const ridge2 = iso(x + w * .5, y + d, h + roofH);
+
+    ctx.fillStyle = shade(color, -10);
+    ctx.beginPath();
+    ctx.moveTo(front.x, front.y);
+    ctx.lineTo(ridge1.x, ridge1.y);
+    ctx.lineTo(ridge2.x, ridge2.y);
+    ctx.lineTo(left.x, left.y);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(back.x, back.y);
+    ctx.lineTo(right.x, right.y);
+    ctx.lineTo(ridge2.x, ridge2.y);
+    ctx.lineTo(ridge1.x, ridge1.y);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(90, 42, 25, .16)";
+    ctx.stroke();
+  }
+
+  function drawHouse(o) {
+    drawShadow(o.x + o.w / 2, o.y + o.d / 2, o.w * 64, o.d * 34);
+    drawBox(o.x, o.y, o.w, o.d, o.h, {
+      top: "#e7d58e",
+      front: "#c9ae58",
+      right: "#d7bd68"
+    });
+    drawRoof(o.x - .06, o.y - .06, o.w + .12, o.d + .12, o.h, 42, o.roof || "#b34938");
+
+    // Dør/vinduer på frontflaten.
+    const p = iso(o.x + o.w * .55, o.y + o.d + .01, 8);
+    ctx.fillStyle = "#6b4a2e";
+    ctx.fillRect(p.x - 6, p.y - 24, 12, 24);
+
+    const v = iso(o.x + o.w * .25, o.y + o.d + .01, 32);
+    ctx.fillStyle = "#d8f3ff";
+    ctx.fillRect(v.x - 7, v.y - 10, 14, 9);
+  }
+
+  function drawSilo(o) {
+    drawShadow(o.x + .5, o.y + .5, 70, 42);
+    const p = iso(o.x + .5, o.y + .5, 0);
+    const top = iso(o.x + .5, o.y + .5, o.h);
+    ctx.fillStyle = "#b9c7c8";
+    ctx.beginPath();
+    ctx.ellipse(p.x, p.y - o.h / 2, 24, 12, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#a8b8ba";
+    ctx.fillRect(top.x - 24, top.y, 48, o.h);
+    ctx.fillStyle = "rgba(255,255,255,.24)";
+    ctx.fillRect(top.x - 9, top.y, 10, o.h);
+
+    ctx.fillStyle = "#bf4d44";
+    ctx.beginPath();
+    ctx.moveTo(top.x - 30, top.y + 4);
+    ctx.lineTo(top.x + 30, top.y + 4);
+    ctx.lineTo(top.x, top.y - 34);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawTree(o) {
+    drawShadow(o.x, o.y, 56, 28);
+    const base = iso(o.x, o.y, 0);
+    const trunkTop = iso(o.x, o.y, 34);
+
+    ctx.strokeStyle = "#795735";
+    ctx.lineWidth = 10;
+    ctx.beginPath();
+    ctx.moveTo(base.x, base.y);
+    ctx.lineTo(trunkTop.x, trunkTop.y);
+    ctx.stroke();
+
+    const sway = Math.sin(time * 1.4 + o.x * .7) * 2;
+
+    ctx.fillStyle = "#3f8e45";
+    blob(trunkTop.x + sway, trunkTop.y - 15, 28, 22);
+    ctx.fillStyle = "#4fa553";
+    blob(trunkTop.x - 13 + sway, trunkTop.y - 7, 23, 18);
+    ctx.fillStyle = "#34783e";
+    blob(trunkTop.x + 15 + sway, trunkTop.y - 4, 23, 18);
+  }
+
+  function drawCrop(o) {
+    const p = iso(o.x + .5, o.y + .5, 0);
+    const grow = .65 + .35 * Math.sin(time * 2 + o.x * .8 + o.y);
+    ctx.strokeStyle = o.color || "#2e9f46";
+    ctx.lineWidth = 3;
+    for (let i = 0; i < 6; i++) {
+      const ox = -22 + i * 9;
+      const h = 16 + grow * 14 + (i % 2) * 5;
+      ctx.beginPath();
+      ctx.moveTo(p.x + ox, p.y + 8);
+      ctx.lineTo(p.x + ox + 2, p.y + 8 - h);
+      ctx.stroke();
+
+      ctx.fillStyle = "#e2c14d";
+      ctx.beginPath();
+      ctx.arc(p.x + ox + 2, p.y + 6 - h, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawCow(o) {
+    drawShadow(o.x, o.y, 46, 24);
+    const p = iso(o.x, o.y, 0);
+    const bounce = Math.sin(time * 2.4 + o.x) * 1.5;
+
+    ctx.fillStyle = "#f2f0e9";
+    roundRect(p.x - 22, p.y - 25 + bounce, 38, 20, 8);
+    ctx.fill();
+    ctx.fillStyle = "#2f2d2b";
+    ctx.beginPath(); ctx.arc(p.x - 10, p.y - 18 + bounce, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x + 7, p.y - 21 + bounce, 4, 0, Math.PI * 2); ctx.fill();
+
+    ctx.fillStyle = "#f2f0e9";
+    ctx.beginPath();
+    ctx.arc(p.x + 18, p.y - 20 + bounce, 9, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#34312f";
+    ctx.beginPath(); ctx.arc(p.x + 21, p.y - 21 + bounce, 2, 0, Math.PI * 2); ctx.fill();
+  }
+
+  function drawMarket(o) {
+    drawShadow(o.x + .5, o.y + .5, 90, 45);
+    drawBox(o.x, o.y, 1.5, 1.1, 28, {
+      top: "#e35b4f",
+      front: "#9a5b32",
+      right: "#b66c3d"
+    });
+
+    const p = iso(o.x + .75, o.y + .55, 34);
+    ctx.fillStyle = "#fff2a4";
+    for (let i = 0; i < 8; i++) {
+      ctx.beginPath();
+      ctx.arc(p.x - 36 + i * 10, p.y - 10 + Math.sin(time * 3 + i) * 2, 2.1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawTruck(o) {
+    drawShadow(o.x, o.y, 58, 26);
+    const p = iso(o.x, o.y, 0);
+    ctx.fillStyle = "#d94b43";
+    roundRect(p.x - 22, p.y - 28, 38, 22, 4);
+    ctx.fill();
+    ctx.fillStyle = "#f7f7f0";
+    roundRect(p.x + 8, p.y - 35, 18, 18, 4);
+    ctx.fill();
+    ctx.fillStyle = "#333";
+    ctx.beginPath(); ctx.arc(p.x - 12, p.y - 6, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x + 18, p.y - 6, 5, 0, Math.PI * 2); ctx.fill();
+  }
+
+  function drawFenceSegment(x, y, dir) {
+    const a = iso(x, y, 0);
+    const b = dir === "x" ? iso(x + 1, y, 0) : iso(x, y + 1, 0);
+    ctx.strokeStyle = "#d9c89b";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y - 14);
+    ctx.lineTo(b.x, b.y - 14);
+    ctx.stroke();
+
+    ctx.strokeStyle = "#a9986d";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y - 4);
+    ctx.lineTo(b.x, b.y - 4);
+    ctx.stroke();
+  }
+
+  function drawLabel(text, x, y, color) {
+    const p = iso(x, y, 78);
+    ctx.font = "700 13px system-ui";
+    const w = ctx.measureText(text).width + 24;
+
+    ctx.fillStyle = color;
+    roundRect(p.x - w / 2, p.y - 16, w, 27, 7);
+    ctx.fill();
+
+    ctx.fillStyle = "white";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, p.x, p.y - 3);
+  }
+
+  function drawShadow(x, y, w, h) {
+    const p = iso(x, y, 0);
+    ctx.save();
+    ctx.globalAlpha = .18;
+    ctx.fillStyle = "#254321";
+    ctx.beginPath();
+    ctx.ellipse(p.x + 12, p.y + 8, w / 2, h / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function blob(x, y, w, h) {
+    ctx.beginPath();
+    ctx.ellipse(x, y, w, h, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  // Kartet er fortsatt bare et vanlig 2D-array.
+  // Det er dette som gjør løsningen mye enklere enn ekte 3D.
+  const map = [];
+  for (let y = 0; y < MAP_H; y++) {
+    const row = [];
+    for (let x = 0; x < MAP_W; x++) {
+      let type = (x + y) % 2 ? "grass" : "grass2";
+
+      if (x >= 4 && x <= 9 && y >= 7 && y <= 10) type = "field";
+      if (x >= 1 && x <= 4 && y <= 2) type = "water";
+      if (x === 10 || y === 6 || (x >= 11 && y === 3)) type = "path";
+      if (x >= 12 && x <= 16 && y >= 6 && y <= 8) type = "soil";
+
+      row.push(type);
+    }
+    map.push(row);
+  }
+
+  const objects = [
+    { type: "house", x: 2, y: 5, w: 2, d: 2, h: 52, roof: "#cf473c", label: ["Barn", "#dc6f49"] },
+    { type: "silo", x: 1.7, y: 4.2, h: 88 },
+    { type: "house", x: 11.8, y: 1.8, w: 1.8, d: 1.6, h: 44, roof: "#9fc0c6", label: ["Dairy", "#7dafdf"] },
+    { type: "house", x: 14.3, y: 4.2, w: 2, d: 1.7, h: 46, roof: "#b85a3d", label: ["Bakery", "#e19b63"] },
+    { type: "house", x: 3.2, y: 9.3, w: 1.7, d: 1.4, h: 35, roof: "#b85a3d", label: ["Coop", "#efb647"] },
+    { type: "market", x: 11.2, y: 8.6, label: ["Market", "#e75d66"] },
+    { type: "truck", x: 14.6, y: 9.2, label: ["Truck", "#e75d66"] },
+
+    { type: "cow", x: 5.8, y: 8.3 },
+    { type: "cow", x: 6.6, y: 8.7 },
+    { type: "cow", x: 4.7, y: 10.2 },
+
+    { type: "tree", x: .7, y: 6.2 },
+    { type: "tree", x: 2.1, y: 8.2 },
+    { type: "tree", x: 6.2, y: 3.4 },
+    { type: "tree", x: 8.3, y: 4.3 },
+    { type: "tree", x: 9.1, y: 4.8 },
+    { type: "tree", x: 10.1, y: 4.5 },
+    { type: "tree", x: 16.2, y: 3.1 },
+    { type: "tree", x: 17.2, y: 8.8 },
+    { type: "tree", x: 13.7, y: 12.4 },
+    { type: "tree", x: 7.9, y: 12.1 },
+
+    { type: "label", text: "Fields", x: 6.7, y: 7.4, color: "#55b96f" },
+    { type: "label", text: "Orchard", x: 9.2, y: 4.3, color: "#55b96f" },
+  ];
+
+  // Crops legges også bare på et vanlig grid.
+  for (let y = 7; y <= 10; y++) {
+    for (let x = 4; x <= 9; x++) {
+      objects.push({ type: "crop", x: x + .22, y: y + .18, color: (x + y) % 2 ? "#2fa244" : "#be6c43" });
+      objects.push({ type: "crop", x: x + .62, y: y + .52, color: (x + y) % 2 ? "#4ab558" : "#d69a4c" });
+    }
+  }
+
+  function draw() {
+    time += 1 / 60;
+
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+
+    drawSkyDecor();
+
+    withCamera(() => {
+      // 1. Tegn bakken først.
+      for (let y = 0; y < MAP_H; y++) {
+        for (let x = 0; x < MAP_W; x++) {
+          drawTile(x, y, map[y][x]);
+        }
+      }
+
+      // Valgt tile.
+      if (selectedTile.x >= 0 && selectedTile.y >= 0 && selectedTile.x < MAP_W && selectedTile.y < MAP_H) {
+        const p = iso(selectedTile.x, selectedTile.y, 0);
+        ctx.globalAlpha = .85;
+        fillDiamond(p.x, p.y, "rgba(255,255,255,.25)", "rgba(255,255,255,.95)");
+        ctx.globalAlpha = 1;
+      }
+
+      // Gjerde rundt innhegning.
+      for (let x = 2; x <= 6; x++) drawFenceSegment(x, 10.9, "x");
+      for (let x = 2; x <= 6; x++) drawFenceSegment(x, 7.8, "x");
+      for (let y = 8; y <= 10; y++) drawFenceSegment(2, y, "y");
+      for (let y = 8; y <= 10; y++) drawFenceSegment(7, y, "y");
+
+      // 2. Depth sorting: ting lenger "bak" tegnes først.
+      const sorted = [...objects].sort((a, b) => {
+        const da = (a.x || 0) + (a.y || 0) + (a.z || 0) * .001;
+        const db = (b.x || 0) + (b.y || 0) + (b.z || 0) * .001;
+        return da - db;
+      });
+
+      for (const o of sorted) {
+        if (o.type === "house") drawHouse(o);
+        if (o.type === "silo") drawSilo(o);
+        if (o.type === "tree") drawTree(o);
+        if (o.type === "crop") drawCrop(o);
+        if (o.type === "cow") drawCow(o);
+        if (o.type === "market") drawMarket(o);
+        if (o.type === "truck") drawTruck(o);
+        if (o.type === "label") drawLabel(o.text, o.x, o.y, o.color);
+
+        if (o.label) drawLabel(o.label[0], o.x + (o.w || 1) / 2, o.y + .15, o.label[1]);
+      }
+    });
+
+    requestAnimationFrame(draw);
+  }
+
+  function drawSkyDecor() {
+    // Skyer i ren kode.
+    ctx.save();
+    ctx.globalAlpha = .35;
+    drawCloud(innerWidth * .46, 52, 1.2);
+    drawCloud(innerWidth * .74, 115, 1.0);
+    drawCloud(innerWidth * .17, 175, .9);
+    ctx.restore();
+  }
+
+  function drawCloud(x, y, s) {
+    ctx.fillStyle = "#ffffff";
+    blob(x, y, 38 * s, 24 * s);
+    blob(x + 30 * s, y - 8 * s, 34 * s, 26 * s);
+    blob(x + 64 * s, y, 42 * s, 24 * s);
+    blob(x + 24 * s, y + 14 * s, 52 * s, 20 * s);
+  }
+
+  canvas.addEventListener("mousedown", (e) => {
+    camera.dragging = true;
+    camera.lastX = e.clientX;
+    camera.lastY = e.clientY;
+  });
+
+  window.addEventListener("mouseup", () => {
+    camera.dragging = false;
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (camera.dragging) {
+      camera.x += e.clientX - camera.lastX;
+      camera.y += e.clientY - camera.lastY;
+      camera.lastX = e.clientX;
+      camera.lastY = e.clientY;
+    }
+  });
+
+  canvas.addEventListener("click", (e) => {
+    if (Math.abs(e.clientX - camera.lastX) + Math.abs(e.clientY - camera.lastY) > 8) return;
+    const t = screenToTile(e.clientX, e.clientY);
+    if (t.x >= 0 && t.y >= 0 && t.x < MAP_W && t.y < MAP_H) {
+      selectedTile = t;
+    }
+  });
+
+  canvas.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const before = {
+      x: (e.clientX - camera.x) / camera.zoom,
+      y: (e.clientY - camera.y) / camera.zoom
+    };
+
+    const factor = e.deltaY < 0 ? 1.08 : .92;
+    camera.zoom = Math.max(.45, Math.min(1.9, camera.zoom * factor));
+
+    camera.x = e.clientX - before.x * camera.zoom;
+    camera.y = e.clientY - before.y * camera.zoom;
+  }, { passive: false });
+
+  function shade(hex, amount) {
+    const n = parseInt(hex.slice(1), 16);
+    let r = (n >> 16) + amount;
+    let g = ((n >> 8) & 255) + amount;
+    let b = (n & 255) + amount;
+    r = Math.max(0, Math.min(255, r));
+    g = Math.max(0, Math.min(255, g));
+    b = Math.max(0, Math.min(255, b));
+    return `rgb(${r},${g},${b})`;
+  }
+
+  function mulberry32(seed) {
+    return function() {
+      let t = seed += 0x6D2B79F5;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  function randFrom(a, b, c) {
+    let n = Math.sin(a * 127.1 + b * 311.7 + c * 74.7) * 43758.5453;
+    return n - Math.floor(n);
+  }
+
+  requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>
