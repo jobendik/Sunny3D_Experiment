@@ -6,7 +6,7 @@
 
 import { state } from '../state';
 import { GRID_W, GRID_H, TILE } from '../constants';
-import { rand, randi, nowSeconds } from '../utils';
+import { rand, randi, choice, nowSeconds } from '../utils';
 import { spawnParticles, floatText } from './particles';
 import { addItem } from './inventory';
 import { addXP } from './xp';
@@ -93,16 +93,24 @@ export function openChest(id: string): void {
   const cx = ch.gx * TILE + TILE / 2;
   const cy = ch.gy * TILE + TILE / 2;
   if (ch.rare) {
-    if (r < 0.4) {
+    if (r < 0.32) {
       const coins = 200 + lvl * 30;
       state.coins += coins; state.stats.earned += coins;
       toast(`💎 Rare chest! +${coins} 💰`, 'gold');
       floatText(cx, cy - 10, `+${coins}💰`, '#ffd040');
-    } else if (r < 0.75) {
+    } else if (r < 0.6) {
       addItem('qualityink', 1);
       addItem('priority', 1);
       toast('💎 Rare loot! Quality Ink + Priority!', 'gold');
       floatText(cx, cy - 10, 'Rare loot!', '#c890ff');
+    } else if (r < 0.92 && lvl >= 4) {
+      // Upgrade materials — what the player needs for Barn/Silo/Landmarks.
+      const mats = ['plank', 'nail', 'screw', 'hinge', 'panel', 'bolt', 'rope', 'stake', 'mallet'] as const;
+      const pick = choice(mats);
+      const n = 1 + (Math.random() < 0.25 ? 1 : 0);
+      addItem(pick, n);
+      toast(`💎 Rare chest! +${n} ${pick.charAt(0).toUpperCase() + pick.slice(1)}`, 'gold');
+      floatText(cx, cy - 10, 'Materials!', '#c890ff');
     } else {
       const xp = 30 + lvl * 5;
       addXP(xp);

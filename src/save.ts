@@ -1,5 +1,6 @@
 // =============================================================
-//  SAVE / LOAD  (localStorage)
+//  SAVE / LOAD  (localStorage) — with version migration safety
+//  for the roadmap expansion's new subsystem state.
 // =============================================================
 
 import { state } from './state';
@@ -7,7 +8,10 @@ import { SAVE_KEY } from './constants';
 import { nowSeconds, rand } from './utils';
 import type { GameState, Tile } from './types';
 
+const CURRENT_SAVE_VERSION = 4;
+
 interface SaveData {
+  saveVersion?: number;
   coins: number;
   xp: number;
   level: number;
@@ -52,10 +56,20 @@ interface SaveData {
   pass?: GameState['pass'];
   visitors?: GameState['visitors'];
   lastSessionEndedAt?: number;
+  // Roadmap expansion
+  storage?: GameState['storage'];
+  marketStall?: GameState['marketStall'];
+  gazette?: GameState['gazette'];
+  boat?: GameState['boat'];
+  train?: GameState['train'];
+  landmarks?: GameState['landmarks'];
+  friendship?: GameState['friendship'];
+  buildingMastery?: GameState['buildingMastery'];
 }
 
 export function saveGame(): void {
   const data: SaveData = {
+    saveVersion: CURRENT_SAVE_VERSION,
     coins: state.coins,
     xp: state.xp,
     level: state.level,
@@ -102,6 +116,14 @@ export function saveGame(): void {
     pass: state.pass,
     visitors: state.visitors,
     lastSessionEndedAt: Date.now(),
+    storage: state.storage,
+    marketStall: state.marketStall,
+    gazette: state.gazette,
+    boat: state.boat,
+    train: state.train,
+    landmarks: state.landmarks,
+    friendship: state.friendship,
+    buildingMastery: state.buildingMastery,
   };
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
@@ -110,11 +132,29 @@ export function saveGame(): void {
   }
 }
 
+/** Up-version old saves. Each migration is pure: in -> out. */
+function migrateSave(data: SaveData): SaveData {
+  if (!data.saveVersion) data.saveVersion = 1;
+  if (data.saveVersion < 4) {
+    // v4: roadmap expansion fields default to undefined; subsystems init() on first use.
+    // (No destructive change needed; just stamp the version.)
+    data.saveVersion = 4;
+  }
+  return data;
+}
+
 export function loadGame(): boolean {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return false;
-    const data = JSON.parse(raw) as SaveData;
+    let data: SaveData;
+    try {
+      data = JSON.parse(raw) as SaveData;
+    } catch (e) {
+      console.warn('save JSON parse failed, ignoring', e);
+      return false;
+    }
+    data = migrateSave(data);
 
     state.coins = data.coins;
     state.xp = data.xp;
@@ -143,6 +183,7 @@ export function loadGame(): boolean {
     state.decor = data.decor || [];
     state.trees = data.trees || [];
     state.musicOn = data.musicOn !== undefined ? data.musicOn : true;
+    // Safe restore — each system's init() function defends against missing fields.
     if (data.daily) state.daily = data.daily;
     if (data.weekly) state.weekly = data.weekly;
     if (data.weatherGrid) state.weatherGrid = data.weatherGrid;
@@ -163,6 +204,15 @@ export function loadGame(): boolean {
     if (data.pass) state.pass = data.pass;
     if (data.visitors) state.visitors = data.visitors;
     if (data.lastSessionEndedAt) state.lastSessionEndedAt = data.lastSessionEndedAt;
+    if (data.storage) state.storage = data.storage;
+    if (data.marketStall) state.marketStall = data.marketStall;
+    if (data.gazette) state.gazette = data.gazette;
+    if (data.boat) state.boat = data.boat;
+    if (data.train) state.train = data.train;
+    if (data.landmarks) state.landmarks = data.landmarks;
+    if (data.friendship) state.friendship = data.friendship;
+    if (data.buildingMastery) state.buildingMastery = data.buildingMastery;
+    state.saveVersion = data.saveVersion ?? CURRENT_SAVE_VERSION;
 
     const offset = data.saveTime || 0;
     const curNow = nowSeconds();
@@ -190,6 +240,20 @@ export function loadGame(): boolean {
       if (tr.lastHarvested) tr.lastHarvested += delta;
     }
     state.weatherUntil += delta;
+    // Rebase boat/train deadlines too.
+    if (state.boat) {
+      if (state.boat.arrivesAt) state.boat.arrivesAt += delta;
+      if (state.boat.departsAt) state.boat.departsAt += delta;
+    }
+    if (state.train) {
+      if (state.train.returnsAt) state.train.returnsAt += delta;
+    }
+    if (state.marketStall) {
+      // Slot timestamps live in game-time too.
+      for (const s of state.marketStall.slots) {
+        s.listedAt += delta;
+      }
+    }
     return true;
   } catch (e) {
     console.warn('load failed', e);

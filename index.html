@@ -154,9 +154,9 @@
         <span class="ico" id="ico-build"></span>
         <span class="btn-label">Build<small>Animals</small></span>
       </button>
-      <button class="btn btn-more desktop-hide" id="open-more" title="More" aria-label="More options">
+      <button class="btn btn-more" id="open-more" title="More" aria-label="More options">
         <span class="ico ico-more">⋯</span>
-        <span class="btn-label">More</span>
+        <span class="btn-label">More<small>Menu</small></span>
       </button>
       <button class="btn mobile-hide" id="open-inventory" title="Inventory" aria-label="Inventory">
         <span class="ico" id="ico-inv"></span>
@@ -235,6 +235,31 @@
         <span class="ico-emoji">💱</span>
         <span>Market</span>
       </button>
+      <button class="sheet-btn" data-more="open-stall">
+        <span class="ico-emoji">🛒</span>
+        <span>Stall</span>
+      </button>
+      <button class="sheet-btn" data-more="open-gazette">
+        <span class="ico-emoji">📰</span>
+        <span>Gazette</span>
+        <span class="sheet-pip" id="gazette-pip" hidden></span>
+      </button>
+      <button class="sheet-btn" data-more="open-boat">
+        <span class="ico-emoji">⛵</span>
+        <span>Boat</span>
+      </button>
+      <button class="sheet-btn" data-more="open-train">
+        <span class="ico-emoji">🚂</span>
+        <span>Train</span>
+      </button>
+      <button class="sheet-btn" data-more="open-landmark">
+        <span class="ico-emoji">🏗️</span>
+        <span>Builds</span>
+      </button>
+      <button class="sheet-btn" data-more="open-friendship">
+        <span class="ico-emoji">🤝</span>
+        <span>Friends</span>
+      </button>
       <button class="sheet-btn" data-more="open-leaderboard">
         <span class="ico-emoji">🏅</span>
         <span>Ranks</span>
@@ -290,6 +315,12 @@
     <button id="open-snapshot" type="button"></button>
     <button id="open-wheel" type="button"></button>
     <button id="open-pass" type="button"></button>
+    <button id="open-stall" type="button"></button>
+    <button id="open-gazette" type="button"></button>
+    <button id="open-boat" type="button"></button>
+    <button id="open-train" type="button"></button>
+    <button id="open-landmark" type="button"></button>
+    <button id="open-friendship" type="button"></button>
   </div>
 
   <!-- Generic Modal -->

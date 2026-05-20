@@ -15,6 +15,8 @@ import { checkAchievements } from './achievements';
 import { track } from './telemetry';
 import { addPassPoints } from './season-pass';
 import { spawnHUDBurst } from './flyers';
+import { trackDelivery, friendshipLevel, friendshipHearts } from './friendship';
+import { hotItem } from './gazette';
 import type { Order } from '../types';
 
 export function generateOrder(): Order {
@@ -62,21 +64,28 @@ export function fulfillOrder(orderId: string): void {
   if (!hasItems(o.items)) { sfx.error(); return; }
   const wasFirst = state.stats.ordersFulfilled === 0;
   for (const k in o.items) removeItem(k, o.items[k]!);
-  state.coins += o.reward;
-  state.stats.earned += o.reward;
+  // Friendship discount: higher friendship => slightly more coins per order.
+  const lvlBonus = o.customerId ? Math.min(0.20, friendshipLevel(o.customerId) * 0.03) : 0;
+  // Hot item bonus from the Gazette: any order including the hot item earns +25%.
+  const hot = hotItem();
+  const hasHot = hot && Object.keys(o.items).includes(hot.itemKey);
+  const reward = Math.floor(o.reward * (1 + lvlBonus + (hasHot ? 0.25 : 0)));
+  state.coins += reward;
+  state.stats.earned += reward;
   state.stats.ordersFulfilled += 1;
   addXP(o.xp);
+  if (o.customerId) trackDelivery(o.customerId);
   sfx.order(); sfx.coin();
   // Personalised thank-you toast — pulls a line from the customer.
   ensureCustomer(o);
   const v = VILLAGERS[o.customerId!];
   if (v) {
     const thanks = choice(v.thanks);
-    toast(`${v.emoji} ${v.name}: "${thanks}" +${o.reward}💰`, 'gold');
+    toast(`${v.emoji} ${v.name}: "${thanks}" +${reward}💰${hasHot ? ' (hot item!)' : ''}`, 'gold');
   } else {
-    toast(`Order fulfilled! +${o.reward}`, 'gold');
+    toast(`Order fulfilled! +${reward}`, 'gold');
   }
-  spawnHUDBurst('coin', Math.min(8, 3 + Math.floor(o.reward / 25)));
+  spawnHUDBurst('coin', Math.min(8, 3 + Math.floor(reward / 25)));
   spawnHUDBurst('xp', Math.min(4, 1 + Math.floor(o.xp / 6)));
   if (wasFirst) {
     // The first delivery is a milestone — give the player extra fanfare and
@@ -95,7 +104,7 @@ export function fulfillOrder(orderId: string): void {
   dailyChallengeProgress('orders', null, 1);
   addWeeklyPoints(20, 'craft');
   addPassPoints(12);
-  track('order_fulfilled', { reward: o.reward });
+  track('order_fulfilled', { reward });
   checkAchievements();
 }
 
@@ -129,7 +138,7 @@ export function renderOrders(): void {
           <span class="order-portrait-emoji">${v.emoji}</span>
         </div>
         <div class="order-customer-text">
-          <div class="order-customer-name">${v.name} <small>· ${v.role}</small></div>
+          <div class="order-customer-name">${v.name} <small>· ${v.role}</small> <span class="friend-hearts">${friendshipHearts(v.id)}</span></div>
           <div class="order-customer-greet">"${greet}"</div>
         </div>
       </div>

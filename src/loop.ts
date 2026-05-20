@@ -27,6 +27,10 @@ import { maybeShowHints } from './systems/hints';
 import { tickVisitors } from './systems/visitors';
 import { tickTreasures } from './systems/treasures';
 import { rolloverIfExpired } from './systems/season-pass';
+import { tickStall } from './systems/market-stall';
+import { tickBoat } from './systems/boat';
+import { tickTrain } from './systems/train';
+import { maybeRolloverGazette } from './systems/gazette';
 
 let smokeT = 0;
 
@@ -106,10 +110,11 @@ export function update(dt: number): void {
   const prevDay = state.day;
   state.day = 1 + Math.floor(elapsed / DAY_SECONDS);
 
-  // Day-over-day side effects (market refresh, deferred payouts)
+  // Day-over-day side effects (market refresh, deferred payouts, gazette).
   if (state.day !== prevDay) {
     refreshMarketModifiers();
     tickDeferredPayouts();
+    maybeRolloverGazette();
   }
 
   updateWeatherAndSeason();
@@ -195,6 +200,26 @@ export function update(dt: number): void {
   if (state._orderTick > 30) {
     state._orderTick = 0;
     maybeUnlockOrders();
+  }
+
+  // Market stall — tick simulated buyers every minute of real time.
+  state._stallTick = (state._stallTick ?? 0) + dt;
+  if (state._stallTick > 8) {
+    const mins = state._stallTick / 60;
+    state._stallTick = 0;
+    tickStall(mins);
+  }
+
+  // Boat/train — refresh state every 5s.
+  state._boatTick = (state._boatTick ?? 0) + dt;
+  if (state._boatTick > 5) {
+    state._boatTick = 0;
+    tickBoat();
+  }
+  state._trainTick = (state._trainTick ?? 0) + dt;
+  if (state._trainTick > 5) {
+    state._trainTick = 0;
+    tickTrain();
   }
 
   // Autosave

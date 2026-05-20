@@ -74,6 +74,21 @@ import { openPass } from './ui/pass-panel';
 import { renderComboHud } from './ui/combo-hud';
 import { maybeOpenWelcomeBack } from './ui/welcome-back';
 import { bindSplash, startCameraIntro, tickCameraIntro } from './systems/intro';
+// Roadmap expansion systems
+import { initStorage } from './systems/storage';
+import { initMarketStall, rebaseStallOnLoad, tickStall } from './systems/market-stall';
+import { initGazette, maybeRolloverGazette } from './systems/gazette';
+import { initBoat, tickBoat } from './systems/boat';
+import { initTrain, tickTrain } from './systems/train';
+import { initLandmarks } from './systems/landmarks';
+import { initFriendship } from './systems/friendship';
+import { initBuildingMastery } from './systems/building-mastery';
+import { openMarketStall } from './ui/market-stall-panel';
+import { openGazette } from './ui/gazette-panel';
+import { openBoatPanel } from './ui/boat-panel';
+import { openTrainPanel } from './ui/train-panel';
+import { openLandmarkPanel } from './ui/landmark-panel';
+import { openFriendshipPanel } from './ui/friendship-panel';
 
 function setupInitialFarm(): void {
   // Irregular lake in the upper-left — ~20 tiles, big enough to build
@@ -136,6 +151,12 @@ function bindToolbarHandlers(): void {
   document.getElementById('open-snapshot')!.addEventListener('click', openSnapshot);
   document.getElementById('open-wheel')!.addEventListener('click', openWheel);
   document.getElementById('open-pass')!.addEventListener('click', openPass);
+  document.getElementById('open-stall')!.addEventListener('click', openMarketStall);
+  document.getElementById('open-gazette')!.addEventListener('click', openGazette);
+  document.getElementById('open-boat')!.addEventListener('click', openBoatPanel);
+  document.getElementById('open-train')!.addEventListener('click', openTrainPanel);
+  document.getElementById('open-landmark')!.addEventListener('click', openLandmarkPanel);
+  document.getElementById('open-friendship')!.addEventListener('click', openFriendshipPanel);
   document.getElementById('save-btn')!.addEventListener('click', () => {
     saveGame();
     toast('Game saved!');
@@ -236,6 +257,21 @@ function init(): void {
   initTreasures();
   initPass();
   bindReadyNotifier();
+  // Roadmap expansion systems
+  initStorage();
+  initMarketStall();
+  initGazette();
+  initBoat();
+  initTrain();
+  initLandmarks();
+  initFriendship();
+  initBuildingMastery();
+  // Rebase market stall offline sales.
+  if (loaded && state.lastSessionEndedAt) {
+    const awayS = Math.max(0, (Date.now() - state.lastSessionEndedAt) / 1000);
+    rebaseStallOnLoad(awayS);
+  }
+  maybeRolloverGazette();
   track(loaded ? 'session_resume' : 'session_new', { level: state.level });
 
   state.camX = (GRID_W * TILE) / 2;

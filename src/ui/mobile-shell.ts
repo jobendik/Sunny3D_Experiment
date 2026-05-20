@@ -87,6 +87,13 @@ export function updateQuestsFabBadge(): void {
   } else {
     badge.setAttribute('hidden', '');
   }
+  // Also refresh the gazette unread pip on the More-sheet button.
+  const pip = document.getElementById('gazette-pip');
+  if (pip) {
+    const unread = !!state.gazette && state.gazette.lastReadDay !== state.day;
+    if (unread) pip.removeAttribute('hidden');
+    else pip.setAttribute('hidden', '');
+  }
 }
 
 // ---------------- RE-CENTER CAMERA ----------------

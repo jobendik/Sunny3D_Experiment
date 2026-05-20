@@ -73,16 +73,18 @@ export function nextQualityFlag(buildingId: string): boolean {
   return true;
 }
 
-export function consumeQualityFlag(buildingId: string): 'normal' | 'good' | 'perfect' {
+export function consumeQualityFlag(buildingId: string, qualityBuff = 0): 'normal' | 'good' | 'perfect' {
   state.qualityFlags = state.qualityFlags ?? {};
   if (state.qualityFlags[buildingId]) {
     delete state.qualityFlags[buildingId];
     return 'perfect';
   }
-  // Random 70/25/5 distribution by default.
+  // Random 70/25/5 distribution by default. Mastery shifts the band upward.
+  const perfectChance = 0.05 + qualityBuff * 0.5;
+  const goodChance = 0.25 + qualityBuff;
   const r = Math.random();
-  if (r < 0.05) return 'perfect';
-  if (r < 0.30) return 'good';
+  if (r < perfectChance) return 'perfect';
+  if (r < perfectChance + goodChance) return 'good';
   return 'normal';
 }
 

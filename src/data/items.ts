@@ -56,4 +56,20 @@ export const ITEMS: Record<string, ItemDef> = {
   worm:       { name: 'Earthworm',   icon: 'worm',       sell: 1,   level: 3 },
   fly:        { name: 'Mayfly',      icon: 'fly',        sell: 6,   level: 5 },
   lure:       { name: 'Goldlure',    icon: 'lure',       sell: 20,  level: 7 },
+  // Roadmap: Upgrade materials (barn)
+  plank:      { name: 'Plank',       icon: 'plank',      sell: 35,  level: 4 },
+  nail:       { name: 'Nail',        icon: 'nail',       sell: 12,  level: 4 },
+  screw:      { name: 'Screw',       icon: 'screw',      sell: 18,  level: 5 },
+  hinge:      { name: 'Hinge',       icon: 'hinge',      sell: 28,  level: 5 },
+  paint:      { name: 'Paint Bucket', icon: 'paint',     sell: 60,  level: 6 },
+  // Roadmap: Upgrade materials (silo)
+  panel:      { name: 'Wood Panel',  icon: 'panel',      sell: 32,  level: 4 },
+  bolt:       { name: 'Metal Bolt',  icon: 'bolt',       sell: 22,  level: 4 },
+  rope:       { name: 'Rope',        icon: 'rope',       sell: 18,  level: 4 },
+  tarp:       { name: 'Tarpaulin',   icon: 'tarp',       sell: 40,  level: 5 },
+  // Roadmap: Land expansion materials
+  deed:       { name: 'Land Deed',   icon: 'deed',       sell: 200, level: 6 },
+  stake:      { name: 'Marker Stake', icon: 'stake',     sell: 25,  level: 5 },
+  map:        { name: 'Survey Map',  icon: 'map',        sell: 80,  level: 6 },
+  mallet:     { name: 'Mallet',      icon: 'mallet',     sell: 45,  level: 5 },
 };

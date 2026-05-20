@@ -452,6 +452,154 @@ export interface VisitorRoot {
   lastVisitDay: number;
 }
 
+// ---- Roadmap expansion: storage, market stall, gazette, deliveries,
+//      landmarks, friendship, mastery ----
+
+export interface StorageRoot {
+  barn: { level: number; capacity: number };
+  silo: { level: number; capacity: number };
+}
+
+export interface MarketStallSlot {
+  id: string;
+  itemKey: string;
+  qty: number;
+  pricePerUnit: number;
+  listedAt: number;   // seconds (game time)
+  saleProb: number;   // 0..1 per minute baseline
+  buyerName?: string; // populated when sold
+  status: 'listed' | 'sold';
+}
+
+export interface MarketStallRoot {
+  unlocked: boolean;
+  slots: MarketStallSlot[];
+  maxSlots: number;
+  reputation: number; // 0..1000
+  lifetimeSales: number;
+  lastTick: number;   // seconds
+  pendingCoins: number; // coins from sales that finished while away
+}
+
+export type GazetteArticleType =
+  | 'forecast'
+  | 'hot_item'
+  | 'help_request'
+  | 'neighbor_sale'
+  | 'event_notice'
+  | 'tip';
+
+export interface GazetteArticle {
+  type: GazetteArticleType;
+  title: string;
+  body: string;
+  data?: Record<string, string | number>;
+}
+
+export interface NeighborSaleOffer {
+  neighborId: string;
+  itemKey: string;
+  qty: number;
+  pricePerUnit: number;
+  bought: boolean;
+}
+
+export interface HelpRequestOffer {
+  id: string;
+  neighborId: string;
+  itemKey: string;
+  qty: number;
+  rewardCoins: number;
+  rewardXp: number;
+  rewardMaterial?: string;
+  done: boolean;
+}
+
+export interface GazetteRoot {
+  day: number;
+  articles: GazetteArticle[];
+  hotItem: { itemKey: string; bonus: number } | null;
+  neighborSales: NeighborSaleOffer[];
+  helpRequests: HelpRequestOffer[];
+  lastReadDay: number;
+}
+
+export interface BoatCrate {
+  itemKey: string;
+  needed: number;
+  filled: number;
+}
+
+export interface BoatRoot {
+  unlocked: boolean;
+  arrivesAt: number;   // seconds (game time)
+  departsAt: number;
+  crates: BoatCrate[];
+  boatName: string;
+  bonusMaterial?: string;
+  state: 'arriving' | 'docked' | 'departed';
+}
+
+export interface TrainCrate {
+  itemKey: string;
+  qty: number;
+}
+
+export interface TrainRoot {
+  unlocked: boolean;
+  status: 'idle' | 'loaded' | 'away' | 'returned';
+  returnsAt: number; // seconds (game time)
+  loadedCrates: TrainCrate[];   // what player loaded for next trip
+  pendingRewards: Record<string, number>; // materials waiting to be claimed
+  routeId: string;
+  level: number;
+}
+
+export interface LandmarkStage {
+  name: string;
+  reqs: Record<string, number>; // item key -> qty
+  rewardCoins: number;
+  rewardXp: number;
+  rewardMaterial?: string;
+}
+
+export interface LandmarkProject {
+  id: string;
+  stageIdx: number;
+  contributed: Record<string, number>; // ongoing contributions for current stage
+  completed: boolean;
+}
+
+export interface LandmarksRoot {
+  projects: Record<string, LandmarkProject>;
+}
+
+export interface FriendshipEntry {
+  level: number;
+  xp: number;
+  lastGiftDay: number;
+  totalDeliveries: number;
+}
+
+export interface FriendshipRoot {
+  byNeighbor: Record<string, FriendshipEntry>;
+}
+
+export interface BuildingMasteryEntry {
+  produced: number; // total recipe completions for this building type
+  stars: number;    // 0..3
+}
+
+export interface BuildingMasteryRoot {
+  byBuildingType: Record<string, BuildingMasteryEntry>;
+}
+
+export type MaterialKey =
+  | 'plank' | 'nail' | 'screw' | 'hinge' | 'paint'   // barn materials
+  | 'panel' | 'bolt' | 'rope' | 'tarp'                // silo materials
+  | 'deed' | 'stake' | 'map' | 'mallet'              // expansion materials
+  ;
+
 export interface GameState {
   coins: number;
   xp: number;
@@ -514,6 +662,16 @@ export interface GameState {
   pass?: PassRoot;
   visitors?: VisitorRoot;
   lastSessionEndedAt?: number;
+  // Roadmap expansion
+  storage?: StorageRoot;
+  marketStall?: MarketStallRoot;
+  gazette?: GazetteRoot;
+  boat?: BoatRoot;
+  train?: TrainRoot;
+  landmarks?: LandmarksRoot;
+  friendship?: FriendshipRoot;
+  buildingMastery?: BuildingMasteryRoot;
+  saveVersion?: number;
   // Internal periodic timers
   _weatherPartT?: number;
   _orderTick?: number;
@@ -521,6 +679,9 @@ export interface GameState {
   _dailyTick?: number;
   _moodTick?: number;
   _soilTick?: number;
+  _stallTick?: number;
+  _boatTick?: number;
+  _trainTick?: number;
 }
 
 // ---- Sprite cache shape ----

@@ -19,6 +19,7 @@ import { activeEffects as weatherGridEffects } from '../systems/weather-grid';
 import { collectionBonuses } from '../systems/collection';
 import { speedupQueue, nextQualityFlag, consumeQualityFlag, QUALITY_VALUE } from '../systems/catalysts';
 import { track } from '../systems/telemetry';
+import { recordProduction, masteryBadge, masterySpeedBuff, masteryQualityBuff, masteryProgress } from '../systems/building-mastery';
 import type { BuildingInstance } from '../types';
 
 export function openProductionPanel(b: BuildingInstance): void {
@@ -26,7 +27,8 @@ export function openProductionPanel(b: BuildingInstance): void {
   const recipes = def.recipes!;
   const queue = state.prodQueues[b.id] ?? (state.prodQueues[b.id] = []);
   const maxQueue = 4;
-  openModal(def.name, null);
+  const badge = masteryBadge(b.type);
+  openModal(badge ? `${def.name} ${badge}` : def.name, null);
   document.getElementById('modal-tabs')!.innerHTML = '';
   const body = document.getElementById('modal-body')!;
 
@@ -82,10 +84,23 @@ export function openProductionPanel(b: BuildingInstance): void {
           const eff = weatherGridEffects();
           const cb = collectionBonuses();
           const adj = adjacencyBonus({ id: b.id, type: b.type, x: b.x, y: b.y });
-          const speed = (sp.produceSpeed ?? 0) + eff.productionSpeed + cb.speedMult + adj;
+          const mast = masterySpeedBuff(b.type);
+          const speed = (sp.produceSpeed ?? 0) + eff.productionSpeed + cb.speedMult + adj + mast;
           return speed > 0
-            ? `<span class="prod-bonus-chip">⚡ ${(speed * 100).toFixed(0)}% speed bonus (spec/grid/codex/adj)</span>`
+            ? `<span class="prod-bonus-chip">⚡ ${(speed * 100).toFixed(0)}% speed bonus${mast > 0 ? ' (incl. ⭐ mastery)' : ''}</span>`
             : '';
+        })()}
+        ${(() => {
+          const mp = masteryProgress(b.type);
+          const stars = mp.stars;
+          const next = mp.nextAt;
+          if (stars === 0 && next) {
+            return `<span class="prod-bonus-chip" style="background:#fff7e1;color:#7a5828">⭐ ${mp.produced}/${next} to first star</span>`;
+          }
+          if (next) {
+            return `<span class="prod-bonus-chip" style="background:#fff7e1;color:#7a5828">${'★'.repeat(stars)} ${mp.produced}/${next} next star</span>`;
+          }
+          return `<span class="prod-bonus-chip" style="background:#fff3c4;color:#7a5828">${'★'.repeat(stars)} Mastery maxed!</span>`;
         })()}
       </div>
       <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
@@ -106,7 +121,8 @@ export function openProductionPanel(b: BuildingInstance): void {
         const eff = weatherGridEffects();
         const cb = collectionBonuses();
         const adj = adjacencyBonus({ id: b.id, type: b.type, x: b.x, y: b.y });
-        const speedReduction = Math.min(0.7, (sp.produceSpeed ?? 0) + eff.productionSpeed + cb.speedMult + adj);
+        const mast = masterySpeedBuff(b.type);
+        const speedReduction = Math.min(0.7, (sp.produceSpeed ?? 0) + eff.productionSpeed + cb.speedMult + adj + mast);
         const time = Math.max(2, r.time * (1 - speedReduction));
         queue.push({ recipeIdx: idx, startTime: nowSeconds(), doneAt: nowSeconds() + time });
         sfx.click();
@@ -118,7 +134,7 @@ export function openProductionPanel(b: BuildingInstance): void {
       while (queue.length > 0 && queue[0]!.doneAt <= nowSeconds()) {
         const job = queue.shift()!;
         const r = recipes[job.recipeIdx]!;
-        const quality = consumeQualityFlag(b.id);
+        const quality = consumeQualityFlag(b.id, masteryQualityBuff(b.type));
         const qMult = QUALITY_VALUE[quality];
         for (const k in r.out) {
           const outQty = Math.max(1, Math.round(r.out[k]! * (quality === 'normal' ? 1 : qMult)));
@@ -144,6 +160,7 @@ export function openProductionPanel(b: BuildingInstance): void {
         addXP(r.xp);
         state.stats.produced++;
         collected++;
+        recordProduction(b.type, 1);
       }
       if (collected > 0) {
         sfx.harvest();
