@@ -28,13 +28,16 @@ import { getSceneRoot } from '../scene-root';
 import { groundHeight } from './tile-grid';
 import type { LightingSnapshot } from '../lighting';
 
-// 8 tufts per tile makes a grass tile look like an actual meadow
-// rather than a green floor with a few sprigs. 18×18×8 = 2592 instances
-// total, still one draw call. Each tuft is a 5-blade fan that taper-
-// shades from root to tip, so individual blades read clearly.
-const TUFTS_PER_TILE = 8;
-const TUFT_WIDTH = 0.32;
-const TUFT_HEIGHT = 0.30;
+// 6 tufts per tile reads as a real meadow without overgrowing the
+// tile silhouette. 18×18×6 = 1944 instances total, still one draw
+// call. Each tuft is a 5-blade fan that taper-shades from root to
+// tip so individual blades stay legible.
+// Height kept low (≈ 0.18) so the grass never obscures path tiles or
+// building silhouettes at any zoom level — the previous 0.30 was
+// drowning the buildings when the camera zoomed in.
+const TUFTS_PER_TILE = 6;
+const TUFT_WIDTH = 0.28;
+const TUFT_HEIGHT = 0.18;
 
 let blades: InstancedMesh | null = null;
 let bladeMat: MeshLambertMaterial | null = null;

@@ -207,8 +207,8 @@ function buildWater(): Mesh {
   const uniforms = {
     uTime: { value: 0 },
     uWindDir: { value: new Vector2(0.35, 0.25) },
-    uShallow: { value: new Color('#b8eaf3') },
-    uDeep: { value: new Color('#2c7ec8') },
+    uShallow: { value: new Color('#9ad9eb') },
+    uDeep: { value: new Color('#1d62b8') },
     uFoam: { value: new Color('#ffffff') },
     uLakeMin: { value: new Vector2(bbox.x0, bbox.y0) },
     uLakeMax: { value: new Vector2(bbox.x1, bbox.y1) },
@@ -277,7 +277,7 @@ function buildWater(): Mesh {
         float glint1 = smoothstep(0.92, 0.99, g1);
         float glint2 = smoothstep(0.94, 0.99, g2);
         col += vec3(1.0, 0.96, 0.85) * (glint1 * 0.42 + glint2 * 0.28);
-        gl_FragColor = vec4(col, 0.95);
+        gl_FragColor = vec4(col, 0.98);
       }
     `,
   });

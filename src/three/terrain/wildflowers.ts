@@ -59,8 +59,8 @@ export function installWildflowers(): void {
   // Pre-build shared per-color materials (one stem mat + one head
   // mat per color) so we never allocate per-flower. Geometry is
   // reused across all flowers in the same color.
-  const stemGeo = new CylinderGeometry(0.014, 0.014, 0.16, 5);
-  const headGeo = new SphereGeometry(0.055, 8, 6);
+  const stemGeo = new CylinderGeometry(0.012, 0.012, 0.12, 5);
+  const headGeo = new SphereGeometry(0.040, 8, 6);
   const stemMats: MeshLambertMaterial[] = [];
   const headMats: MeshLambertMaterial[] = [];
   for (let i = 0; i < PALETTE.length; i++) {
@@ -85,9 +85,9 @@ export function installWildflowers(): void {
         const colorIdx = pickColorIndex(smoothHash(gx, gy, 300 + i));
         const g = new Group();
         const stem = new Mesh(stemGeo, stemMats[colorIdx]!);
-        stem.position.y = 0.08;
+        stem.position.y = 0.06;
         const head = new Mesh(headGeo, headMats[colorIdx]!);
-        head.position.y = 0.18;
+        head.position.y = 0.14;
         g.add(stem, head);
         g.position.set(
           gx + 0.2 + rx * 0.6,
