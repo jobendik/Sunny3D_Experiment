@@ -1,18 +1,18 @@
 // =============================================================
-//  CAMERA RIG  (constrained-orbit perspective)
+//  CAMERA RIG  (locked-iso perspective + optional snap-rotate)
 //
-//  Perspective camera that orbits around a ground target. State:
+//  Hay-Day-style: the camera is locked to a cozy 3/4 iso angle.
+//  Players pan and zoom; they do NOT free-orbit. A dedicated
+//  "rotate view" button cycles through the 4 cardinal iso angles
+//  via a smooth lerp (rotateView() below) — that is the only way
+//  yaw changes during play. Pitch is fixed.
+//
+//  State convention (kept from the prior version so save format
+//  is untouched):
 //    state.camX, state.camY  — target ground position in PIXELS
-//                              (same convention as before)
-//    state.camYaw            — rotation around world-Y, radians
-//                              (π/4 = classic iso facing)
-//    state.camPitch          — tilt from horizon, radians
-//                              (clamped to [PITCH_MIN, PITCH_MAX])
-//    state.camScale          — zoom; mapped to camera distance via
-//                              distance = BASE_DISTANCE / camScale
-//
-//  Pan, rotate, and zoom are all driven by state mutations from
-//  input.ts. This module is a pure projector.
+//    state.camYaw            — radians around world-Y; default π/4
+//    state.camPitch          — radians from horizon; locked at ~40°
+//    state.camScale          — zoom; distance = BASE_DISTANCE / scale
 // =============================================================
 
 import { PerspectiveCamera, Vector3 } from 'three';
@@ -24,15 +24,18 @@ const FOV_DEG = 34;
 const NEAR = 0.1;
 const FAR = 200;
 
-// Camera distance from target at camScale = 1. Roughly matches the
-// old iso framing so existing UI/build-menu offsets still look right.
+// Camera distance at camScale = 1. Tuned to roughly match the
+// legacy iso framing so existing UI/build-menu offsets line up.
 const BASE_DISTANCE = 22;
 
-// Free-cam: open the pitch range almost end-to-end. We still clamp
-// just shy of horizon-skim and pole to avoid the lookAt() singularity
-// (camera up vector flips when pitch crosses ±π/2).
-export const PITCH_MIN = Math.PI / 30;        // ~6°   (near horizon)
-export const PITCH_MAX = Math.PI * 0.49;      // ~88°  (just shy of straight down)
+// Locked iso angle — the cozy 3/4 view. Yaw is one of 4 cardinal
+// snaps (DEFAULT_YAW + k·π/2); pitch never moves.
+export const DEFAULT_YAW = Math.PI * 0.25;       // 45° around Y
+export const DEFAULT_PITCH = Math.atan2(12, Math.hypot(10, 10)); // ~40°
+
+// A snap-rotate tween in progress, if any. The driver is
+// tickCameraTween() (called from loop.ts each frame).
+let yawTweenTarget: number | null = null;
 
 let cam: PerspectiveCamera | null = null;
 const tmpTarget = new Vector3();
@@ -40,7 +43,56 @@ const tmpTarget = new Vector3();
 export function getCamera(): PerspectiveCamera {
   if (cam) return cam;
   cam = new PerspectiveCamera(FOV_DEG, 1, NEAR, FAR);
+  // Migration: saves from the previous free-cam build may have any
+  // yaw/pitch. Snap to the nearest cardinal iso facing on first
+  // construct so the player lands on a clean view, never mid-orbit.
+  const k = Math.round((state.camYaw - DEFAULT_YAW) / (Math.PI / 2));
+  state.camYaw = DEFAULT_YAW + k * (Math.PI / 2);
+  state.camPitch = DEFAULT_PITCH;
   return cam;
+}
+
+/** Snap to the next cardinal iso angle (clockwise from current).
+ *  Smoothly lerped by tickCameraTween() over ~0.4s. */
+export function rotateView(): void {
+  const base = yawTweenTarget ?? state.camYaw;
+  yawTweenTarget = base + Math.PI / 2;
+}
+
+/** Snap back to the default iso facing. */
+export function resetView(): void {
+  // Pick the equivalent of DEFAULT_YAW nearest the current yaw so
+  // we lerp the short way around instead of unwinding 7π.
+  const k = Math.round((state.camYaw - DEFAULT_YAW) / (Math.PI / 2));
+  yawTweenTarget = DEFAULT_YAW + k * (Math.PI / 2);
+  // Reset orientation index too — back to "north" at the default.
+  if (yawTweenTarget !== state.camYaw) {
+    yawTweenTarget = DEFAULT_YAW;
+  }
+}
+
+/** Drive any active yaw tween. Called once per frame from loop.ts. */
+export function tickCameraTween(dt: number): void {
+  // Pitch is permanently locked — clamp every frame so legacy saves
+  // (or any errant mutation) snap back without a one-frame glitch.
+  state.camPitch = DEFAULT_PITCH;
+
+  if (yawTweenTarget === null) return;
+  const diff = yawTweenTarget - state.camYaw;
+  if (Math.abs(diff) < 0.0015) {
+    state.camYaw = yawTweenTarget;
+    yawTweenTarget = null;
+    return;
+  }
+  // Critically-damped feel: ~0.4s to converge from a quarter turn.
+  state.camYaw += diff * Math.min(1, dt * 7);
+}
+
+/** True while a snap-rotate is in flight. UI uses this to disable
+ *  the rotate button mid-tween (otherwise spamming the button
+ *  stacks rotations and overshoots). */
+export function isRotating(): boolean {
+  return yawTweenTarget !== null;
 }
 
 export function syncCameraFromState(): void {
@@ -55,8 +107,7 @@ export function syncCameraFromState(): void {
   const yaw = state.camYaw;
   const pitch = state.camPitch;
 
-  // Spherical coordinates around the target. yaw=π/4 + pitch≈40°
-  // reproduces the legacy iso-3/4 framing.
+  // Spherical position around the target.
   const horiz = Math.cos(pitch) * distance;
   const cx = tmpTarget.x + Math.cos(yaw) * horiz;
   const cy = tmpTarget.y + Math.sin(pitch) * distance;

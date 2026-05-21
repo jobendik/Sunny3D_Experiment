@@ -1,6 +1,12 @@
 // =============================================================
 //  INPUT  — pointer, touch (with pinch-zoom), wheel, keyboard.
 //  Mobile-first: long-press tooltip, haptic feedback, multi-touch.
+//
+//  Camera model: locked iso (yaw=π/4, pitch=~40°). Drag = pan;
+//  scroll/pinch = zoom. The world point under the cursor stays
+//  under the cursor while dragging (Google-Maps-style anchor pan).
+//  Yaw rotation only changes via the explicit rotate-view button
+//  in the HUD (rotateView() in camera-rig.ts) — never from gestures.
 // =============================================================
 
 import { state } from './state';
@@ -9,7 +15,6 @@ import { TILE } from './constants';
 import { clamp } from './utils';
 import { ensureAudio } from './audio/sfx';
 import { screenToWorld, clampCamera } from './systems/camera';
-import { PITCH_MIN, PITCH_MAX } from './three/camera-rig';
 import { tileAt, buildingAt } from './systems/grid';
 import { shooCrow } from './systems/crows';
 import { tryPlow, tryPlant, tryHarvestOrInteract, tryPlaceDecoration } from './systems/actions';
@@ -22,38 +27,29 @@ import { setTool } from './ui/tools';
 import { toast } from './ui/toasts';
 import { closeModal } from './ui/modal';
 import { updateHoverTooltip, showTooltipAt, hideTooltip } from './ui/tooltip';
+import { rotateView, resetView } from './three/camera-rig';
 import type { ToolKind } from './types';
 
 export const mousePos = { x: 0, y: 0 };
-// Free-cam mode (preview.html-style): primary drag = orbit (yaw + pitch).
-// `dragging` tracks the "tap-or-orbit" state for left-mouse / single touch.
+// Drag state for "tap or drag-pan". prevX/prevY are advanced every
+// move event so each step can recompute "world point under cursor".
 let dragging = false;
-let dragStart: { x: number; y: number; yaw: number; pitch: number } | null = null;
+let dragStart: { x: number; y: number; prevX: number; prevY: number } | null = null;
 let didDrag = false;
 let isTouch = false;
 let dragThreshold = 4;
-const ORBIT_YAW_SPEED = 0.008;   // rad per screen pixel
-const ORBIT_PITCH_SPEED = 0.005; // rad per screen pixel
-
-// Right-mouse drag pan — secondary "shove the world" input.
-let panning = false;
-let panStart: { x: number; y: number; camX: number; camY: number } | null = null;
 
 // Held movement keys (per-frame ticked from loop.ts via tickCameraInput).
 const heldKeys = {
-  yawL: false, yawR: false,   // Q / E
-  pitchUp: false, pitchDown: false, // R / F
   panFwd: false, panBack: false,    // W / S
   panLeft: false, panRight: false,  // A / D
 };
-const KEY_YAW_SPEED = 1.8;   // rad/sec
-const KEY_PITCH_SPEED = 1.2; // rad/sec
 const KEY_PAN_SPEED = 12;    // world tiles/sec at camScale=1
 
 // Multi-touch state for pinch-zoom / two-finger pan
 interface TouchPoint { id: number; x: number; y: number }
 let activeTouches: TouchPoint[] = [];
-let pinchStart: { dist: number; scale: number; midX: number; midY: number; camX: number; camY: number } | null = null;
+let pinchStart: { dist: number; scale: number; midX: number; midY: number } | null = null;
 
 // Long-press tooltip on touch
 let longPressTimer: number | null = null;
@@ -68,17 +64,8 @@ export function isDragging(): boolean {
 /** Apply held-key camera motion. Called once per frame from loop.ts.
  *  Pan is camera-relative so WASD always moves "as the player sees it". */
 export function tickCameraInput(dt: number): void {
-  // Yaw (Q/E)
-  if (heldKeys.yawL) state.camYaw -= KEY_YAW_SPEED * dt;
-  if (heldKeys.yawR) state.camYaw += KEY_YAW_SPEED * dt;
-
-  // Pitch (R/F) — clamped to the rig's safe range.
-  if (heldKeys.pitchUp) state.camPitch -= KEY_PITCH_SPEED * dt;
-  if (heldKeys.pitchDown) state.camPitch += KEY_PITCH_SPEED * dt;
-  state.camPitch = clamp(state.camPitch, PITCH_MIN, PITCH_MAX);
-
   // Pan (WASD) — camera-relative axes projected to ground. State maps:
-  // state.camX → world X, state.camY → world Z.
+  // state.camX → world X · TILE, state.camY → world Z · TILE.
   const fwdX   = -Math.cos(state.camYaw);
   const fwdZ   = -Math.sin(state.camYaw);
   const rightX =  Math.sin(state.camYaw); // screen-right in world
@@ -112,11 +99,9 @@ function onPointerDown(e: PointerLike): void {
   ensureAudio();
   dragging = true;
   didDrag = false;
-  // Primary drag is now ORBIT. dragStart snapshots yaw/pitch so the
-  // orbit is absolute relative to where the drag began — drift-free.
   dragStart = {
     x: e.clientX, y: e.clientY,
-    yaw: state.camYaw, pitch: state.camPitch,
+    prevX: e.clientX, prevY: e.clientY,
   };
   cv.classList.add('dragging');
 }
@@ -129,33 +114,21 @@ function onPointerMove(e: PointerLike): void {
     const dy = e.clientY - dragStart.y;
     if (Math.abs(dx) > dragThreshold || Math.abs(dy) > dragThreshold) didDrag = true;
     if (didDrag) {
-      // Free-cam orbit: drag horizontally rotates yaw, vertically
-      // pitches. Pitch is clamped to PITCH_MIN/PITCH_MAX in the rig.
-      state.camYaw = dragStart.yaw - dx * ORBIT_YAW_SPEED;
-      state.camPitch = clamp(
-        dragStart.pitch - dy * ORBIT_PITCH_SPEED,
-        PITCH_MIN, PITCH_MAX,
-      );
+      // Anchor pan: the world point that was under the previous
+      // mouse position should still be under the current mouse.
+      // Recomputing the delta each step keeps the pan rock-steady
+      // even at oblique angles where 1 screen px ≠ 1 world unit.
+      const prevW = screenToWorld(dragStart.prevX, dragStart.prevY);
+      const curW = screenToWorld(e.clientX, e.clientY);
+      state.camX += prevW.x - curW.x;
+      state.camY += prevW.y - curW.y;
+      clampCamera();
+      dragStart.prevX = e.clientX;
+      dragStart.prevY = e.clientY;
       cancelLongPress();
     }
   }
   if (!isTouch) updateHoverTooltip();
-}
-
-// Right-mouse pan: rotates the screen delta by (yaw - π/4) so the
-// world shifts under the cursor in roughly the cursor's direction.
-function onPanMove(e: PointerLike): void {
-  if (!panning || !panStart) return;
-  const dx = e.clientX - panStart.x;
-  const dy = e.clientY - panStart.y;
-  const da = state.camYaw - Math.PI / 4;
-  const c = Math.cos(da);
-  const s = Math.sin(da);
-  const dxw = dx * c - dy * s;
-  const dyw = dx * s + dy * c;
-  state.camX = panStart.camX - dxw / state.camScale;
-  state.camY = panStart.camY - dyw / state.camScale;
-  clampCamera();
 }
 
 function onPointerUp(_e: unknown): void {
@@ -171,8 +144,9 @@ function onWheel(e: WheelEvent): void {
   e.preventDefault();
   const factor = e.deltaY > 0 ? 0.88 : 1.12;
   const before = screenToWorld(e.clientX, e.clientY);
-  // Wider zoom range for free-cam — get up close or float high above.
-  state.camScale = clamp(state.camScale * factor, 0.25, 3.5);
+  // Wider zoom range so the locked iso feels expansive: from a
+  // close-up of one building to a full-farm overview.
+  state.camScale = clamp(state.camScale * factor, 0.45, 3.0);
   const after = screenToWorld(e.clientX, e.clientY);
   state.camX += before.x - after.x;
   state.camY += before.y - after.y;
@@ -269,7 +243,9 @@ function cancelLongPress(): void {
 }
 
 // ----------------------------------------------------------------
-// Pinch-zoom helpers
+// Pinch-zoom helpers — two fingers zoom + pan. Pan is world-anchor
+// (the midpoint between the fingers stays put while the gesture
+// re-scales), matching the mouse-wheel zoom-to-cursor behavior.
 // ----------------------------------------------------------------
 function midpoint(a: TouchPoint, b: TouchPoint): { x: number; y: number } {
   return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
@@ -299,8 +275,6 @@ function startPinch(): void {
     scale: state.camScale,
     midX: mid.x,
     midY: mid.y,
-    camX: state.camX,
-    camY: state.camY,
   };
   // Treat as not a single-finger drag anymore
   dragging = false;
@@ -318,34 +292,27 @@ function updatePinch(): void {
   if (newDist < 1 || pinchStart.dist < 1) return;
   const mid = midpoint(a, b);
 
-  // Calculate desired zoom from the pinch ratio
-  let newScale = clamp(pinchStart.scale * (newDist / pinchStart.dist), 0.4, 2.6);
-
-  // Two-finger pan from midpoint delta
-  const dx = mid.x - pinchStart.midX;
-  const dy = mid.y - pinchStart.midY;
-
-  // World point under the pinch center should stay there:
-  // Before zoom (using prev cam), world point at (midX, midY) = pinchStart.camX + (midX - SW/2)/pinchStart.scale
-  // After zoom apply: new camX such that the original world point maps back to (mid.x, mid.y)
-  // We combine pan (delta) by subtracting dx / newScale.
-  const worldAtStart = {
-    x: pinchStart.camX + (pinchStart.midX - window.innerWidth / 2) / pinchStart.scale,
-    y: pinchStart.camY + (pinchStart.midY - window.innerHeight / 2) / pinchStart.scale,
-  };
+  // 1) Apply the pinch ratio, keeping the world point under the
+  //    pinch midpoint anchored across the scale change.
+  const prevWorldAtMid = screenToWorld(pinchStart.midX, pinchStart.midY);
+  const newScale = clamp(pinchStart.scale * (newDist / pinchStart.dist), 0.45, 3.0);
   state.camScale = newScale;
-  state.camX = worldAtStart.x - (mid.x - window.innerWidth / 2) / newScale;
-  state.camY = worldAtStart.y - (mid.y - window.innerHeight / 2) / newScale;
-  // Apply two-finger pan delta on top
-  state.camX -= dx / newScale;
-  state.camY -= dy / newScale;
-  // Update pinchStart so the next move event is relative (smoother feel)
+  const afterWorldAtMid = screenToWorld(pinchStart.midX, pinchStart.midY);
+  state.camX += prevWorldAtMid.x - afterWorldAtMid.x;
+  state.camY += prevWorldAtMid.y - afterWorldAtMid.y;
+
+  // 2) Apply two-finger pan by anchoring "the world point under
+  //    the previous midpoint" to the new midpoint.
+  const prevW = screenToWorld(pinchStart.midX, pinchStart.midY);
+  const curW = screenToWorld(mid.x, mid.y);
+  state.camX += prevW.x - curW.x;
+  state.camY += prevW.y - curW.y;
+
+  // Update pinchStart so the next move event is relative
   pinchStart.dist = newDist;
   pinchStart.midX = mid.x;
   pinchStart.midY = mid.y;
   pinchStart.scale = newScale;
-  pinchStart.camX = state.camX;
-  pinchStart.camY = state.camY;
   clampCamera();
 }
 
@@ -358,13 +325,9 @@ export function attachInput(): void {
   cv.addEventListener('mousedown', e => {
     isTouch = false;
     dragThreshold = 4;
+    // Middle/right click is reserved for the browser context menu (we
+    // suppress it on the canvas); they no longer have a gameplay role.
     if (e.button === 2 || e.button === 1) {
-      // Right-click or middle-click drag = pan.
-      panning = true;
-      panStart = {
-        x: e.clientX, y: e.clientY,
-        camX: state.camX, camY: state.camY,
-      };
       e.preventDefault();
       return;
     }
@@ -372,25 +335,12 @@ export function attachInput(): void {
   });
   cv.addEventListener('mousemove', e => {
     isTouch = false;
-    if (panning) {
-      onPanMove(e);
-      return;
-    }
     onPointerMove(e);
   });
   cv.addEventListener('mouseup', e => {
-    if (panning) {
-      panning = false;
-      panStart = null;
-      return;
-    }
     onPointerUp(e);
   });
   cv.addEventListener('mouseleave', e => {
-    if (panning) {
-      panning = false;
-      panStart = null;
-    }
     onPointerUp(e);
   });
   cv.addEventListener('wheel', onWheel, { passive: false });
@@ -460,15 +410,15 @@ export function attachInput(): void {
       setTool(tool);
       return;
     }
-    // Camera — WASD pan, Q/E yaw, R/F pitch (camera-relative).
+    // Camera — WASD pan (camera-relative). Q rotates the iso view
+    // by 90°; Home returns to the default facing. No pitch control:
+    // the iso angle is locked for a stable cozy feel.
     if (e.key === 'w' || e.key === 'W') { heldKeys.panFwd = true; return; }
     if (e.key === 's' || e.key === 'S') { heldKeys.panBack = true; return; }
     if (e.key === 'a' || e.key === 'A') { heldKeys.panLeft = true; return; }
     if (e.key === 'd' || e.key === 'D') { heldKeys.panRight = true; return; }
-    if (e.key === 'q' || e.key === 'Q') { heldKeys.yawL = true; return; }
-    if (e.key === 'e' || e.key === 'E') { heldKeys.yawR = true; return; }
-    if (e.key === 'r' || e.key === 'R') { heldKeys.pitchUp = true; return; }
-    if (e.key === 'f' || e.key === 'F') { heldKeys.pitchDown = true; return; }
+    if (e.key === 'q' || e.key === 'Q') { rotateView(); return; }
+    if (e.key === 'Home') { resetView(); return; }
     if (e.key === 'Escape') {
       if (state.placing) {
         state.placing = null;
@@ -497,16 +447,20 @@ export function attachInput(): void {
     if (e.key === 's' || e.key === 'S') heldKeys.panBack = false;
     if (e.key === 'a' || e.key === 'A') heldKeys.panLeft = false;
     if (e.key === 'd' || e.key === 'D') heldKeys.panRight = false;
-    if (e.key === 'q' || e.key === 'Q') heldKeys.yawL = false;
-    if (e.key === 'e' || e.key === 'E') heldKeys.yawR = false;
-    if (e.key === 'r' || e.key === 'R') heldKeys.pitchUp = false;
-    if (e.key === 'f' || e.key === 'F') heldKeys.pitchDown = false;
   });
 
-  // ----- Block iOS context menu on long-press of canvas (also
-  //       suppresses right-click menu so right-drag = orbit). -----
+  // ----- Block iOS context menu on long-press of canvas -----
   cv.addEventListener('contextmenu', e => e.preventDefault());
 
   // ----- Block iOS double-tap zoom on UI -----
   document.addEventListener('gesturestart', e => e.preventDefault());
+
+  // ----- HUD: rotate-view button -----
+  const rotateBtn = document.getElementById('rotate-view-btn');
+  if (rotateBtn) {
+    rotateBtn.addEventListener('click', () => {
+      rotateView();
+      haptic(8);
+    });
+  }
 }

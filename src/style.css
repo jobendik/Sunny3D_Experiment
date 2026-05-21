@@ -446,6 +446,11 @@ button {
 }
 .music-toggle.muted { opacity: 0.55; filter: grayscale(0.35); }
 
+/* Rotate-view button — same icon-badge geometry as the music toggle,
+   but the glyph is a chunky CSS arrow so we don't rely on emoji.  */
+.rotate-view { font-family: 'Nunito', system-ui, sans-serif; font-weight: 800; font-size: 22px; }
+.rotate-view:active { transform: rotate(90deg); transition: transform 0.35s cubic-bezier(.4,1.4,.5,1); }
+
 /* Secondary HUD chips — softer, smaller, weather-tinted */
 .weather-badge, .season-badge, .day-badge {
   font-size: var(--fs-13);
