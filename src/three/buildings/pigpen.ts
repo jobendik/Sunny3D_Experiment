@@ -30,10 +30,22 @@ export function makePigPen(w: number, d: number): Group {
   nostril2.position.set(hutX0 + hutW / 2 + 0.04, 1.05, hutZ0 + 0.005);
   g.add(nostril1, nostril2);
 
-  // Mud puddle (flat dark disc)
-  const mud = new Mesh(cyl(0.6, 0.6, 0.03, 16), mat('#3a2010'));
+  // Mud puddle with reflective center (a brighter ring around a
+  // darker pool reads as wet, satisfying, "pig-friendly" mud).
+  const mud = new Mesh(cyl(0.62, 0.62, 0.03, 18), mat('#5a3220'));
   mud.position.set(hutX0 + hutW + 0.7, 0.01, d / 2 + 0.2);
   g.add(mud);
+  const mudCore = new Mesh(cyl(0.42, 0.42, 0.02, 18), mat('#3a2010'));
+  mudCore.position.set(hutX0 + hutW + 0.7, 0.025, d / 2 + 0.2);
+  g.add(mudCore);
+  // A few hay tufts scattered in the yard
+  for (let i = 0; i < 4; i++) {
+    const hay = new Mesh(box(0.10, 0.04, 0.10), mat('#e8c64a'));
+    const hx = 0.4 + (i / 4) * (w - 0.8) + (Math.random() - 0.5) * 0.1;
+    const hz = 0.5 + (i % 2) * 0.8 + (Math.random() - 0.5) * 0.1;
+    hay.position.set(hx, 0.025, hz);
+    g.add(hay);
+  }
 
   // Fenced yard around the whole footprint
   const fenceG = fence({ w, d, color: '#7a5530', sides: { n: true, e: true, w: true, s: true } });

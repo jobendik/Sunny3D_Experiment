@@ -36,12 +36,14 @@ function smoothHash(x: number, y: number, salt = 0): number {
   return (h & 0xffff) / 0xffff;
 }
 
-const stoneMat = new MeshLambertMaterial({ color: new Color('#9a948a'), flatShading: true });
-const stoneDarkMat = new MeshLambertMaterial({ color: new Color('#7a7670'), flatShading: true });
-const bushMat = new MeshLambertMaterial({ color: new Color('#3e8a2a'), flatShading: true });
-const bushDarkMat = new MeshLambertMaterial({ color: new Color('#2d6a22'), flatShading: true });
-const mushroomCap = new MeshLambertMaterial({ color: new Color('#c84030'), flatShading: true });
-const mushroomStem = new MeshLambertMaterial({ color: new Color('#f0e8d0'), flatShading: true });
+const stoneMat = new MeshLambertMaterial({ color: new Color('#a8a298'), flatShading: true });
+const stoneDarkMat = new MeshLambertMaterial({ color: new Color('#8a8478'), flatShading: true });
+const bushMat = new MeshLambertMaterial({ color: new Color('#52a448'), flatShading: true });
+const bushDarkMat = new MeshLambertMaterial({ color: new Color('#386e2c'), flatShading: true });
+const bushBerryMat = new MeshLambertMaterial({ color: new Color('#e85068'), flatShading: true });
+const mushroomCap = new MeshLambertMaterial({ color: new Color('#d3492f'), flatShading: true });
+const mushroomCapSpot = new MeshLambertMaterial({ color: new Color('#fff4e0'), flatShading: true });
+const mushroomStem = new MeshLambertMaterial({ color: new Color('#f4ecd6'), flatShading: true });
 
 const stoneSmGeom = new IcosahedronGeometry(0.12, 0);
 const stoneMdGeom = new IcosahedronGeometry(0.16, 0);
@@ -76,34 +78,58 @@ function makeStoneCluster(rand: () => number): Group {
 
 function makeBush(rand: () => number): Group {
   const g = new Group();
-  const a = new Mesh(bushLgGeom, bushMat);
-  a.position.set(0, 0.22, 0);
-  a.scale.set(1.1, 0.9, 1.1);
-  g.add(a);
-  const b = new Mesh(bushSmGeom, bushDarkMat);
-  b.position.set(0.16, 0.20, 0.08);
-  g.add(b);
-  if (rand() < 0.4) {
+  // Two-tone layered bush: a darker base + a lighter "lit hemisphere"
+  // offset on top so the silhouette has clear depth.
+  const base = new Mesh(bushLgGeom, bushDarkMat);
+  base.position.set(0, 0.20, 0);
+  base.scale.set(1.15, 0.92, 1.15);
+  g.add(base);
+  const lit = new Mesh(bushLgGeom, bushMat);
+  lit.position.set(0.05, 0.26, 0.04);
+  lit.scale.set(1.0, 0.85, 1.0);
+  g.add(lit);
+  if (rand() < 0.55) {
     const c = new Mesh(bushSmGeom, bushMat);
-    c.position.set(-0.14, 0.18, -0.06);
-    c.scale.set(0.85, 0.85, 0.85);
+    c.position.set(-0.16, 0.20, -0.08);
+    c.scale.set(0.95, 0.85, 0.95);
     g.add(c);
+  }
+  // 25% chance of berry highlights
+  if (rand() < 0.25) {
+    for (let i = 0; i < 4; i++) {
+      const berry = new Mesh(new SphereGeometry(0.03, 6, 4), bushBerryMat);
+      const ang = (i / 4) * Math.PI * 2 + rand() * 0.5;
+      berry.position.set(
+        Math.cos(ang) * 0.22,
+        0.30 + rand() * 0.08,
+        Math.sin(ang) * 0.22,
+      );
+      g.add(berry);
+    }
   }
   return g;
 }
 
 function makeMushroomClump(rand: () => number): Group {
   const g = new Group();
-  for (let i = 0; i < 3; i++) {
+  const clumpSize = 2 + Math.floor(rand() * 3);
+  for (let i = 0; i < clumpSize; i++) {
     const m = new Group();
     const stem = new Mesh(mushStemGeom, mushroomStem);
     stem.position.y = 0.04;
     const cap = new Mesh(mushCapGeom, mushroomCap);
     cap.position.y = 0.10;
-    cap.scale.set(1, 0.6, 1);
+    cap.scale.set(1.05, 0.62, 1.05);
     m.add(stem, cap);
+    // Add 2 tiny cream spots on top of the cap for a fairytale feel
+    for (let s = 0; s < 2; s++) {
+      const spot = new Mesh(new SphereGeometry(0.012, 6, 4), mushroomCapSpot);
+      const ang = rand() * Math.PI * 2;
+      spot.position.set(Math.cos(ang) * 0.04, 0.135, Math.sin(ang) * 0.04);
+      m.add(spot);
+    }
     m.position.set((rand() - 0.5) * 0.16, 0, (rand() - 0.5) * 0.16);
-    m.scale.setScalar(0.7 + rand() * 0.5);
+    m.scale.setScalar(0.7 + rand() * 0.55);
     g.add(m);
   }
   return g;

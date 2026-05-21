@@ -1,6 +1,6 @@
 // Perfumery — fancy purple shop with a perfume-bottle sign.
 import { Group, Mesh } from 'three';
-import { walls, gableRoof, door, windowPane } from '../procgen/building-kit';
+import { walls, gableRoof, door, windowPane, flowerBox } from '../procgen/building-kit';
 import { box, cyl, sphere } from '../procgen/geometries';
 import { mat } from '../procgen/materials';
 
@@ -24,5 +24,8 @@ export function makePerfumery(w: number, d: number): Group {
   const puff = new Mesh(sphere(0.07, 8, 6), mat('#f0d8f8', { transparent: true, opacity: 0.6 }));
   puff.position.set(w / 2 + 0.15, 2.4, d / 2);
   g.add(puff);
+  // Flower boxes — match the fragrant aesthetic
+  g.add(flowerBox(w / 2 - 0.9, 0.65, -0.05, 0.4));
+  g.add(flowerBox(w / 2 + 0.9, 0.65, -0.05, 0.4));
   return g;
 }

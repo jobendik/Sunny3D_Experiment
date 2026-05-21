@@ -50,12 +50,12 @@ function makePointCloud(n: number, area: number, height: number, color: string, 
 
 export function installWeather(): void {
   const { weather } = getSceneRoot();
-  rain = makePointCloud(RAIN_COUNT, GRID_W + 6, 14, '#7ac0ef', 0.05);
+  rain = makePointCloud(RAIN_COUNT, GRID_W + 6, 14, '#aedbf3', 0.06);
   rainMat = rain.material as PointsMaterial;
   rain.position.set(-3, 0, -3);
   weather.add(rain);
 
-  snow = makePointCloud(SNOW_COUNT, GRID_W + 6, 14, '#ffffff', 0.08);
+  snow = makePointCloud(SNOW_COUNT, GRID_W + 6, 14, '#fffeff', 0.11);
   snowMat = snow.material as PointsMaterial;
   snow.position.set(-3, 0, -3);
   weather.add(snow);

@@ -1,6 +1,6 @@
 // Feed Mill — wooden silo with a hopper chute.
 import { Group, Mesh } from 'three';
-import { walls, gableRoof, door, silo } from '../procgen/building-kit';
+import { walls, gableRoof, door, silo, flowerBox } from '../procgen/building-kit';
 import { box, cone, cyl } from '../procgen/geometries';
 import { mat } from '../procgen/materials';
 
@@ -27,6 +27,8 @@ export function makeFeedMill(w: number, d: number): Group {
   const pile = new Mesh(cone(0.3, 0.18, 14), mat('#e8c878'));
   pile.position.set(w * 0.85, 0.09, d * 0.95);
   g.add(pile);
+  // Cozy front flowerbox
+  g.add(flowerBox(0.15 + houseW / 2, 0.55, -0.05, 0.4));
   void box; void cyl;
   return g;
 }

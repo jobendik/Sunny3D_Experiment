@@ -9,7 +9,10 @@
 //  Withered tiles get tilted & desaturated; wilting tiles bob.
 // =============================================================
 
-import { Group, Mesh } from 'three';
+import {
+  Group, Mesh, RingGeometry, MeshBasicMaterial, Color, DoubleSide,
+  AdditiveBlending, Sprite, SpriteMaterial, CanvasTexture,
+} from 'three';
 import { state } from '../../state';
 import { GRID_W, GRID_H } from '../../constants';
 import { getSceneRoot } from '../scene-root';
@@ -22,9 +25,70 @@ interface CropMounted {
   crop: string;
   stage: number;
   root: Group;
+  ring?: Mesh;
+  sparkle?: Sprite;
 }
 
 const mounted = new Map<string, CropMounted>();
+
+// Shared ripe-ready ring geometry & material — one for every crop,
+// drawn under the plant when stage === 3. It pulses gently so the
+// player's eye is drawn to harvestable rows at a glance.
+let _ringGeom: RingGeometry | null = null;
+let _ringMat: MeshBasicMaterial | null = null;
+function ripeRing(): Mesh {
+  if (!_ringGeom) {
+    _ringGeom = new RingGeometry(0.30, 0.42, 24);
+    _ringGeom.rotateX(-Math.PI / 2);
+  }
+  if (!_ringMat) {
+    _ringMat = new MeshBasicMaterial({
+      color: new Color('#ffe080'),
+      transparent: true,
+      opacity: 0.55,
+      depthWrite: false,
+      side: DoubleSide,
+      blending: AdditiveBlending,
+    });
+  }
+  const m = new Mesh(_ringGeom, _ringMat);
+  m.renderOrder = 2;
+  return m;
+}
+
+// Shared sparkle sprite texture — a small radial gradient that
+// reads as a tiny "ready!" highlight floating above a ripe crop.
+let _sparkleTex: CanvasTexture | null = null;
+let _sparkleMat: SpriteMaterial | null = null;
+function sparkleSprite(): Sprite {
+  if (!_sparkleTex) {
+    const size = 64;
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const ctx = c.getContext('2d')!;
+    const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    grad.addColorStop(0, 'rgba(255,255,220,1)');
+    grad.addColorStop(0.35, 'rgba(255,220,130,0.7)');
+    grad.addColorStop(1, 'rgba(255,180,80,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+    _sparkleTex = new CanvasTexture(c);
+  }
+  if (!_sparkleMat) {
+    _sparkleMat = new SpriteMaterial({
+      map: _sparkleTex,
+      transparent: true,
+      depthWrite: false,
+      blending: AdditiveBlending,
+    });
+  }
+  // Per-sprite material clone so opacity can pulse independently.
+  const m = _sparkleMat.clone();
+  const s = new Sprite(m);
+  s.scale.set(0.32, 0.32, 1);
+  s.renderOrder = 6;
+  return s;
+}
 
 const CROP_COLORS: Record<string, { stem: string; head: string }> = {
   wheat:      { stem: '#3a7a30', head: '#e8c64a' },
@@ -164,6 +228,18 @@ export function updateCrops(timeS: number): void {
         root.position.set(gx + 0.5, 0, gy + 0.5);
         entities.add(root);
         m = { key, crop: t.crop, stage, root };
+        // Attach ripe-ring + sparkle on stage 3 so the player's eye
+        // is drawn to harvestable tiles even at a quick glance.
+        if (stage === 3) {
+          const ring = ripeRing();
+          ring.position.y = 0.03;
+          root.add(ring);
+          m.ring = ring;
+          const spark = sparkleSprite();
+          spark.position.y = 0.65;
+          root.add(spark);
+          m.sparkle = spark;
+        }
         mounted.set(key, m);
       }
       // Animate state on top of the static base mesh
@@ -178,8 +254,28 @@ export function updateCrops(timeS: number): void {
       } else {
         m.root.rotation.z = 0;
         // Ripe stage gentle bob
-        if (stage === 3) m.root.position.y = Math.sin(timeS * 2 + gx + gy) * 0.02;
-        else m.root.position.y = 0;
+        if (stage === 3) {
+          m.root.position.y = Math.sin(timeS * 2 + gx + gy) * 0.02;
+          // Pulse the "ready" ring + sparkle gently. The pulse phase
+          // is offset per-tile so a row of ripe crops twinkles in a
+          // soft wave rather than synchronously.
+          const phase = timeS * 2.2 + gx * 0.41 + gy * 0.37;
+          const pulse = 0.55 + 0.35 * (0.5 + 0.5 * Math.sin(phase));
+          if (m.ring) {
+            (m.ring.material as MeshBasicMaterial).opacity = pulse;
+            const s = 0.95 + 0.10 * Math.sin(phase * 0.8);
+            m.ring.scale.setScalar(s);
+          }
+          if (m.sparkle) {
+            const mat = m.sparkle.material as SpriteMaterial;
+            mat.opacity = 0.55 + 0.35 * Math.sin(phase + 1.2);
+            const ss = 0.28 + 0.10 * Math.sin(phase * 1.3 + 0.6);
+            m.sparkle.scale.set(ss, ss, 1);
+            m.sparkle.position.y = 0.62 + Math.sin(phase * 0.7) * 0.04;
+          }
+        } else {
+          m.root.position.y = 0;
+        }
       }
     }
   }

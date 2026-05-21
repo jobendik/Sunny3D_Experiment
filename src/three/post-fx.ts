@@ -23,15 +23,18 @@ import { getRenderer } from './renderer';
 import { getSceneRoot } from './scene-root';
 import { getCamera } from './camera-rig';
 
-// Subtle vignette + warm/cool grade so the framing feels filmic
-// rather than "raw renderer output". Strength is conservative —
-// dark corners only, +1% saturation, +2% warmth at low light levels.
+// Cozy color grade: soft vignette, warm sunset-ish tint in the
+// corners, a kiss of saturation, a touch of lift+gain S-curve, and
+// a subtle warm highlight push. Keeps the cinematic feel without
+// crushing midtones.
 const VignetteShader = {
   uniforms: {
     tDiffuse: { value: null },
-    uStrength: { value: 0.28 },
-    uWarmth: { value: 0.03 },
-    uSat: { value: 1.05 },
+    uStrength: { value: 0.34 },
+    uWarmth: { value: 0.05 },
+    uSat: { value: 1.10 },
+    uLift: { value: 0.012 },          // raise blacks slightly
+    uHighlightWarm: { value: 0.018 }, // gently warm the highlights
   },
   vertexShader: /* glsl */ `
     varying vec2 vUv;
@@ -45,19 +48,34 @@ const VignetteShader = {
     uniform float uStrength;
     uniform float uWarmth;
     uniform float uSat;
+    uniform float uLift;
+    uniform float uHighlightWarm;
     varying vec2 vUv;
     void main() {
       vec4 c = texture2D(tDiffuse, vUv);
-      // Vignette: darken corners, leave center untouched.
+      // Vignette: darken corners, leave center untouched. Slightly
+      // softer falloff so the player's eye isn't drawn to a hard
+      // ring at the edges.
       float d = length(vUv - vec2(0.5)) * 1.42;
-      float v = smoothstep(0.55, 1.0, d);
+      float v = smoothstep(0.50, 1.05, d);
       c.rgb *= 1.0 - v * uStrength;
-      // Warm/cool tint
-      c.r += uWarmth * (1.0 - v);
-      c.b -= uWarmth * 0.5 * (1.0 - v);
+      // Warm corners — sells "afternoon sun".
+      c.r += uWarmth * v;
+      c.g += uWarmth * 0.55 * v;
+      c.b -= uWarmth * 0.35 * v;
+      // Lift shadows a hair so dark crevices don't crush black.
+      c.rgb += vec3(uLift);
+      // Warm-highlight push: bright pixels pull toward honey, which
+      // makes sun-lit rooftops feel "lit by golden hour" without
+      // bleeding tint into midtones.
+      float lum = dot(c.rgb, vec3(0.299, 0.587, 0.114));
+      float hi = smoothstep(0.55, 1.0, lum);
+      c.r += hi * uHighlightWarm;
+      c.g += hi * uHighlightWarm * 0.4;
+      c.b -= hi * uHighlightWarm * 0.6;
       // Saturation
-      float l = dot(c.rgb, vec3(0.299, 0.587, 0.114));
-      c.rgb = mix(vec3(l), c.rgb, uSat);
+      vec3 grey = vec3(lum);
+      c.rgb = mix(grey, c.rgb, uSat);
       gl_FragColor = c;
     }
   `,
@@ -84,10 +102,11 @@ export function getComposer(): EffectComposer {
 
   composer.addPass(new RenderPass(scene, camera));
 
-  // Bloom: strength / radius / threshold. Threshold ~0.9 keeps
-  // mid-tone surfaces from blooming; emissive materials and bright
-  // sun highlights are the main contributors.
-  bloomPass = new UnrealBloomPass(new Vector2(w, h), 0.42, 0.7, 0.85);
+  // Bloom: strength / radius / threshold. Threshold ~0.82 lets
+  // bright sun highlights, ripe-crop sparkles, treasure chest
+  // glow, and emissive materials all pick up a gentle halo
+  // without the rest of the scene smearing.
+  bloomPass = new UnrealBloomPass(new Vector2(w, h), 0.48, 0.85, 0.82);
   composer.addPass(bloomPass);
 
   // SMAAPass auto-sizes from its composer in r155+.

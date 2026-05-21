@@ -1,6 +1,6 @@
 // Dairy — clean white walls with a chrome milk can on the roof.
 import { Group, Mesh } from 'three';
-import { walls, gableRoof, door, windowPane } from '../procgen/building-kit';
+import { walls, gableRoof, door, windowPane, wallLantern, flowerBox } from '../procgen/building-kit';
 import { cyl, sphere } from '../procgen/geometries';
 import { mat } from '../procgen/materials';
 
@@ -24,5 +24,10 @@ export function makeDairy(w: number, d: number): Group {
   const drop = new Mesh(sphere(0.05, 8, 6), mat('#f8f8f0'));
   drop.position.set(w / 2 + 0.18, 2.18, d / 2);
   g.add(drop);
+  // Front lanterns + window flowerboxes
+  g.add(wallLantern(w / 2 - 0.35, 0.9, -0.06));
+  g.add(wallLantern(w / 2 + 0.35, 0.9, -0.06));
+  g.add(flowerBox(w / 2 - 0.85, 0.6, -0.05, 0.4));
+  g.add(flowerBox(w / 2 + 0.85, 0.6, -0.05, 0.4));
   return g;
 }

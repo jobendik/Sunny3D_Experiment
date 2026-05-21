@@ -71,14 +71,16 @@ function biomeColor(worldX: number, worldZ: number, height: number): Color {
     Math.abs(worldX - GRID_W / 2),
     Math.abs(worldZ - GRID_H / 2),
   );
-  if (height < -0.2) return new Color('#2f6bb0');                // pond
-  if (height < -0.05) return new Color('#a8d28a');               // marsh
-  if (distFromCenter > 22) return new Color('#5a8a4a');          // deep forest floor
-  // Meadow palette: 3 greens picked from a hash.
+  if (height < -0.2) return new Color('#3a82c8');                // pond
+  if (height < -0.05) return new Color('#b8d894');               // marsh
+  if (distFromCenter > 22) return new Color('#62956a');          // deep forest floor
+  // Meadow palette tuned to match the inner tile palette so the
+  // playable grid blends into the outer ring instead of standing
+  // out as a different-colored island.
   const t = smoothHash(worldX, worldZ, 3);
-  if (t < 0.33) return new Color('#74c45e');
-  if (t < 0.66) return new Color('#86d068');
-  return new Color('#6db053');
+  if (t < 0.33) return new Color('#7ccc60');
+  if (t < 0.66) return new Color('#8ad36e');
+  return new Color('#73c258');
 }
 
 function buildOuterLand(): InstancedMesh {
@@ -224,11 +226,22 @@ function makeRock(x: number, y: number, z: number, r: number): Mesh {
 function makeMountain(x: number, z: number, r: number): Group {
   const g = new Group();
   const h = 7 + r * 5;
-  const base = new Mesh(new ConeGeometry(2.2 + r * 1.1, h, 6), mat('#7889a4'));
+  // Slightly cooler, more atmospheric mountains so they read as
+  // "far away" rather than competing with the warm farm tones.
+  const palette = ['#7d8caf', '#849ab4', '#8090ad'];
+  const c = palette[Math.floor(r * palette.length)] ?? palette[0]!;
+  const base = new Mesh(new ConeGeometry(2.2 + r * 1.1, h, 6), mat(c));
   base.position.y = h / 2 - 0.5;
   g.add(base);
-  const snowCap = new Mesh(new ConeGeometry(0.9, h * 0.25, 6), mat('#f4f8ff'));
-  snowCap.position.y = h - h * 0.1;
+  // A secondary cone offset to one side adds silhouette interest —
+  // ridges feel more "real mountain" with the broken shape.
+  if (r > 0.4) {
+    const sub = new Mesh(new ConeGeometry(1.6 + r * 0.8, h * 0.75, 6), mat(c));
+    sub.position.set(0.9 * (r - 0.5) * 2, h * 0.32 - 0.5, 0.7 * (r - 0.5) * 2);
+    g.add(sub);
+  }
+  const snowCap = new Mesh(new ConeGeometry(0.95, h * 0.27, 6), mat('#f6f9ff'));
+  snowCap.position.y = h - h * 0.10;
   g.add(snowCap);
   g.position.set(x, 0, z);
   g.rotation.y = r * Math.PI * 2;
@@ -241,11 +254,11 @@ function buildOuterWater(): Mesh {
   const geom = new CircleGeometry(OUTER_RANGE + 6, 48);
   geom.rotateX(-Math.PI / 2);
   outerWaterMat = new MeshStandardMaterial({
-    color: new Color('#3a76b8'),
+    color: new Color('#4a92d0'),
     transparent: true,
-    opacity: 0.7,
-    roughness: 0.35,
-    metalness: 0.1,
+    opacity: 0.78,
+    roughness: 0.30,
+    metalness: 0.12,
     side: DoubleSide,
   });
   const m = new Mesh(geom, outerWaterMat);

@@ -4,23 +4,33 @@
 import { Group, Mesh } from 'three';
 import { cyl, box, cone } from '../procgen/geometries';
 import { mat } from '../procgen/materials';
-import { door, windowPane } from '../procgen/building-kit';
+import { door, windowPane, wallLantern, flowerBox } from '../procgen/building-kit';
 
 export function makeWindmill(w: number, d: number): Group {
   const g = new Group();
   const cx = w / 2;
   const cz = d / 2;
-  // Tower body (slightly tapered cylinder)
-  const tower = new Mesh(cyl(0.55, 0.7, 2.4, 16), mat('#e8d8b8'));
+  // Tower body (slightly tapered cylinder) — a touch warmer/creamier
+  const tower = new Mesh(cyl(0.55, 0.7, 2.4, 16), mat('#f0e0bc'));
   tower.position.set(cx, 1.2, cz);
   tower.castShadow = true;
   tower.receiveShadow = true;
   g.add(tower);
-  // Cone cap
-  const cap = new Mesh(cone(0.7, 0.55, 16), mat('#5a3a20'));
-  cap.position.set(cx, 2.65, cz);
+  // Stone foundation ring at the base for landmark presence
+  const foundation = new Mesh(cyl(0.78, 0.78, 0.18, 16), mat('#8a8278'));
+  foundation.position.set(cx, 0.09, cz);
+  foundation.castShadow = true;
+  foundation.receiveShadow = true;
+  g.add(foundation);
+  // Cone cap with a slightly richer red-brown
+  const cap = new Mesh(cone(0.72, 0.62, 16), mat('#6b3a20'));
+  cap.position.set(cx, 2.7, cz);
   cap.castShadow = true;
   g.add(cap);
+  // Decorative trim ring just under the cap
+  const trim = new Mesh(cyl(0.6, 0.6, 0.10, 16), mat('#a26240'));
+  trim.position.set(cx, 2.38, cz);
+  g.add(trim);
   // Sail axle pointing south (toward viewer)
   const sails = new Group();
   sails.name = 'windmill-sails';
@@ -44,5 +54,9 @@ export function makeWindmill(w: number, d: number): Group {
   g.add(door({ faceZ: cz - 0.55, faceX: cx, w: 0.4, h: 0.7, color: '#5a3a20' }));
   g.add(windowPane({ faceZ: cz - 0.55, faceX: cx - 0.4, y: 1.7, w: 0.2, h: 0.25 }));
   g.add(windowPane({ faceZ: cz - 0.55, faceX: cx + 0.4, y: 1.7, w: 0.2, h: 0.25 }));
+  // Porch lanterns + flower box for that landmark "wow"
+  g.add(wallLantern(cx - 0.25, 1.05, cz - 0.55));
+  g.add(wallLantern(cx + 0.25, 1.05, cz - 0.55));
+  g.add(flowerBox(cx, 0.6, cz - 0.62, 0.5));
   return g;
 }

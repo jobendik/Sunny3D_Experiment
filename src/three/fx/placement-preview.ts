@@ -50,7 +50,7 @@ export function installPlacementPreview(): void {
   const { fx } = getSceneRoot();
   group = new Group();
   group.visible = false;
-  outlineMat = new LineBasicMaterial({ color: new Color('#4ad84a'), linewidth: 2, transparent: true, opacity: 0.85 });
+  outlineMat = new LineBasicMaterial({ color: new Color('#5cf263'), linewidth: 3, transparent: true, opacity: 0.95 });
   outline = new LineSegments(makeOutlineGeom(1, 1), outlineMat);
   group.add(outline);
   fx.add(group);
@@ -147,5 +147,5 @@ export function updatePlacementPreview(): void {
     }
     lastSig = fullSig;
   }
-  outlineMat.color.setStyle(ok ? '#4ad84a' : '#e84040');
+  outlineMat.color.setStyle(ok ? '#5cf263' : '#ff5252');
 }

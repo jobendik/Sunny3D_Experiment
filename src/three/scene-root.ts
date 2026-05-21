@@ -31,10 +31,11 @@ export function getSceneRoot(): SceneRoot {
   if (cached) return cached;
   const scene = new Scene();
   scene.background = new Color(0xcfeefc);
-  // Fog pushed out to ~90 because we now have a 60×60 outer world
-  // ring beyond the playable grid. Distant mountains & fog-of-war
-  // wisps live at 90+ where the fog softens them into the horizon.
-  scene.fog = new Fog(0xcfeefc, 65, 140);
+  // Fog pushed out to ~70 because we now have a 60×60 outer world
+  // ring beyond the playable grid. Tightened in slightly so distant
+  // mountains have a gentle atmospheric haze (premium-mobile feel)
+  // without losing the cozy "see the next hill over" composition.
+  scene.fog = new Fog(0xcfeefc, 55, 130);
 
   const terrain = new Group(); terrain.name = 'terrain';
   const decor = new Group(); decor.name = 'decor';

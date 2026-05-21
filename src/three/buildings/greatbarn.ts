@@ -1,6 +1,6 @@
 // Great Barn (landmark) — huge red barn with cupola. Footprint 4×3.
 import { Group, Mesh } from 'three';
-import { walls, gableRoof, door, windowPane } from '../procgen/building-kit';
+import { walls, gableRoof, door, windowPane, wallLantern, flowerBox } from '../procgen/building-kit';
 import { box, cyl } from '../procgen/geometries';
 import { mat } from '../procgen/materials';
 
@@ -41,5 +41,10 @@ export function makeGreatBarn(w: number, d: number): Group {
   const pole = new Mesh(cyl(0.025, 0.025, 0.5, 6), mat('#3a2a18'));
   pole.position.set(w / 2, 3.4, d / 2);
   g.add(pole);
+  // Landmark warmth — flanking lanterns + flowerboxes under the windows
+  g.add(wallLantern(w / 2 - 0.6, 1.20, -0.06, 1.3));
+  g.add(wallLantern(w / 2 + 0.6, 1.20, -0.06, 1.3));
+  g.add(flowerBox(w / 2 - 1.3, 0.65, -0.05, 0.45));
+  g.add(flowerBox(w / 2 + 1.3, 0.65, -0.05, 0.45));
   return g;
 }

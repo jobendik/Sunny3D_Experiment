@@ -1,6 +1,6 @@
 // Bakery — warm stone walls, big brick chimney, bread loaf sign.
 import { Group, Mesh } from 'three';
-import { walls, gableRoof, door, windowPane, chimney } from '../procgen/building-kit';
+import { walls, gableRoof, door, windowPane, chimney, wallLantern, flowerBox } from '../procgen/building-kit';
 import { box, sphere } from '../procgen/geometries';
 import { mat } from '../procgen/materials';
 
@@ -24,6 +24,12 @@ export function makeBakery(w: number, d: number): Group {
   bun.scale.set(1.2, 0.6, 1);
   bun.position.set(w / 2, 1.18, -0.05);
   g.add(bun);
+
+  // Porch lanterns flanking the door + flower boxes under windows
+  g.add(wallLantern(w / 2 - 0.35, 0.9, -0.06));
+  g.add(wallLantern(w / 2 + 0.35, 0.9, -0.06));
+  g.add(flowerBox(w / 2 - 0.85, 0.6, -0.05, 0.4));
+  g.add(flowerBox(w / 2 + 0.85, 0.6, -0.05, 0.4));
 
   return g;
 }

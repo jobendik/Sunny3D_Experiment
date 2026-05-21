@@ -1,6 +1,6 @@
 // Loom — wooden shop with a weaving spindle on the roof.
 import { Group, Mesh } from 'three';
-import { walls, gableRoof, door, windowPane } from '../procgen/building-kit';
+import { walls, gableRoof, door, windowPane, flowerBox } from '../procgen/building-kit';
 import { cyl, box } from '../procgen/geometries';
 import { mat } from '../procgen/materials';
 
@@ -23,6 +23,9 @@ export function makeLoom(w: number, d: number): Group {
     yarn.position.set(w / 2 - 0.15 + i * 0.15, 2.0, d / 2);
     g.add(yarn);
   }
+  // Window flower boxes
+  g.add(flowerBox(w / 2 - 0.9, 0.6, -0.05, 0.4));
+  g.add(flowerBox(w / 2 + 0.9, 0.6, -0.05, 0.4));
   void box;
   return g;
 }

@@ -1,6 +1,6 @@
 // Smoothie Bar — tropical roof, glass cup on top.
 import { Group, Mesh } from 'three';
-import { walls, door, windowPane } from '../procgen/building-kit';
+import { walls, door, windowPane, wallLantern, flowerBox } from '../procgen/building-kit';
 import { box, cyl, cone } from '../procgen/geometries';
 import { mat } from '../procgen/materials';
 
@@ -36,5 +36,10 @@ export function makeSmoothieBar(w: number, d: number): Group {
   const umb = new Mesh(cone(0.08, 0.04, 12), mat('#ff5a8a'));
   umb.position.set(w / 2 - 0.08, 1.92, d / 2);
   g.add(umb);
+  // Tropical lanterns + flowerboxes
+  g.add(wallLantern(w / 2 - 0.25, 0.92, -0.06));
+  g.add(wallLantern(w / 2 + 0.25, 0.92, -0.06));
+  g.add(flowerBox(w / 2 - 0.80, 0.55, -0.05, 0.32));
+  g.add(flowerBox(w / 2 + 0.80, 0.55, -0.05, 0.32));
   return g;
 }

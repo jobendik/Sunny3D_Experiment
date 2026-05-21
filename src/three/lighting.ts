@@ -38,21 +38,24 @@ interface LightFrameHex {
   warmTint: number;
 }
 
-// Ported verbatim from the original 2D renderer so the cycle has
-// the same vibe in both pipelines.
+// Cozy farm day cycle: brighter, warmer, more saturated midday +
+// dramatic golden-hour bookends. Sunrise/sunset are emphasized to
+// give the player a satisfying "golden farm" hero shot. Midday is
+// still bright but pulled subtly toward a soft warm cream so the
+// scene never reads as harsh white.
 const LIGHT_FRAMES: LightFrameHex[] = [
-  { t: 0.00, skyTop: '#0e1a36', skyBottom: '#22324f', shadow: 0.16, sun: 0, moon: 1.0, windows: 0.95, nightTint: 0.5, warmTint: 0 },
-  { t: 0.08, skyTop: '#1a2548', skyBottom: '#3a4868', shadow: 0.18, sun: 0, moon: 0.9, windows: 0.85, nightTint: 0.42, warmTint: 0 },
-  { t: 0.12, skyTop: '#5a4870', skyBottom: '#b08280', shadow: 0.22, sun: 0.1, moon: 0.35, windows: 0.55, nightTint: 0.25, warmTint: 0.1 },
-  { t: 0.18, skyTop: '#f0c8a0', skyBottom: '#ffe0c0', shadow: 0.30, sun: 0.4, moon: 0, windows: 0.18, nightTint: 0.08, warmTint: 0.18 },
-  { t: 0.25, skyTop: '#cfe8ff', skyBottom: '#e0f4d8', shadow: 0.36, sun: 1.0, moon: 0, windows: 0, nightTint: 0, warmTint: 0.04 },
-  { t: 0.50, skyTop: '#bce8ff', skyBottom: '#d8f0c0', shadow: 0.40, sun: 1.0, moon: 0, windows: 0, nightTint: 0, warmTint: 0 },
-  { t: 0.65, skyTop: '#c2e0f4', skyBottom: '#f0e6c0', shadow: 0.38, sun: 0.95, moon: 0, windows: 0, nightTint: 0, warmTint: 0.06 },
-  { t: 0.75, skyTop: '#ffcc98', skyBottom: '#ffd890', shadow: 0.32, sun: 0.65, moon: 0, windows: 0.05, nightTint: 0.04, warmTint: 0.18 },
-  { t: 0.82, skyTop: '#e88060', skyBottom: '#f0c890', shadow: 0.26, sun: 0.25, moon: 0, windows: 0.30, nightTint: 0.12, warmTint: 0.22 },
-  { t: 0.88, skyTop: '#6a4878', skyBottom: '#c87060', shadow: 0.21, sun: 0, moon: 0.25, windows: 0.65, nightTint: 0.3, warmTint: 0.12 },
-  { t: 0.94, skyTop: '#1f2a4a', skyBottom: '#3e4a68', shadow: 0.17, sun: 0, moon: 0.7, windows: 0.85, nightTint: 0.42, warmTint: 0.02 },
-  { t: 1.00, skyTop: '#0e1a36', skyBottom: '#22324f', shadow: 0.16, sun: 0, moon: 1.0, windows: 0.95, nightTint: 0.5, warmTint: 0 },
+  { t: 0.00, skyTop: '#0e1a36', skyBottom: '#22324f', shadow: 0.18, sun: 0, moon: 1.0, windows: 0.95, nightTint: 0.5, warmTint: 0 },
+  { t: 0.08, skyTop: '#1a2548', skyBottom: '#3a4868', shadow: 0.20, sun: 0, moon: 0.9, windows: 0.88, nightTint: 0.42, warmTint: 0 },
+  { t: 0.12, skyTop: '#5a4870', skyBottom: '#b08280', shadow: 0.24, sun: 0.12, moon: 0.35, windows: 0.55, nightTint: 0.25, warmTint: 0.14 },
+  { t: 0.18, skyTop: '#f0c8a0', skyBottom: '#ffd2a0', shadow: 0.32, sun: 0.55, moon: 0, windows: 0.18, nightTint: 0.06, warmTint: 0.32 },
+  { t: 0.25, skyTop: '#bce0f4', skyBottom: '#fce8c8', shadow: 0.40, sun: 1.10, moon: 0, windows: 0, nightTint: 0, warmTint: 0.16 },
+  { t: 0.50, skyTop: '#a8d6f0', skyBottom: '#e4f0d4', shadow: 0.44, sun: 1.15, moon: 0, windows: 0, nightTint: 0, warmTint: 0.06 },
+  { t: 0.65, skyTop: '#b6dceb', skyBottom: '#f4e6c4', shadow: 0.42, sun: 1.05, moon: 0, windows: 0, nightTint: 0, warmTint: 0.14 },
+  { t: 0.75, skyTop: '#ffcc98', skyBottom: '#ffd890', shadow: 0.34, sun: 0.78, moon: 0, windows: 0.05, nightTint: 0.04, warmTint: 0.28 },
+  { t: 0.82, skyTop: '#e88060', skyBottom: '#f0c890', shadow: 0.28, sun: 0.32, moon: 0, windows: 0.30, nightTint: 0.12, warmTint: 0.34 },
+  { t: 0.88, skyTop: '#6a4878', skyBottom: '#c87060', shadow: 0.23, sun: 0, moon: 0.25, windows: 0.68, nightTint: 0.3, warmTint: 0.18 },
+  { t: 0.94, skyTop: '#1f2a4a', skyBottom: '#3e4a68', shadow: 0.19, sun: 0, moon: 0.7, windows: 0.88, nightTint: 0.42, warmTint: 0.04 },
+  { t: 1.00, skyTop: '#0e1a36', skyBottom: '#22324f', shadow: 0.18, sun: 0, moon: 1.0, windows: 0.95, nightTint: 0.5, warmTint: 0 },
 ];
 
 function hexToRgb(hex: string): RGB {
@@ -137,26 +140,34 @@ export interface LightingSnapshot {
 export function initLighting(): LightingSnapshot {
   const { scene } = getSceneRoot();
 
-  amb = new AmbientLight(0xffffff, 0.42);
-  hemi = new HemisphereLight(0xfff6e0, 0x4a7c5a, 0.78);
+  // Warm ambient with a touch of honey — never pure white. Combined
+  // with the hemisphere it gives the scene a soft "Hay-Day Sunday
+  // afternoon" base tone before the sun even kicks in.
+  amb = new AmbientLight(0xffeac8, 0.50);
+  // Hemisphere: warm cream sky → sage-green ground bounce. The
+  // green-tinted ground term gives every shadowed face a subtle
+  // grass-bounced lift that reads as the meadow lighting itself.
+  hemi = new HemisphereLight(0xfff2d4, 0x4f8a5a, 0.92);
   hemi.position.set(0, 50, 0);
 
-  sun = new DirectionalLight(0xfff0cc, 1.45);
+  // Sun: brighter, warmer (tilted a hair toward honey rather than
+  // neutral cream) so highlights pop golden on rooftops & crops.
+  sun = new DirectionalLight(0xffe6b3, 1.7);
   sun.castShadow = true;
-  // 2048² gives much crisper shadow edges on the stylized geometry.
+  // 2048² gives crisp shadow edges on the stylized geometry.
   // Combined with VSM shadow type in the renderer this looks like
   // baked AO around buildings & trees.
   sun.shadow.mapSize.set(2048, 2048);
   const sc = sun.shadow.camera;
-  sc.left = -16;
-  sc.right = 16;
-  sc.top = 16;
-  sc.bottom = -16;
+  sc.left = -18;
+  sc.right = 18;
+  sc.top = 18;
+  sc.bottom = -18;
   sc.near = 1;
-  sc.far = 80;
-  sun.shadow.bias = -0.0003;
-  sun.shadow.normalBias = 0.04;
-  sun.shadow.radius = 3;        // softer VSM penumbra
+  sc.far = 90;
+  sun.shadow.bias = -0.00028;
+  sun.shadow.normalBias = 0.045;
+  sun.shadow.radius = 4.5;       // softer VSM penumbra → "baked" feel
 
   moon = new DirectionalLight(0xa8c0ff, 0);
   moon.castShadow = false;
@@ -166,10 +177,11 @@ export function initLighting(): LightingSnapshot {
   sun.target.position.set(GRID_W / 2, 0, GRID_H / 2);
   moon.target.position.set(GRID_W / 2, 0, GRID_H / 2);
 
-  // Small fill light from the opposite side so shadowed faces
-  // aren't pitch-black against the bright sun. Cool blue-tinted so
-  // it reads as bounce from the sky.
-  fill = new DirectionalLight(0xd4e6ff, 0.35);
+  // Fill light: cool blue-tinted bounce from the opposite side so
+  // shadowed faces read as "lit by sky" rather than pitch-black. A
+  // little stronger than before so the shaded sides of buildings &
+  // trees don't go muddy under the punchier sun.
+  fill = new DirectionalLight(0xc8defc, 0.48);
   fill.position.set(GRID_W / 2 + 8, 6, GRID_H / 2 - 8);
   fill.target.position.set(GRID_W / 2, 0, GRID_H / 2);
 
@@ -217,8 +229,17 @@ export function updateLighting(): LightingSnapshot {
     state.weather === 'storm' || state.weather === 'rainy' ? 0.4 :
     state.weather === 'snowy' ? 0.7 :
     state.weather === 'cloudy' ? 0.75 : 1;
-  sun.intensity = s.sun * 1.55 * wMul;
+  sun.intensity = s.sun * 1.65 * wMul;
   moon.intensity = s.moon * 0.42;
+  // Drift the sun's color toward warm honey at golden hour. Reads
+  // as proper "magic hour" light across the whole farm without
+  // touching individual materials.
+  const warmth = s.warmTint;
+  sun.color.setRGB(
+    1.0,
+    0.90 - warmth * 0.18,
+    0.70 - warmth * 0.30,
+  );
   // No point paying for a shadow pass once the sun is below the
   // horizon — the moonlight is too weak to cast meaningful shadows
   // in this style, and skipping it cuts a draw pass through every
@@ -237,8 +258,8 @@ export function updateLighting(): LightingSnapshot {
     Math.max(40, Math.round(skyBottom[2] * 0.3)),
   ]));
   // Brighter during the day, dimmer at night. nightTint = 0 → daytime.
-  hemi.intensity = MathUtils.lerp(0.95, 0.22, Math.min(1, s.nightTint * 2));
-  amb.intensity = MathUtils.lerp(0.6, 0.18, Math.min(1, s.nightTint * 2));
+  hemi.intensity = MathUtils.lerp(1.10, 0.26, Math.min(1, s.nightTint * 2));
+  amb.intensity = MathUtils.lerp(0.68, 0.22, Math.min(1, s.nightTint * 2));
 
   // Update the scene's background + fog to match the sky bottom
   // (horizon color), not the top — that's what distant terrain
