@@ -60,16 +60,19 @@ function indexOf(gx: number, gy: number): number {
   return gy * GRID_W + gx;
 }
 
-function writeInstance(idx: number, gx: number, gy: number, type: TileType, isWater: boolean): void {
-  if (!land) return;
+// Note: the mesh is passed in explicitly because the module-level
+// `land` is still null while buildLand() is populating its instances
+// — relying on it there silently no-op'd every initial write and
+// left every tile stacked at the origin.
+function writeInstance(mesh: InstancedMesh, idx: number, gx: number, gy: number, type: TileType, isWater: boolean): void {
   const obj = _scratch;
   const topY = isWater ? -0.5 : 0;
   obj.position.set(gx + 0.5, topY - TILE_HEIGHT / 2, gy + 0.5);
   obj.rotation.set(0, 0, 0);
   obj.scale.set(1, 1, 1);
   obj.updateMatrix();
-  land.setMatrixAt(idx, obj.matrix);
-  land.setColorAt(idx, tileTint(gx, gy, type));
+  mesh.setMatrixAt(idx, obj.matrix);
+  mesh.setColorAt(idx, tileTint(gx, gy, type));
 }
 
 const _scratch = new Object3D();
@@ -93,7 +96,7 @@ function buildLand(): InstancedMesh {
       const isWater = tile?.type === 'water';
       const type = (isWater ? 'soil' : (tile?.type ?? 'grass')) as TileType;
       const i = indexOf(gx, gy);
-      writeInstance(i, gx, gy, type, isWater);
+      writeInstance(mesh, i, gx, gy, type, isWater);
       lastTypes[i] = tile?.type ?? 'grass';
     }
   }
@@ -152,7 +155,7 @@ function updateDirtyInstances(): void {
       if (cur === lastTypes[i]) continue;
       const isWater = cur === 'water';
       const type = (isWater ? 'soil' : cur) as TileType;
-      writeInstance(i, gx, gy, type, isWater);
+      writeInstance(land, i, gx, gy, type, isWater);
       lastTypes[i] = cur;
       matrixDirty = true;
       colorDirty = true;

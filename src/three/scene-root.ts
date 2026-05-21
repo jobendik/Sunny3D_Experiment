@@ -25,9 +25,11 @@ export function getSceneRoot(): SceneRoot {
   if (cached) return cached;
   const scene = new Scene();
   scene.background = new Color(0xcfeefc);
-  // Fog tuned for the iso camera distance (~18 from target). Start
-  // well past the world edge so the farm itself stays crisp.
-  scene.fog = new Fog(0xcfeefc, 28, 60);
+  // Fog tuned for the perspective iso framing. At max zoom-out the
+  // camera sits ~50 world units from the target, so the far world
+  // edge is at ~60 — we want it fully crisp. Fog kicks in only
+  // beyond the playable area to soften the background tree ring.
+  scene.fog = new Fog(0xcfeefc, 55, 120);
 
   const terrain = new Group(); terrain.name = 'terrain';
   const decor = new Group(); decor.name = 'decor';
