@@ -137,25 +137,26 @@ export interface LightingSnapshot {
 export function initLighting(): LightingSnapshot {
   const { scene } = getSceneRoot();
 
-  amb = new AmbientLight(0xffffff, 0.55);
-  hemi = new HemisphereLight(0xfff6e0, 0x4a7c5a, 0.85);
+  amb = new AmbientLight(0xffffff, 0.42);
+  hemi = new HemisphereLight(0xfff6e0, 0x4a7c5a, 0.78);
   hemi.position.set(0, 50, 0);
 
-  sun = new DirectionalLight(0xfff0cc, 1.2);
+  sun = new DirectionalLight(0xfff0cc, 1.45);
   sun.castShadow = true;
-  // 1024² is plenty: the iso framing only ever has ~12-14 tiles
-  // worth of land on screen, and we re-aim the shadow frustum
-  // around the camera target each frame (see updateLighting).
-  sun.shadow.mapSize.set(1024, 1024);
+  // 2048² gives much crisper shadow edges on the stylized geometry.
+  // Combined with VSM shadow type in the renderer this looks like
+  // baked AO around buildings & trees.
+  sun.shadow.mapSize.set(2048, 2048);
   const sc = sun.shadow.camera;
-  sc.left = -14;
-  sc.right = 14;
-  sc.top = 14;
-  sc.bottom = -14;
+  sc.left = -16;
+  sc.right = 16;
+  sc.top = 16;
+  sc.bottom = -16;
   sc.near = 1;
   sc.far = 80;
-  sun.shadow.bias = -0.0004;
+  sun.shadow.bias = -0.0003;
   sun.shadow.normalBias = 0.04;
+  sun.shadow.radius = 4;        // softer VSM penumbra
 
   moon = new DirectionalLight(0xa8c0ff, 0);
   moon.castShadow = false;
@@ -166,8 +167,9 @@ export function initLighting(): LightingSnapshot {
   moon.target.position.set(GRID_W / 2, 0, GRID_H / 2);
 
   // Small fill light from the opposite side so shadowed faces
-  // aren't pitch-black against the bright sun.
-  fill = new DirectionalLight(0xfff0e0, 0.25);
+  // aren't pitch-black against the bright sun. Cool blue-tinted so
+  // it reads as bounce from the sky.
+  fill = new DirectionalLight(0xd4e6ff, 0.35);
   fill.position.set(GRID_W / 2 + 8, 6, GRID_H / 2 - 8);
   fill.target.position.set(GRID_W / 2, 0, GRID_H / 2);
 
@@ -215,8 +217,8 @@ export function updateLighting(): LightingSnapshot {
     state.weather === 'storm' || state.weather === 'rainy' ? 0.4 :
     state.weather === 'snowy' ? 0.7 :
     state.weather === 'cloudy' ? 0.75 : 1;
-  sun.intensity = s.sun * 1.3 * wMul;
-  moon.intensity = s.moon * 0.35;
+  sun.intensity = s.sun * 1.55 * wMul;
+  moon.intensity = s.moon * 0.42;
   // No point paying for a shadow pass once the sun is below the
   // horizon — the moonlight is too weak to cast meaningful shadows
   // in this style, and skipping it cuts a draw pass through every
@@ -238,11 +240,14 @@ export function updateLighting(): LightingSnapshot {
   hemi.intensity = MathUtils.lerp(0.95, 0.22, Math.min(1, s.nightTint * 2));
   amb.intensity = MathUtils.lerp(0.6, 0.18, Math.min(1, s.nightTint * 2));
 
-  // Update the scene's background + fog to match the sky.
+  // Update the scene's background + fog to match the sky bottom
+  // (horizon color), not the top — that's what distant terrain
+  // would blend into in real atmospheric perspective.
   const { scene } = getSceneRoot();
   const skyHex = rgbToHex(skyTop);
+  const fogHex = rgbToHex(skyBottom);
   (scene.background as Color).setHex(skyHex);
-  if (scene.fog) (scene.fog as { color: Color }).color.setHex(skyHex);
+  if (scene.fog) (scene.fog as { color: Color }).color.setHex(fogHex);
 
   return {
     windows: s.windows,

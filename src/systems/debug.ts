@@ -5,8 +5,10 @@
 // =============================================================
 
 import { state } from '../state';
+import { BUILDINGS } from '../data/buildings';
 import { addItem } from './inventory';
 import { addXP } from './xp';
+import { markBuildingTiles } from './grid';
 import { toast } from '../ui/toasts';
 import { tickStall } from './market-stall';
 import { tickBoat } from './boat';
@@ -58,6 +60,36 @@ function makeDbg() {
     level(n: number) {
       state.level = n;
       toast(`Level set to ${n}`);
+    },
+    /** Force-place a building at tile (gx, gy). Bypasses cost/lock. */
+    build(type: string, gx: number, gy: number) {
+      const def = BUILDINGS[type];
+      if (!def) { toast(`No such building: ${type}`); return; }
+      const id = 'dbg_' + type + '_' + Date.now();
+      state.buildings.push({ id, type, x: gx, y: gy, smokeT: 0 });
+      for (let dy = 0; dy < def.h; dy++) for (let dx = 0; dx < def.w; dx++) {
+        const t = state.grid[gy + dy]?.[gx + dx];
+        if (t) { t.type = 'soil'; t.crop = null; }
+      }
+      markBuildingTiles();
+      if (def.kind === 'pen') state.penAnimals[id] = [];
+      if (def.kind === 'production') state.prodQueues[id] = [];
+      toast(`Built ${def.name} at (${gx},${gy})`);
+    },
+    /** Show a sample farm for visual testing. */
+    sampleFarm() {
+      this.build('henhouse', 13, 1);
+      this.build('cowpen', 13, 5);
+      this.build('bakery', 11, 10);
+      this.build('windmill', 6, 11);
+      this.build('dairy', 14, 13);
+      this.build('pigpen', 6, 1);
+      // Mature apple trees in the SW orchard zone
+      const treeT = Date.now() / 1000 - 3600 * 24;
+      state.trees.push({ id: 't1', type: 'appletree', x: 2, y: 12, plantedAt: treeT, lastHarvested: 0 });
+      state.trees.push({ id: 't2', type: 'appletree', x: 4, y: 12, plantedAt: treeT, lastHarvested: 0 });
+      state.trees.push({ id: 't3', type: 'appletree', x: 2, y: 14, plantedAt: treeT, lastHarvested: 0 });
+      toast('Sample farm placed');
     },
   };
 }
