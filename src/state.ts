@@ -23,7 +23,7 @@ export const state: GameState = {
   camY: 0,
   camScale: 1,
   camYaw: Math.PI * 0.25,
-  camPitch: Math.atan2(12, Math.hypot(10, 10)),
+  camPitch: 0.58,
   particles: [],
   floats: [],
   stats: {

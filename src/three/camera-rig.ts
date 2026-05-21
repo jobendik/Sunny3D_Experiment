@@ -30,8 +30,11 @@ const BASE_DISTANCE = 22;
 
 // Locked iso angle — the cozy 3/4 view. Yaw is one of 4 cardinal
 // snaps (DEFAULT_YAW + k·π/2); pitch never moves.
+// Pitch 33° matches the inspiration preview's framing — lower than
+// the prior 40° so the playable ground plane spreads across the
+// screen instead of collapsing into the lower half.
 export const DEFAULT_YAW = Math.PI * 0.25;       // 45° around Y
-export const DEFAULT_PITCH = Math.atan2(12, Math.hypot(10, 10)); // ~40°
+export const DEFAULT_PITCH = 0.58;               // ~33° from horizon
 
 // A snap-rotate tween in progress, if any. The driver is
 // tickCameraTween() (called from loop.ts each frame).
