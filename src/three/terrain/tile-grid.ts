@@ -190,6 +190,8 @@ function buildWater(): Mesh {
     uShallow: { value: new Color('#a8e6f5') },
     uDeep: { value: new Color('#2a72c2') },
     uFoam: { value: new Color('#ffffff') },
+    uLakeMin: { value: new Vector2(bbox.x0, bbox.y0) },
+    uLakeMax: { value: new Vector2(bbox.x1, bbox.y1) },
   };
   waterUniforms = uniforms;
   waterMat = new ShaderMaterial({
@@ -223,24 +225,35 @@ function buildWater(): Mesh {
       uniform vec3 uDeep;
       uniform vec3 uFoam;
       uniform float uTime;
+      uniform vec2 uLakeMin;
+      uniform vec2 uLakeMax;
       varying vec3 vWorldPos;
       varying float vRipple;
       void main() {
         // Mix shallow/deep by wave height — crests are paler, troughs
-        // deeper. Cheap fake-fresnel using the y component of the
-        // surface normal of an idealized wave.
+        // deeper.
         float t = clamp(vRipple * 4.0 + 0.5, 0.0, 1.0);
         vec3 col = mix(uDeep, uShallow, t);
-        // Streak of foam at the wave peak.
-        float foam = smoothstep(0.045, 0.075, vRipple);
-        col = mix(col, uFoam, foam * 0.6);
-        // Glittering specular dots — high-frequency noise modulated
-        // by time. Reads like sun glints on the water surface.
+        // Wave-peak foam streak
+        float foam = smoothstep(0.025, 0.055, vRipple);
+        col = mix(col, uFoam, foam * 0.55);
+        // Shore foam — bright band where the water meets the visible
+        // lake bbox. Sells the basin shape and makes the lake feel
+        // contained instead of a "pool of paint".
+        float dx = min(vWorldPos.x - uLakeMin.x, uLakeMax.x - vWorldPos.x);
+        float dz = min(vWorldPos.z - uLakeMin.y, uLakeMax.y - vWorldPos.z);
+        float shoreDist = min(dx, dz);
+        float shoreFoam = smoothstep(0.6, 0.05, shoreDist);
+        // Animate the shore foam slightly so it breathes with the
+        // ripples — same uTime input as the wave system.
+        shoreFoam *= 0.6 + 0.4 * sin(uTime * 1.5 + vWorldPos.x * 2.0 + vWorldPos.z * 2.0) * 0.5 + 0.5;
+        col = mix(col, uFoam, shoreFoam * 0.7);
+        // Sun glints
         float g = sin(vWorldPos.x * 18.0 + uTime * 4.0)
                 * sin(vWorldPos.z * 14.0 - uTime * 3.2);
         float glint = smoothstep(0.92, 0.99, g);
         col += vec3(1.0) * glint * 0.35;
-        gl_FragColor = vec4(col, 0.94);
+        gl_FragColor = vec4(col, 0.95);
       }
     `,
   });

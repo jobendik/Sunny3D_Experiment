@@ -89,6 +89,37 @@ function makeDbg() {
       state.trees.push({ id: 't1', type: 'appletree', x: 2, y: 12, plantedAt: treeT, lastHarvested: 0 });
       state.trees.push({ id: 't2', type: 'appletree', x: 4, y: 12, plantedAt: treeT, lastHarvested: 0 });
       state.trees.push({ id: 't3', type: 'appletree', x: 2, y: 14, plantedAt: treeT, lastHarvested: 0 });
+      // Plowed beds with crops at various growth stages
+      const crops: Array<[string, number, number, number]> = [
+        ['wheat',   9,  6, 0.95],
+        ['wheat',  10,  6, 0.85],
+        ['wheat',  11,  6, 0.70],
+        ['wheat',  12,  6, 0.50],
+        ['corn',    9,  7, 0.85],
+        ['corn',   10,  7, 0.65],
+        ['carrot', 11,  7, 0.95],
+        ['carrot', 12,  7, 0.95],
+        ['tomato',  9,  8, 0.95],
+        ['tomato', 10,  8, 0.95],
+        ['pumpkin',11,  8, 0.95],
+        ['pumpkin',12,  8, 0.80],
+      ];
+      const now = Date.now() / 1000;
+      for (const [crop, gx, gy, progress] of crops) {
+        const t = state.grid[gy]?.[gx];
+        if (!t) continue;
+        t.type = 'plowed';
+        t.crop = crop;
+        // Crop stage is computed from elapsed time since plantedAt
+        // vs the crop's grow duration. Going further back in time
+        // makes the crop appear more grown.
+        t.plantedAt = now - 60 * progress;
+        t.watered = true;
+      }
+      // Some flowerbed + lamppost decor
+      state.decor.push({ id: 'd1', type: 'flowerbed', x: 8, y: 9, placedAt: now } as never);
+      state.decor.push({ id: 'd2', type: 'lamppost',  x: 9, y: 9, placedAt: now } as never);
+      state.decor.push({ id: 'd3', type: 'fountain',  x: 14, y: 8, placedAt: now } as never);
       toast('Sample farm placed');
     },
   };
