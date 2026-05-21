@@ -156,7 +156,7 @@ export function initLighting(): LightingSnapshot {
   sc.far = 80;
   sun.shadow.bias = -0.0003;
   sun.shadow.normalBias = 0.04;
-  sun.shadow.radius = 4;        // softer VSM penumbra
+  sun.shadow.radius = 3;        // softer VSM penumbra
 
   moon = new DirectionalLight(0xa8c0ff, 0);
   moon.castShadow = false;
