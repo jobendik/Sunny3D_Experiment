@@ -33,9 +33,13 @@ export function getRenderer(): WebGLRenderer {
   // checkerboard you get on stylized geometry.
   renderer.shadowMap.type = VSMShadowMap;
   renderer.toneMapping = ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.08;
+  // Slightly higher exposure makes the warmer light frames register
+  // as "sunny golden" rather than "neutral bright". The vignette in
+  // post-fx still rolls off the corners so highlights never feel
+  // blown.
+  renderer.toneMappingExposure = 1.18;
   renderer.outputColorSpace = SRGBColorSpace;
-  renderer.setClearColor(0x9ed3f5, 1);
+  renderer.setClearColor(0xa8d6f0, 1);
 
   window.addEventListener('resize', () => {
     if (!renderer) return;

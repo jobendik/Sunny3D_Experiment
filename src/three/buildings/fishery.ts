@@ -1,6 +1,6 @@
 // Fishery (landmark) — stone building with a big fish sign.
 import { Group, Mesh } from 'three';
-import { walls, gableRoof, door, windowPane } from '../procgen/building-kit';
+import { walls, gableRoof, door, windowPane, wallLantern, flowerBox } from '../procgen/building-kit';
 import { box, sphere, cone } from '../procgen/geometries';
 import { mat } from '../procgen/materials';
 
@@ -34,5 +34,10 @@ export function makeFishery(w: number, d: number): Group {
   const anchorShaft = new Mesh(box(0.04, 0.4, 0.04), mat('#3a3a3a'));
   anchorShaft.position.set(0.4, 0.25, -0.18);
   g.add(anchorShaft);
+  // Lanterns + flowerboxes
+  g.add(wallLantern(w / 2 - 0.40, 1.05, -0.06, 1.2));
+  g.add(wallLantern(w / 2 + 0.40, 1.05, -0.06, 1.2));
+  g.add(flowerBox(w / 2 - 1.0, 0.6, -0.05, 0.4));
+  g.add(flowerBox(w / 2 + 1.0, 0.6, -0.05, 0.4));
   return g;
 }

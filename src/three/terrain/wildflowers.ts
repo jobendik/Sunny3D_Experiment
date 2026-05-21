@@ -11,8 +11,6 @@
 // =============================================================
 
 import {
-  InstancedMesh,
-  Object3D,
   CylinderGeometry,
   SphereGeometry,
   Group,
@@ -27,10 +25,11 @@ import { groundHeight } from './tile-grid';
 
 interface FlowerColor { name: string; head: Color; stem: Color; chance: number }
 const PALETTE: FlowerColor[] = [
-  { name: 'red',    head: new Color('#e64842'), stem: new Color('#4a8a40'), chance: 0.30 },
-  { name: 'yellow', head: new Color('#f4cf42'), stem: new Color('#4a8a40'), chance: 0.30 },
-  { name: 'white',  head: new Color('#ffffff'), stem: new Color('#4a8a40'), chance: 0.20 },
-  { name: 'purple', head: new Color('#9070d4'), stem: new Color('#4a8a40'), chance: 0.20 },
+  { name: 'red',    head: new Color('#ea4d4d'), stem: new Color('#4a8a40'), chance: 0.24 },
+  { name: 'yellow', head: new Color('#f8d650'), stem: new Color('#4a8a40'), chance: 0.28 },
+  { name: 'white',  head: new Color('#fff8e8'), stem: new Color('#4a8a40'), chance: 0.18 },
+  { name: 'purple', head: new Color('#a07adc'), stem: new Color('#4a8a40'), chance: 0.16 },
+  { name: 'pink',   head: new Color('#ff8ac0'), stem: new Color('#4a8a40'), chance: 0.14 },
 ];
 
 let mounted: Group | null = null;
@@ -57,50 +56,45 @@ export function installWildflowers(): void {
   mounted.name = 'wildflowers';
   terrain.add(mounted);
 
-  // Single instanced mesh per color
-  const meshes: InstancedMesh[] = [];
-  // Pre-build flower geometry as a combined Group → flatten to a
-  // single InstancedMesh per color using a small combined geom.
-  const stemGeo = new CylinderGeometry(0.012, 0.012, 0.12, 4);
-  const headGeo = new SphereGeometry(0.04, 6, 4);
+  // Pre-build shared per-color materials (one stem mat + one head
+  // mat per color) so we never allocate per-flower. Geometry is
+  // reused across all flowers in the same color.
+  const stemGeo = new CylinderGeometry(0.014, 0.014, 0.16, 5);
+  const headGeo = new SphereGeometry(0.055, 8, 6);
+  const stemMats: MeshLambertMaterial[] = [];
+  const headMats: MeshLambertMaterial[] = [];
   for (let i = 0; i < PALETTE.length; i++) {
     const pal = PALETTE[i]!;
-    const stemMat = new MeshLambertMaterial({ color: pal.stem, flatShading: true });
-    const headMat = new MeshLambertMaterial({ color: pal.head, flatShading: true });
-    // We need ONE InstancedMesh per geometry per material. Cheaper:
-    // build a small Group of [stem + head] meshes per flower & mount
-    // them under the wildflowers group directly. Volume is low
-    // enough (a few hundred flowers max) that this is fine.
-    void stemMat; void headMat;
-    meshes.push(null as unknown as InstancedMesh);
+    stemMats.push(new MeshLambertMaterial({ color: pal.stem, flatShading: true }));
+    headMats.push(new MeshLambertMaterial({ color: pal.head, flatShading: true }));
   }
   // Use direct Mesh approach — total flower count stays well under
-  // 500 even on a fully grass farm.
+  // 500 even on a fully grass farm. Slightly larger heads at this
+  // scale read clearly from the iso camera.
   let total = 0;
   for (let gy = 0; gy < GRID_H; gy++) {
     for (let gx = 0; gx < GRID_W; gx++) {
       const t = state.grid[gy]?.[gx];
       if (!t || t.type !== 'grass') continue;
       const r = smoothHash(gx, gy, 41);
-      if (r > 0.28) continue;        // ~28% of grass tiles get flowers
-      const clusterSize = 1 + Math.floor(smoothHash(gx, gy, 7) * 3);
+      if (r > 0.32) continue;        // ~32% of grass tiles get flowers
+      const clusterSize = 1 + Math.floor(smoothHash(gx, gy, 7) * 4);
       for (let i = 0; i < clusterSize; i++) {
         const rx = smoothHash(gx, gy, 100 + i);
         const rz = smoothHash(gx, gy, 200 + i);
         const colorIdx = pickColorIndex(smoothHash(gx, gy, 300 + i));
-        const pal = PALETTE[colorIdx]!;
         const g = new Group();
-        const stem = new Mesh(stemGeo, new MeshLambertMaterial({ color: pal.stem, flatShading: true }));
-        stem.position.y = 0.06;
-        const head = new Mesh(headGeo, new MeshLambertMaterial({ color: pal.head, flatShading: true }));
-        head.position.y = 0.14;
+        const stem = new Mesh(stemGeo, stemMats[colorIdx]!);
+        stem.position.y = 0.08;
+        const head = new Mesh(headGeo, headMats[colorIdx]!);
+        head.position.y = 0.18;
         g.add(stem, head);
         g.position.set(
           gx + 0.2 + rx * 0.6,
           groundHeight(gx, gy) + 0.001,
           gy + 0.2 + rz * 0.6,
         );
-        g.scale.setScalar(0.7 + smoothHash(gx, gy, 400 + i) * 0.5);
+        g.scale.setScalar(0.75 + smoothHash(gx, gy, 400 + i) * 0.55);
         mounted.add(g);
         total++;
       }

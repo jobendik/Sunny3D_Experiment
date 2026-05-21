@@ -28,8 +28,12 @@ import { mat } from './materials';
 // Shared window-glass material — all window panes across all 21
 // buildings use this single material so a one-line emissive update
 // in buildings-manager lights up the whole farm at night.
+//
+// Day: soft sky-tinted blue with a hair of sheen.
+// Night: deep honey-amber emissive that bloom picks up and turns
+// into proper "lanterns through a windowpane" halos.
 const _glassDayColor = new Color('#b8d4e8');
-const _glassNightColor = new Color('#fff0b0');
+const _glassNightColor = new Color('#ffd066');
 const _glassEmissive = new Color('#000000');
 const windowGlassMat = new MeshLambertMaterial({
   color: _glassDayColor.clone(),
@@ -43,11 +47,12 @@ export function setWindowGlow(intensity: number): void {
   // Color: cool-blue daylight → warm-yellow lamplight.
   windowGlassMat.color.copy(_glassDayColor).lerp(_glassNightColor, t);
   // Emissive: only "on" once it's actually night, then ramps up.
-  // Tuned so windows pick up the UnrealBloom pass and read as cozy
-  // lanterns at night, without overwhelming the surrounding scene.
+  // Slightly more saturated than before so window halos pop as
+  // proper cozy lamplight when the sun goes down — UnrealBloom
+  // picks them up cleanly.
   const e = t * t;
-  windowGlassMat.emissive.setRGB(e * 1.05, e * 0.78, e * 0.32);
-  windowGlassMat.emissiveIntensity = 1;
+  windowGlassMat.emissive.setRGB(e * 1.25, e * 0.85, e * 0.30);
+  windowGlassMat.emissiveIntensity = 1.15;
 }
 
 export interface WallOpts {
@@ -351,5 +356,60 @@ export function silo(x: number, z: number, radius = 0.4, height = 1.2, color = '
   const cap = new Mesh(new ConeGeometry(radius + 0.02, 0.28, 14), mat('#8a8a8a'));
   cap.position.set(x, height + 0.14, z);
   g.add(body, cap);
+  return g;
+}
+
+/** Wall-mounted lantern — small box with an emissive amber bulb.
+ *  Reads as a cozy porch light during the day and picks up bloom
+ *  + warm halo from the post-fx pass at night. Caller positions it
+ *  on the building wall using face coordinates. */
+export function wallLantern(x: number, y: number, z: number, scale = 1): Group {
+  const g = new Group();
+  const bracket = new Mesh(box(0.04 * scale, 0.04 * scale, 0.08 * scale), mat('#3a2818'));
+  bracket.position.set(x, y, z);
+  g.add(bracket);
+  const cage = new Mesh(box(0.10 * scale, 0.14 * scale, 0.10 * scale), mat('#2a1a10'));
+  cage.position.set(x, y - 0.08 * scale, z);
+  g.add(cage);
+  const bulb = new Mesh(
+    new CylinderGeometry(0.035 * scale, 0.035 * scale, 0.09 * scale, 8),
+    mat('#fff2c0', { emissive: '#ffae3a' }),
+  );
+  bulb.position.set(x, y - 0.08 * scale, z);
+  g.add(bulb);
+  const cap = new Mesh(new ConeGeometry(0.07 * scale, 0.04 * scale, 8), mat('#2a1a10'));
+  cap.position.set(x, y + 0.0 * scale, z);
+  g.add(cap);
+  return g;
+}
+
+/** Flowerbox under a window — short planter with a few colorful
+ *  flowers. Adds a strong "lived-in cozy" feel to any building wall. */
+export function flowerBox(x: number, y: number, z: number, w = 0.4): Group {
+  const g = new Group();
+  const planter = new Mesh(box(w, 0.10, 0.10), mat('#6e4a28'));
+  planter.position.set(x, y, z);
+  g.add(planter);
+  const trim = new Mesh(box(w + 0.02, 0.02, 0.12), mat('#3a2010'));
+  trim.position.set(x, y + 0.06, z);
+  g.add(trim);
+  const palette = ['#ea4d4d', '#f8d650', '#a07adc', '#ff8ac0', '#ffffff'];
+  const flowerCount = Math.max(2, Math.floor(w * 8));
+  for (let i = 0; i < flowerCount; i++) {
+    const fx = x - w / 2 + (w * (i + 0.5)) / flowerCount + (i % 2 ? 0.005 : -0.005);
+    const stem = new Mesh(
+      new CylinderGeometry(0.008, 0.008, 0.08, 4),
+      mat('#3e7a2a'),
+    );
+    stem.position.set(fx, y + 0.10, z);
+    g.add(stem);
+    const head = new Mesh(
+      new CylinderGeometry(0.028, 0.028, 0.012, 6),
+      mat(palette[i % palette.length]!),
+    );
+    head.rotation.x = Math.PI / 2;
+    head.position.set(fx, y + 0.15, z);
+    g.add(head);
+  }
   return g;
 }

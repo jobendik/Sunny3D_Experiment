@@ -1,6 +1,6 @@
 // Sheep pen — small wool-themed hut with a fenced run.
 import { Group, Mesh } from 'three';
-import { walls, gableRoof, door, windowPane, fence } from '../procgen/building-kit';
+import { walls, gableRoof, door, windowPane, fence, wallLantern, flowerBox } from '../procgen/building-kit';
 import { sphere } from '../procgen/geometries';
 import { mat } from '../procgen/materials';
 
@@ -28,5 +28,10 @@ export function makeSheepPen(w: number, d: number): Group {
   const yard = fence({ w, d: d - yardZ0, color: '#a07040', sides: { n: true, e: true, w: true, s: false } });
   yard.position.set(0, 0, yardZ0);
   g.add(yard);
+  // Porch lanterns + flowerboxes
+  g.add(wallLantern(w / 2 - 0.30, 0.82, -0.06, 0.85));
+  g.add(wallLantern(w / 2 + 0.30, 0.82, -0.06, 0.85));
+  g.add(flowerBox(w / 2 - 0.9, 0.5, -0.05, 0.32));
+  g.add(flowerBox(w / 2 + 0.9, 0.5, -0.05, 0.32));
   return g;
 }

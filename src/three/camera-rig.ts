@@ -20,7 +20,10 @@ import { state } from '../state';
 import { TILE } from '../constants';
 import { SW, SH } from '../canvas';
 
-const FOV_DEG = 34;
+// Slightly tighter FOV (32°) compresses the iso framing toward a
+// premium "mobile farm hero shot" look — silhouettes flatten in a
+// pleasant way and individual buildings read crisper.
+const FOV_DEG = 32;
 const NEAR = 0.1;
 const FAR = 200;
 
@@ -30,11 +33,12 @@ const BASE_DISTANCE = 22;
 
 // Locked iso angle — the cozy 3/4 view. Yaw is one of 4 cardinal
 // snaps (DEFAULT_YAW + k·π/2); pitch never moves.
-// Pitch 33° matches the inspiration preview's framing — lower than
-// the prior 40° so the playable ground plane spreads across the
-// screen instead of collapsing into the lower half.
+// Pitch raised slightly to 36° from horizon — the playable ground
+// plane still spreads attractively across the screen, but the
+// buildings have a hair more "presence" (taller silhouettes catch
+// the sun better at this angle than they did at 33°).
 export const DEFAULT_YAW = Math.PI * 0.25;       // 45° around Y
-export const DEFAULT_PITCH = 0.58;               // ~33° from horizon
+export const DEFAULT_PITCH = 0.64;               // ~37° from horizon
 
 // A snap-rotate tween in progress, if any. The driver is
 // tickCameraTween() (called from loop.ts each frame).

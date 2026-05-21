@@ -33,5 +33,12 @@ export function makeFishingDock(w: number, d: number): Group {
   const bob = new Mesh(cyl(0.05, 0.05, 0.06, 10), mat('#e64030'));
   bob.position.set(w / 2, 0.04, d + 0.3);
   g.add(bob);
+  // Tiny tackle box & rope coil on the deck for character
+  const tackle = new Mesh(box(0.16, 0.08, 0.10), mat('#3a78c8'));
+  tackle.position.set(0.4, 0.14, 0.4);
+  g.add(tackle);
+  const rope = new Mesh(cyl(0.07, 0.07, 0.04, 12), mat('#c4a070'));
+  rope.position.set(w - 0.4, 0.12, 0.4);
+  g.add(rope);
   return g;
 }

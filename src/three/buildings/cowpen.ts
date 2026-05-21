@@ -1,6 +1,6 @@
 // Classic red barn for the cow pen. Footprint 4×3.
 import { Group, Mesh } from 'three';
-import { walls, gableRoof, door, windowPane, fence, chimney } from '../procgen/building-kit';
+import { walls, gableRoof, door, windowPane, fence, chimney, wallLantern, flowerBox } from '../procgen/building-kit';
 import { box, cyl } from '../procgen/geometries';
 import { mat } from '../procgen/materials';
 
@@ -61,6 +61,11 @@ export function makeCowPen(w: number, d: number): Group {
   trough.position.set(0.8, 0.08, yardZ0 + 0.4);
   trough.castShadow = true;
   g.add(trough);
+  // Porch lanterns + flowerboxes
+  g.add(wallLantern(w / 2 - 0.45, 0.95, -0.06));
+  g.add(wallLantern(w / 2 + 0.45, 0.95, -0.06));
+  g.add(flowerBox(w / 2 - 1.1, 0.55, -0.05, 0.40));
+  g.add(flowerBox(w / 2 + 1.1, 0.55, -0.05, 0.40));
   void chimney;
   return g;
 }

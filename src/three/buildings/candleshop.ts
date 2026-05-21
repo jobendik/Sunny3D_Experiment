@@ -17,11 +17,14 @@ export function makeCandleshop(w: number, d: number): Group {
   candle.position.set(w / 2, 1.95, d / 2);
   candle.castShadow = true;
   g.add(candle);
-  // Wick + flame
+  // Wick + flame with a soft halo
   const wick = new Mesh(cyl(0.012, 0.012, 0.06, 6), mat('#3a2a18'));
   wick.position.set(w / 2, 2.28, d / 2);
   g.add(wick);
-  const flame = new Mesh(cone(0.06, 0.16, 8), mat('#f4742a', { emissive: '#f4742a' }));
+  const flameHalo = new Mesh(cone(0.12, 0.22, 10), mat('#ffba50', { transparent: true, opacity: 0.45, emissive: '#ff8a3a' }));
+  flameHalo.position.set(w / 2, 2.40, d / 2);
+  g.add(flameHalo);
+  const flame = new Mesh(cone(0.06, 0.16, 8), mat('#fff0c0', { emissive: '#ff8a2a' }));
   flame.position.set(w / 2, 2.38, d / 2);
   g.add(flame);
   return g;

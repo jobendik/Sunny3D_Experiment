@@ -64,6 +64,10 @@ export function updateDog(timeS: number): void {
   if (Math.abs(dx) + Math.abs(dz) > 1) {
     mounted.rotation.y = -Math.atan2(dz, dx);
   }
-  // Wag tail
-  mounted.position.y = Math.sin(timeS * 8) * 0.02;
+  // Trot bob + tiny squish so the pup feels happy and alive.
+  const moving = Math.hypot(dx, dz) > 2;
+  const speed = moving ? 10 : 5;
+  const amp = moving ? 0.025 : 0.014;
+  mounted.position.y = Math.sin(timeS * speed) * amp;
+  mounted.scale.set(1, 1 + Math.sin(timeS * speed * 2) * 0.04, 1);
 }

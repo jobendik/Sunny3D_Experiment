@@ -124,19 +124,31 @@ export function installSky(): void {
   // Leaving scene.background as-is is fine (it's only rendered when
   // nothing else covers that pixel; the dome always does).
 
-  // Clouds — soft white puff-groups high above the world. Kept small
-  // and few so they don't crowd the iso view.
+  // Clouds — soft white puff-groups high above the world. Slightly
+  // larger and with a darker "underside" sphere so they read as
+  // proper Hay-Day cumulus rather than little white blobs.
   clouds = new Group();
   clouds.name = 'clouds';
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 14; i++) {
     const cloud = new Group();
-    const baseR = 0.55 + Math.random() * 0.45;
-    for (let j = 0; j < 5; j++) {
+    const baseR = 0.7 + Math.random() * 0.6;
+    // Belly puff (slightly grey, slightly lower)
+    const belly = new Mesh(
+      sphere(baseR * 0.85, 12, 8),
+      mat('#dde6ed', { transparent: true, opacity: 0.78 }),
+    );
+    belly.position.set(0, -0.15, 0.05);
+    cloud.add(belly);
+    for (let j = 0; j < 6; j++) {
       const puff = new Mesh(
         sphere(baseR * (0.55 + Math.random() * 0.55), 12, 8),
-        mat('#ffffff', { transparent: true, opacity: 0.85 }),
+        mat('#ffffff', { transparent: true, opacity: 0.9 }),
       );
-      puff.position.set((j - 2) * baseR * 0.45 + Math.random() * 0.2, Math.random() * 0.18, Math.random() * 0.18);
+      puff.position.set(
+        (j - 2.5) * baseR * 0.42 + (Math.random() - 0.5) * 0.3,
+        Math.random() * 0.22,
+        (Math.random() - 0.5) * 0.22,
+      );
       cloud.add(puff);
     }
     cloud.position.set(
@@ -144,8 +156,8 @@ export function installSky(): void {
       14 + Math.random() * 5,
       -12 + Math.random() * (GRID_H + 24),
     );
-    cloud.scale.setScalar(0.9 + Math.random() * 0.7);
-    cloud.userData.driftSpeed = 0.06 + Math.random() * 0.08;
+    cloud.scale.setScalar(1.0 + Math.random() * 0.9);
+    cloud.userData.driftSpeed = 0.05 + Math.random() * 0.09;
     clouds.add(cloud);
   }
   sky.add(clouds);
@@ -196,15 +208,20 @@ export function installSky(): void {
 // Sky color tables: explicit top/bottom/horizon picks for the
 // day-cycle key frames. Sampled & interpolated each frame.
 interface SkyFrame { t: number; top: string; bottom: string; horizon: string }
+// Sky frames tuned for a cozy farm vibe. Midday is a soft cornflower
+// → cream gradient (never harsh cyan), and the golden-hour bookends
+// push deep peach/coral horizons that contrast against the warm
+// scene. Night is a believable deep blue so windows and lanterns
+// pop when they light up.
 const SKY_FRAMES: SkyFrame[] = [
   { t: 0.00, top: '#0a1228', bottom: '#1a2548', horizon: '#142040' },
   { t: 0.12, top: '#2a2050', bottom: '#5a3878', horizon: '#a05870' },
-  { t: 0.18, top: '#6a5078', bottom: '#f0c096', horizon: '#ff9a64' },
-  { t: 0.25, top: '#5fa2dc', bottom: '#bce0ff', horizon: '#fce0b8' },
-  { t: 0.50, top: '#3e76b5', bottom: '#bce0ff', horizon: '#f0f0e8' },
-  { t: 0.70, top: '#4a86c2', bottom: '#d8e8f0', horizon: '#f4d8a0' },
-  { t: 0.78, top: '#aa6a7a', bottom: '#ffce82', horizon: '#ff8a52' },
-  { t: 0.86, top: '#3a2848', bottom: '#7a3856', horizon: '#c0506a' },
+  { t: 0.18, top: '#6a5078', bottom: '#f6b884', horizon: '#ff8a4e' },
+  { t: 0.25, top: '#5fa2dc', bottom: '#cfe6ff', horizon: '#ffd8a4' },
+  { t: 0.50, top: '#4986c4', bottom: '#c4e2f4', horizon: '#f0f0d8' },
+  { t: 0.70, top: '#5e9ad0', bottom: '#dceaf0', horizon: '#f8d68c' },
+  { t: 0.78, top: '#b06a8a', bottom: '#ffc878', horizon: '#ff7a3a' },
+  { t: 0.86, top: '#3a2848', bottom: '#8a3a56', horizon: '#c0506a' },
   { t: 0.94, top: '#162038', bottom: '#2a3250', horizon: '#1a2240' },
   { t: 1.00, top: '#0a1228', bottom: '#1a2548', horizon: '#142040' },
 ];

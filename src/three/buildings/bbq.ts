@@ -24,9 +24,13 @@ export function makeBbq(w: number, d: number): Group {
   const legR = legL.clone();
   legR.position.set(w / 2 + 0.25, 0.16, -0.4);
   g.add(legL, legR);
-  // Glowing coal sphere inside
-  const coal = new Mesh(sphere(0.08, 8, 6), mat('#1a0e08', { emissive: '#f4502a' }));
+  // Glowing coal sphere inside — brighter for that "actively cooking" look
+  const coal = new Mesh(sphere(0.10, 10, 8), mat('#3a1408', { emissive: '#ff7a3a' }));
   coal.position.set(w / 2, 0.4, -0.4);
   g.add(coal);
+  // Halo around the coals (bloomable, transparent)
+  const halo = new Mesh(sphere(0.16, 10, 8), mat('#ff9a4a', { transparent: true, opacity: 0.40, emissive: '#ff6a2a' }));
+  halo.position.set(w / 2, 0.42, -0.4);
+  g.add(halo);
   return g;
 }

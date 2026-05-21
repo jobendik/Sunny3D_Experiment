@@ -43,22 +43,36 @@ import type { TileType } from '../../types';
 const TILE_HEIGHT = 0.22;        // visible thickness of each tile box
 
 const TILE_COLORS: Record<TileType, Color> = {
-  grass:  new Color('#7fcf63'),
-  soil:   new Color('#c99a63'),
+  grass:  new Color('#86d56b'),
+  soil:   new Color('#cf9d5c'),
   plowed: new Color('#7a4f28'),
   water:  new Color('#3a86c4'),  // unused — water tiles fall back to grass below the lake
-  path:   new Color('#dbb781'),
+  path:   new Color('#e2c08a'),
 };
 
-// Tiny secondary tint table; we sample one of three palette shades
+// Tiny secondary tint table; we sample one of several palette shades
 // per tile so a grass field reads like patches of meadow rather
-// than a perfectly uniform billiard table.
+// than a perfectly uniform billiard table. The grass palette leans
+// slightly toward saturated golden-green like a Hay-Day meadow at
+// midday; plowed/soil pick up warmer ochre highlights.
 const TILE_VARIANTS: Record<TileType, Color[]> = {
-  grass:  [new Color('#7fcf63'), new Color('#8ad96e'), new Color('#76c45a'), new Color('#92dc75')],
-  soil:   [new Color('#c99a63'), new Color('#b88a55'), new Color('#d1a06d'), new Color('#bd8d58')],
-  plowed: [new Color('#7a4f28'), new Color('#86562f'), new Color('#704620'), new Color('#7e5328')],
+  grass:  [
+    new Color('#82d364'), new Color('#90dd76'), new Color('#78c95e'),
+    new Color('#9adc7c'), new Color('#86d167'), new Color('#7ed062'),
+  ],
+  soil:   [
+    new Color('#cf9d5c'), new Color('#bd8c50'), new Color('#d7a868'),
+    new Color('#c4925a'), new Color('#dba36a'),
+  ],
+  plowed: [
+    new Color('#7e5429'), new Color('#88592c'), new Color('#724820'),
+    new Color('#83532c'),
+  ],
   water:  [new Color('#3a86c4')],
-  path:   [new Color('#dbb781'), new Color('#d3ad75'), new Color('#e1bf8b'), new Color('#cba66b')],
+  path:   [
+    new Color('#e7c58a'), new Color('#ddb87e'), new Color('#eece92'),
+    new Color('#d6a872'), new Color('#e3bd84'),
+  ],
 };
 
 function smoothHash(gx: number, gy: number, salt = 0): number {
@@ -193,8 +207,8 @@ function buildWater(): Mesh {
   const uniforms = {
     uTime: { value: 0 },
     uWindDir: { value: new Vector2(0.35, 0.25) },
-    uShallow: { value: new Color('#a8e6f5') },
-    uDeep: { value: new Color('#2a72c2') },
+    uShallow: { value: new Color('#b8eaf3') },
+    uDeep: { value: new Color('#2c7ec8') },
     uFoam: { value: new Color('#ffffff') },
     uLakeMin: { value: new Vector2(bbox.x0, bbox.y0) },
     uLakeMax: { value: new Vector2(bbox.x1, bbox.y1) },
@@ -253,12 +267,16 @@ function buildWater(): Mesh {
         // Animate the shore foam slightly so it breathes with the
         // ripples — same uTime input as the wave system.
         shoreFoam *= 0.6 + 0.4 * sin(uTime * 1.5 + vWorldPos.x * 2.0 + vWorldPos.z * 2.0) * 0.5 + 0.5;
-        col = mix(col, uFoam, shoreFoam * 0.7);
-        // Sun glints
-        float g = sin(vWorldPos.x * 18.0 + uTime * 4.0)
-                * sin(vWorldPos.z * 14.0 - uTime * 3.2);
-        float glint = smoothstep(0.92, 0.99, g);
-        col += vec3(1.0) * glint * 0.35;
+        col = mix(col, uFoam, shoreFoam * 0.75);
+        // Sun glints — two phase-offset layers so the sparkle pattern
+        // never repeats predictably from the iso camera.
+        float g1 = sin(vWorldPos.x * 18.0 + uTime * 4.0)
+                 * sin(vWorldPos.z * 14.0 - uTime * 3.2);
+        float g2 = sin(vWorldPos.x * 26.0 - uTime * 5.3 + 1.7)
+                 * sin(vWorldPos.z * 22.0 + uTime * 4.7);
+        float glint1 = smoothstep(0.92, 0.99, g1);
+        float glint2 = smoothstep(0.94, 0.99, g2);
+        col += vec3(1.0, 0.96, 0.85) * (glint1 * 0.42 + glint2 * 0.28);
         gl_FragColor = vec4(col, 0.95);
       }
     `,

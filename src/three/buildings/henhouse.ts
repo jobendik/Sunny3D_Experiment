@@ -1,6 +1,6 @@
 // Small wooden chicken coop. Footprint 3×3.
 import { Group, Mesh } from 'three';
-import { walls, gableRoof, door, windowPane, fence } from '../procgen/building-kit';
+import { walls, gableRoof, door, windowPane, fence, flowerBox } from '../procgen/building-kit';
 import { box, sphere, cone, cyl } from '../procgen/geometries';
 import { mat } from '../procgen/materials';
 
@@ -64,6 +64,9 @@ export function makeHenHouse(w: number, d: number): Group {
   rooster.rotation.x = Math.PI / 2;
   rooster.position.set(coopX0 + coopW / 2 + 0.08, 2.06, 0.1 + coopD / 2);
   g.add(rooster);
+  // Window flowerboxes for that cozy coop feel
+  g.add(flowerBox(coopX0 + 0.35, 0.40, 0.04, 0.30));
+  g.add(flowerBox(coopX0 + coopW - 0.35, 0.40, 0.04, 0.30));
   void box;
   return g;
 }

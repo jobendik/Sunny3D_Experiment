@@ -115,16 +115,17 @@ function makeCritter(kind: 'butterfly' | 'bee' | 'firefly'): Mesh {
 function spawnCritters(): void {
   const cx = GRID_W / 2;
   const cz = GRID_H / 2;
-  // Butterflies — scattered across the meadow
-  for (let i = 0; i < 8; i++) {
+  // Butterflies — more of them, scattered across the meadow at
+  // varying altitudes so the eye always catches one.
+  for (let i = 0; i < 12; i++) {
     const m = makeCritter('butterfly');
     const x = cx + (Math.random() - 0.5) * (GRID_W - 4);
     const z = cz + (Math.random() - 0.5) * (GRID_H - 4);
-    m.position.set(x, 0.5 + Math.random() * 0.6, z);
+    m.position.set(x, 0.5 + Math.random() * 0.7, z);
     CRITTERS.push({
       mesh: m,
       homeX: x, homeZ: z,
-      baseY: 0.5 + Math.random() * 0.6,
+      baseY: 0.5 + Math.random() * 0.7,
       speed: 0.6 + Math.random() * 0.4,
       phaseA: Math.random() * Math.PI * 2,
       phaseB: Math.random() * Math.PI * 2,
@@ -134,7 +135,7 @@ function spawnCritters(): void {
   }
   // Bees — buzz near specific spots (we don't know building positions
   // at install time, so just give them a "hive" home each).
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 7; i++) {
     const m = makeCritter('bee');
     const x = cx + (Math.random() - 0.5) * (GRID_W - 4);
     const z = cz + (Math.random() - 0.5) * (GRID_H - 4);
@@ -150,8 +151,8 @@ function spawnCritters(): void {
     });
     group!.add(m);
   }
-  // Fireflies — show up at night
-  for (let i = 0; i < 14; i++) {
+  // Fireflies — show up at night, slightly denser cluster
+  for (let i = 0; i < 22; i++) {
     const m = makeCritter('firefly');
     const x = cx + (Math.random() - 0.5) * (GRID_W - 2);
     const z = cz + (Math.random() - 0.5) * (GRID_H - 2);
@@ -159,7 +160,7 @@ function spawnCritters(): void {
     CRITTERS.push({
       mesh: m,
       homeX: x, homeZ: z,
-      baseY: 0.4 + Math.random() * 0.5,
+      baseY: 0.4 + Math.random() * 0.7,
       speed: 0.4 + Math.random() * 0.3,
       phaseA: Math.random() * Math.PI * 2,
       phaseB: Math.random() * Math.PI * 2,
@@ -170,21 +171,21 @@ function spawnCritters(): void {
 }
 
 function spawnDustMotes(): void {
-  const N = 250;
+  const N = 380;
   const positions = new Float32Array(N * 3);
   for (let i = 0; i < N; i++) {
     positions[i * 3 + 0] = Math.random() * GRID_W;
-    positions[i * 3 + 1] = 0.4 + Math.random() * 2.6;
+    positions[i * 3 + 1] = 0.4 + Math.random() * 2.8;
     positions[i * 3 + 2] = Math.random() * GRID_H;
   }
   const g = new BufferGeometry();
   g.setAttribute('position', new BufferAttribute(positions, 3));
   dustMat = new PointsMaterial({
-    color: new Color('#fff8d8'),
-    size: 0.04,
+    color: new Color('#fff4c2'),
+    size: 0.055,
     sizeAttenuation: true,
     transparent: true,
-    opacity: 0.35,
+    opacity: 0.40,
     depthWrite: false,
     blending: AdditiveBlending,
   });

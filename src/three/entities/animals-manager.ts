@@ -138,8 +138,11 @@ export function updateAnimals(timeS: number): void {
       if (Math.abs(dx) + Math.abs(dz) > 1) {
         m.root.rotation.y = -Math.atan2(dz, dx);
       }
-      // Subtle bob from frame counter
-      m.root.position.y = Math.sin((a.frame + timeS * 4) * 0.5) * 0.015;
+      // Subtle bob + tiny per-step squish so the herd reads as
+      // walking pets rather than dragged sprites.
+      const phase = a.frame * 0.5 + timeS * 4 + i * 0.7;
+      m.root.position.y = Math.sin(phase) * 0.020;
+      m.root.scale.set(1, 1 + Math.sin(phase * 2) * 0.04, 1);
     }
   }
   for (const [k, m] of mounted) {

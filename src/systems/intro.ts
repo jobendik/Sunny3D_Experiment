@@ -22,25 +22,28 @@ function easeOutCubic(t: number): number {
   return 1 - Math.pow(1 - t, 3);
 }
 
+// Hero camera intro: glide *down and in* from a slightly off-center
+// vantage to the farm centre, ending with a satisfying soft-landing
+// zoom. The off-axis start gives the player a half-second of
+// "ahh, look at this place" before the playable framing settles in.
 /** Begin a cinematic camera ride to the farm centre. */
 export function startCameraIntro(): void {
-  // Already-saved players keep their last camera — only intro on fresh start.
   const cx = (GRID_W * TILE) / 2;
   const cy = (GRID_H * TILE) / 2;
-  // Pick a target scale that fills the screen comfortably
   const targetScale = clamp(
     Math.min(SW() / (GRID_W * TILE), SH() / (GRID_H * TILE)) * 0.95,
     0.5, 1.6,
   );
-  // Start zoomed-out, slightly above, so the world "drops in"
-  const startScale = targetScale * 0.62;
-  state.camX = cx;
-  state.camY = cy - 60;
+  // Start farther back and offset to the south so the entrance path
+  // is visible — gives a real "you're approaching your farm" feel.
+  const startScale = targetScale * 0.55;
+  state.camX = cx + 20;
+  state.camY = cy + 80;
   state.camScale = startScale;
   tween = {
-    fromX: cx, fromY: cy - 60, fromS: startScale,
+    fromX: cx + 20, fromY: cy + 80, fromS: startScale,
     toX: cx, toY: cy, toS: targetScale,
-    duration: 2.2,
+    duration: 2.6,
     age: 0,
     easing: easeOutCubic,
   };

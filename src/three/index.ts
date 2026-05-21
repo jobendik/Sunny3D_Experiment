@@ -96,10 +96,11 @@ export function render3d(dt: number): void {
   updatePlacementPreview();
 
   // Bloom shines brightest at dusk when lamps & windows start to
-  // come on. During full daylight we ease it back so the sky isn't
-  // blown out; at full night we also ease back so the warm window
-  // halos don't bleed into giant suns.
-  setBloomStrength(0.30 + light.nightTint * 0.32);
+  // come on. During full daylight we keep a gentle base so sun
+  // highlights and ripe-crop sparkles still register as "glowy";
+  // at full night we ease back so the warm window halos don't
+  // bleed into giant suns.
+  setBloomStrength(0.38 + light.nightTint * 0.34);
 
   getComposer().render(dt);
 }

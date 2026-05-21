@@ -40,35 +40,56 @@ function makeFlowerbed(): Group {
 
 function makeLamppost(): Group {
   const g = new Group();
-  const base = new Mesh(cyl(0.08, 0.08, 0.08, 8), mat('#4a4a4a'));
-  base.position.y = 0.04;
+  const base = new Mesh(cyl(0.10, 0.10, 0.10, 8), mat('#3a2a18'));
+  base.position.y = 0.05;
   g.add(base);
-  const pole = new Mesh(cyl(0.025, 0.025, 0.9, 8), mat('#2a2a2a'));
-  pole.position.y = 0.5;
+  const pole = new Mesh(cyl(0.030, 0.030, 1.0, 8), mat('#2a1a10'));
+  pole.position.y = 0.55;
   pole.castShadow = true;
   g.add(pole);
-  const lamp = new Mesh(box(0.18, 0.18, 0.18), mat('#fff5b0', { emissive: '#f4d160' }));
-  lamp.position.y = 1.0;
+  // Bigger emissive lamp box + a soft outer halo box for cozy glow
+  const lampHalo = new Mesh(box(0.30, 0.30, 0.30), mat('#ffe9a8', { transparent: true, opacity: 0.28, emissive: '#ffae3a' }));
+  lampHalo.position.y = 1.10;
+  g.add(lampHalo);
+  const lamp = new Mesh(box(0.20, 0.22, 0.20), mat('#fff2c0', { emissive: '#ffae3a' }));
+  lamp.position.y = 1.10;
   g.add(lamp);
-  const cap = new Mesh(cone(0.13, 0.1, 6), mat('#2a2a2a'));
-  cap.position.y = 1.15;
+  const cap = new Mesh(cone(0.16, 0.13, 8), mat('#2a1a10'));
+  cap.position.y = 1.30;
   g.add(cap);
+  // Decorative arm + finial on top for a "real lantern" silhouette
+  const finial = new Mesh(sphere(0.04, 8, 6), mat('#3a2a18'));
+  finial.position.y = 1.40;
+  g.add(finial);
   return g;
 }
 
 function makeBench(): Group {
   const g = new Group();
-  const seat = new Mesh(box(1.4, 0.06, 0.34), mat('#8a5a30'));
-  seat.position.y = 0.3;
-  seat.castShadow = true;
-  g.add(seat);
-  const back = new Mesh(box(1.4, 0.34, 0.06), mat('#8a5a30'));
-  back.position.set(0, 0.48, -0.14);
-  g.add(back);
+  // Slat-style park bench: 3 stacked planks for the seat + back so
+  // the silhouette reads as a wooden bench from above, not a brown
+  // slab. Iron legs ground it visually.
+  const slatColors = ['#a06840', '#8a5530', '#a06840'];
+  for (let i = 0; i < 3; i++) {
+    const slat = new Mesh(box(1.4, 0.06, 0.10), mat(slatColors[i]!));
+    slat.position.set(0, 0.32, -0.12 + i * 0.11);
+    slat.castShadow = true;
+    g.add(slat);
+  }
+  for (let i = 0; i < 3; i++) {
+    const slat = new Mesh(box(1.4, 0.08, 0.04), mat(slatColors[i]!));
+    slat.position.set(0, 0.42 + i * 0.10, -0.18);
+    g.add(slat);
+  }
+  // Iron legs (curved at the top — approximated with two boxes)
   for (let i = 0; i < 2; i++) {
-    const leg = new Mesh(box(0.06, 0.3, 0.3), mat('#2a2a2a'));
-    leg.position.set(-0.55 + i * 1.1, 0.15, 0);
+    const legX = -0.55 + i * 1.1;
+    const leg = new Mesh(box(0.05, 0.32, 0.34), mat('#2a2a2a'));
+    leg.position.set(legX, 0.16, -0.04);
     g.add(leg);
+    const armrest = new Mesh(box(0.05, 0.06, 0.30), mat('#2a2a2a'));
+    armrest.position.set(legX, 0.36, -0.05);
+    g.add(armrest);
   }
   return g;
 }
@@ -81,39 +102,83 @@ function makeScarecrow(): Group {
   const arms = new Mesh(box(0.6, 0.06, 0.06), mat('#6e4a28'));
   arms.position.y = 0.65;
   g.add(arms);
+  // Plaid shirt body (hay-stuffed)
+  const body = new Mesh(box(0.36, 0.34, 0.18), mat('#c8423a'));
+  body.position.y = 0.55;
+  g.add(body);
+  // Hay sticking out of sleeves & collar
+  for (let i = 0; i < 3; i++) {
+    const hay = new Mesh(box(0.05, 0.08, 0.02), mat('#e8c64a'));
+    hay.position.set(-0.22 + i * 0.22, 0.74, 0.0);
+    hay.rotation.z = (i - 1) * 0.4;
+    g.add(hay);
+  }
   const head = new Mesh(sphere(0.14, 12, 10), mat('#e8c878'));
   head.position.y = 0.95;
   head.castShadow = true;
   g.add(head);
-  const hat = new Mesh(cone(0.16, 0.16, 14), mat('#5a3a18'));
-  hat.position.y = 1.12;
+  // Burlap-sack stripe stitch around the head
+  const stitch = new Mesh(box(0.30, 0.012, 0.01), mat('#8a6740'));
+  stitch.position.set(0, 0.88, 0.13);
+  g.add(stitch);
+  const hat = new Mesh(cone(0.18, 0.22, 14), mat('#7a5524'));
+  hat.position.y = 1.16;
   g.add(hat);
+  // Hat band
+  const band = new Mesh(cyl(0.13, 0.13, 0.04, 14), mat('#4a3018'));
+  band.position.y = 1.05;
+  g.add(band);
+  // Eyes (button-style)
+  const eyeL = new Mesh(sphere(0.022, 6, 4), mat('#1a1a1a'));
+  eyeL.position.set(-0.05, 0.97, 0.13);
+  const eyeR = eyeL.clone();
+  eyeR.position.set(0.05, 0.97, 0.13);
+  g.add(eyeL, eyeR);
   // Stitched smile (dark line)
   const mouth = new Mesh(box(0.08, 0.012, 0.01), mat('#3a2010'));
-  mouth.position.set(0, 0.92, 0.14);
+  mouth.position.set(0, 0.90, 0.14);
   g.add(mouth);
   return g;
 }
 
 function makeFountain(): Group {
   const g = new Group();
-  const basin = new Mesh(cyl(0.7, 0.7, 0.18, 24), mat('#a0a0a8'));
-  basin.position.y = 0.09;
+  // Stylized 3-tier marble fountain with brighter, more inviting
+  // water and a tall central plume.
+  const basin = new Mesh(cyl(0.72, 0.72, 0.22, 28), mat('#cfd2d8'));
+  basin.position.y = 0.11;
+  basin.castShadow = true;
+  basin.receiveShadow = true;
   g.add(basin);
-  const water = new Mesh(cyl(0.6, 0.6, 0.06, 24), mat('#5a9ed4', { transparent: true, opacity: 0.8 }));
-  water.position.y = 0.18;
+  const basinTrim = new Mesh(cyl(0.78, 0.78, 0.04, 28), mat('#9aa0a8'));
+  basinTrim.position.y = 0.23;
+  g.add(basinTrim);
+  const water = new Mesh(cyl(0.64, 0.64, 0.04, 28), mat('#5fb6de', { transparent: true, opacity: 0.85 }));
+  water.position.y = 0.20;
   g.add(water);
-  const stem = new Mesh(cyl(0.12, 0.12, 0.35, 14), mat('#a0a0a8'));
-  stem.position.y = 0.36;
+  const stem = new Mesh(cyl(0.14, 0.14, 0.4, 14), mat('#c4c8cf'));
+  stem.position.y = 0.42;
   g.add(stem);
-  const top = new Mesh(cyl(0.35, 0.35, 0.08, 18), mat('#a0a0a8'));
-  top.position.y = 0.58;
+  const top = new Mesh(cyl(0.38, 0.38, 0.08, 22), mat('#cfd2d8'));
+  top.position.y = 0.66;
   g.add(top);
-  // Water plume on top
-  const plume = new Mesh(sphere(0.16, 12, 10), mat('#bcd8ec', { transparent: true, opacity: 0.7 }));
-  plume.scale.set(0.6, 1.5, 0.6);
-  plume.position.y = 0.78;
+  // Upper bowl pool
+  const topWater = new Mesh(cyl(0.32, 0.32, 0.025, 22), mat('#5fb6de', { transparent: true, opacity: 0.85 }));
+  topWater.position.y = 0.71;
+  g.add(topWater);
+  // Tall central plume + a couple of side dribbles
+  const plume = new Mesh(sphere(0.16, 12, 10), mat('#cfeefc', { transparent: true, opacity: 0.75, emissive: '#9ed0e8' }));
+  plume.scale.set(0.5, 1.9, 0.5);
+  plume.position.y = 0.95;
+  plume.name = 'fountain-plume';
   g.add(plume);
+  for (let i = 0; i < 4; i++) {
+    const ang = (i / 4) * Math.PI * 2;
+    const drop = new Mesh(sphere(0.05, 8, 6), mat('#cfeefc', { transparent: true, opacity: 0.7 }));
+    drop.position.set(Math.cos(ang) * 0.18, 0.75, Math.sin(ang) * 0.18);
+    drop.name = 'fountain-drop';
+    g.add(drop);
+  }
   g.name = 'fountain';
   return g;
 }
@@ -178,13 +243,32 @@ function makePinwheel(): Group {
 
 function makeCherryTree(): Group {
   const g = new Group();
-  const trunk = new Mesh(cyl(0.07, 0.08, 0.5, 8), mat('#5a3a20'));
-  trunk.position.y = 0.25;
+  const trunk = new Mesh(cyl(0.07, 0.09, 0.55, 8), mat('#5a3a20'));
+  trunk.position.y = 0.27;
+  trunk.castShadow = true;
   g.add(trunk);
-  const canopy = new Mesh(sphere(0.4, 14, 12), mat('#ff9ed4'));
-  canopy.position.y = 0.7;
-  canopy.castShadow = true;
-  g.add(canopy);
+  // Layered pink cherry blossom canopy — a darker rose under, two
+  // brighter pink puffs above, plus a sprinkle of paler-pink "flowers"
+  const darkPink = '#e575a8';
+  const pink = '#ff9ed4';
+  const palePink = '#ffd0e8';
+  const back = new Mesh(sphere(0.40, 12, 10), mat(darkPink));
+  back.position.set(-0.06, 0.68, -0.04);
+  g.add(back);
+  const mid = new Mesh(sphere(0.34, 12, 10), mat(pink));
+  mid.position.set(0.08, 0.72, 0.06);
+  g.add(mid);
+  const top = new Mesh(sphere(0.30, 12, 10), mat(pink));
+  top.position.set(-0.02, 0.84, 0.0);
+  top.castShadow = true;
+  g.add(top);
+  // Bright pale-pink "petals" highlights
+  for (let i = 0; i < 6; i++) {
+    const ang = (i / 6) * Math.PI * 2;
+    const petal = new Mesh(sphere(0.07, 8, 6), mat(palePink));
+    petal.position.set(Math.cos(ang) * 0.34, 0.78 + (i % 2 ? 0.05 : -0.04), Math.sin(ang) * 0.34);
+    g.add(petal);
+  }
   return g;
 }
 
@@ -347,6 +431,31 @@ export function updateDecor(timeS: number): void {
     if (d.type === 'pinwheel') {
       const wheel = m.root.getObjectByName('pinwheel-wheel');
       if (wheel) wheel.rotation.z = timeS * 2.2;
+    }
+    if (d.type === 'fountain') {
+      // Gentle plume bob + side-drop drift so the fountain reads
+      // "alive" without spawning particles every frame.
+      const plume = m.root.getObjectByName('fountain-plume') as Mesh | null;
+      if (plume) {
+        const pulse = 1.0 + 0.08 * Math.sin(timeS * 2.6);
+        plume.scale.set(0.5 * pulse, 1.9 * pulse, 0.5 * pulse);
+        plume.position.y = 0.95 + Math.sin(timeS * 1.6) * 0.025;
+      }
+      m.root.children.forEach((c, idx) => {
+        if (c.name === 'fountain-drop') {
+          c.position.y = 0.75 + Math.sin(timeS * 3 + idx) * 0.07;
+        }
+      });
+    }
+    if (d.type === 'tikitorch') {
+      // Flicker the tiki flame so torches feel alive.
+      const flame = m.root.children.find(c => (c as Mesh).material && (c as Mesh).name !== 'tiki-pole');
+      void flame; // simple per-frame nudge below works on the cone mesh
+      const top = m.root.children[m.root.children.length - 1] as Mesh | undefined;
+      if (top) {
+        const flick = 1.0 + 0.10 * Math.sin(timeS * 11 + d.x * 0.7);
+        top.scale.set(flick, flick * 0.92 + 0.08, flick);
+      }
     }
     void MathUtils;
   }
