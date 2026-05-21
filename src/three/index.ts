@@ -95,10 +95,11 @@ export function render3d(dt: number): void {
   updateAmbientLife(timeS, light);
   updatePlacementPreview();
 
-  // Bloom shines brightest at dusk/night when lamps & windows light
-  // up. During full daylight we ease it back so the sky isn't blown
-  // out. nightTint goes 0 (day) → 0.5 (deep night).
-  setBloomStrength(0.32 + light.nightTint * 0.65);
+  // Bloom shines brightest at dusk when lamps & windows start to
+  // come on. During full daylight we ease it back so the sky isn't
+  // blown out; at full night we also ease back so the warm window
+  // halos don't bleed into giant suns.
+  setBloomStrength(0.30 + light.nightTint * 0.32);
 
   getComposer().render(dt);
 }

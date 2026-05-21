@@ -96,10 +96,11 @@ function placePatches(group: Group): void {
   // outer world peeks through, middle = denser, far ring = thick
   // mist that hides the deep forest until the player expands.
   const rings = [
-    { radius: 12.5, count: 20, scale: 4.5, alpha: 0.45 },
-    { radius: 17, count: 28, scale: 5.6, alpha: 0.78 },
-    { radius: 22, count: 32, scale: 6.8, alpha: 0.88 },
-    { radius: 28, count: 24, scale: 7.5, alpha: 0.7 },
+    { radius: 11.5, count: 22, scale: 5.0, alpha: 0.55 },
+    { radius: 15, count: 28, scale: 6.0, alpha: 0.82 },
+    { radius: 19, count: 30, scale: 7.0, alpha: 0.92 },
+    { radius: 25, count: 28, scale: 8.0, alpha: 0.85 },
+    { radius: 31, count: 22, scale: 9.0, alpha: 0.7 },
   ];
   let patchIdx = 0;
   for (const ring of rings) {

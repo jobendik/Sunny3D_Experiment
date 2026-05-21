@@ -43,8 +43,11 @@ export function setWindowGlow(intensity: number): void {
   // Color: cool-blue daylight → warm-yellow lamplight.
   windowGlassMat.color.copy(_glassDayColor).lerp(_glassNightColor, t);
   // Emissive: only "on" once it's actually night, then ramps up.
-  const e = t * t; // gentle ease
-  windowGlassMat.emissive.setRGB(e * 0.95, e * 0.7, e * 0.25);
+  // Tuned so windows pick up the UnrealBloom pass and read as cozy
+  // lanterns at night, without overwhelming the surrounding scene.
+  const e = t * t;
+  windowGlassMat.emissive.setRGB(e * 1.05, e * 0.78, e * 0.32);
+  windowGlassMat.emissiveIntensity = 1;
 }
 
 export interface WallOpts {

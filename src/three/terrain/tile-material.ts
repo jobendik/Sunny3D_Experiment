@@ -79,7 +79,9 @@ export function tileMaterial(): MeshLambertMaterial {
          // Two layers of noise: coarse meadow patches, fine blade-tips.
          float coarse = vnoise(vTileWorld.xz * 1.4);
          float fine   = vnoise(vTileWorld.xz * 7.0);
-         float pat = (coarse - 0.5) * 0.18 + (fine - 0.5) * 0.12;
+         // Slightly biased down so the meadow reads as soft grass
+         // rather than chalky-bright.
+         float pat = (coarse - 0.5) * 0.12 + (fine - 0.5) * 0.08;
          // Only modulate the top face — sides stay clean so the bevel
          // rim catches the sun crisply.
          pat *= vTopMask;
