@@ -5,7 +5,7 @@
 //             terrain, sky, weather, beacons, etc.
 //  render3d(dt) — call every frame from main.ts; syncs the camera
 //                 from game state, ticks per-entity managers, and
-//                 draws the scene.
+//                 draws the scene through the post-fx composer.
 // =============================================================
 
 import { getRenderer } from './renderer';
@@ -13,6 +13,14 @@ import { getSceneRoot } from './scene-root';
 import { getCamera, syncCameraFromState } from './camera-rig';
 import { initLighting, updateLighting } from './lighting';
 import { initTerrain, updateTerrain } from './terrain/tile-grid';
+import { installGrassBlades, updateGrassBlades } from './terrain/grass-blades';
+import { installOuterWorld, updateOuterWorld } from './terrain/outer-world';
+import { installFogOfWar, updateFogOfWar } from './terrain/fog-of-war';
+import { installLakeDecor, updateLakeDecor } from './terrain/lake-decor';
+import { installWildflowers } from './terrain/wildflowers';
+import { installScatter } from './terrain/scatter';
+import { installBirds, updateBirds } from './fx/birds';
+import { installGodRays, updateGodRays } from './fx/god-rays';
 import { updateBuildings } from './entities/buildings-manager';
 import { updateCrops } from './entities/crops-manager';
 import { updateTrees } from './entities/trees-manager';
@@ -27,6 +35,8 @@ import { updateTreasureChests } from './fx/treasure-chests';
 import { installBeacon, updateBeacon } from './fx/beacon';
 import { installPlacementPreview, updatePlacementPreview } from './fx/placement-preview';
 import { installHoverTile, updateHoverTile } from './fx/hover-tile';
+import { installAmbientLife, updateAmbientLife } from './fx/ambient-life';
+import { getComposer, setBloomStrength } from './post-fx';
 
 let inited = false;
 let timeS = 0;
@@ -39,12 +49,23 @@ export function init3d(): void {
   getCamera();
   initLighting();
   initTerrain();
+  installOuterWorld();
   installBackgroundTrees();
+  installGrassBlades();
   installSky();
   installWeather();
   installBeacon();
   installPlacementPreview();
   installHoverTile();
+  installAmbientLife();
+  installFogOfWar();
+  installLakeDecor();
+  installWildflowers();
+  installScatter();
+  installBirds();
+  installGodRays();
+  // Prime the composer so its first frame isn't a stutter.
+  getComposer();
 }
 
 export function render3d(dt: number): void {
@@ -53,6 +74,12 @@ export function render3d(dt: number): void {
   syncCameraFromState();
   const light = updateLighting();
   updateTerrain(timeS);
+  updateGrassBlades(timeS, light);
+  updateOuterWorld(timeS);
+  updateFogOfWar(timeS, light);
+  updateLakeDecor(timeS);
+  updateBirds(timeS, dt, light);
+  updateGodRays(timeS, light);
   updateBuildings(light);
   updateCrops(timeS);
   updateTrees(timeS);
@@ -65,9 +92,14 @@ export function render3d(dt: number): void {
   updateTreasureChests(timeS);
   updateBeacon(timeS);
   updateHoverTile(timeS);
+  updateAmbientLife(timeS, light);
   updatePlacementPreview();
 
-  const renderer = getRenderer();
-  const { scene } = getSceneRoot();
-  renderer.render(scene, getCamera());
+  // Bloom shines brightest at dusk when lamps & windows start to
+  // come on. During full daylight we ease it back so the sky isn't
+  // blown out; at full night we also ease back so the warm window
+  // halos don't bleed into giant suns.
+  setBloomStrength(0.30 + light.nightTint * 0.32);
+
+  getComposer().render(dt);
 }
