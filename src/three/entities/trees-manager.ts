@@ -28,10 +28,20 @@ function fruitColor(type: string): string {
 }
 function trunkColor(_type: string): string { return '#5a3a20'; }
 
-function makeTreeMesh(type: string, stage: number): Group {
+// Per-tree leaf color variation so an orchard row reads as an
+// actual orchard, not a clone-stamped grid. We pick from a tight
+// green palette using the orchard type + tile coords as a seed.
+const LEAF_PALETTE = ['#3a8a30', '#4a9a40', '#3e7a2a', '#52a648', '#43913a'];
+function leafColor(seed: number, mature: boolean): string {
+  if (!mature) return '#4a9a40';
+  const i = ((seed * 2654435761) >>> 0) % LEAF_PALETTE.length;
+  return LEAF_PALETTE[i]!;
+}
+
+function makeTreeMesh(type: string, stage: number, seed = 0): Group {
   const g = new Group();
   const trunkC = trunkColor(type);
-  const leafC = stage >= 1 ? '#3a8a30' : '#4a9a40';
+  const leafC = leafColor(seed, stage >= 1);
   if (stage === 0) {
     const sap = new Mesh(cyl(0.025, 0.025, 0.18, 6), mat(trunkC));
     sap.position.y = 0.09;
@@ -88,8 +98,11 @@ export function updateTrees(timeS: number): void {
     let m = mounted.get(tr.id);
     if (!m || m.stage !== stage || m.type !== tr.type) {
       if (m) entities.remove(m.root);
-      const root = makeTreeMesh(tr.type, stage);
+      // Seed: tile coords ensure same tree always picks same palette.
+      const root = makeTreeMesh(tr.type, stage, tr.x * 73856093 ^ tr.y * 19349663);
       root.position.set(tr.x + 0.5, 0, tr.y + 0.5);
+      // A tiny per-tree rotation so an orchard row doesn't look stamped.
+      root.rotation.y = ((tr.x * 17 + tr.y * 31) % 7) * 0.15;
       entities.add(root);
       m = { id: tr.id, stage, type: tr.type, root };
       mounted.set(tr.id, m);

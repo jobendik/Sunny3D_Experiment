@@ -8,7 +8,9 @@
 //  Water is a separate plane drawn slightly below the land tops so
 //  the boxes around it form a "shoreline".
 //
-//  Rebuilds when the grid signature changes (plow, harvest, dig).
+//  Rebuilds: only the tile *instances* whose type changed are
+//  touched (plow/harvest/dig). The mesh itself is never recreated
+//  during gameplay.
 // =============================================================
 
 import {
@@ -48,20 +50,29 @@ function tileTint(gx: number, gy: number, type: TileType): Color {
 }
 
 let land: InstancedMesh | null = null;
-let waterMesh: import('three').Mesh | null = null;
+let waterMesh: Mesh | null = null;
 let waterMat: MeshStandardMaterial | null = null;
-let lastGridSignature = '';
+// Per-instance cached tile type. The grid is small (324 entries) so
+// a flat string[] beats a Map for cache locality.
+let lastTypes: (TileType | '?')[] = [];
 
-function gridSignature(): string {
-  let s = '';
-  for (let y = 0; y < GRID_H; y++) {
-    for (let x = 0; x < GRID_W; x++) {
-      const t = state.grid[y]?.[x]?.type;
-      s += t ? t[0] : '?';
-    }
-  }
-  return s;
+function indexOf(gx: number, gy: number): number {
+  return gy * GRID_W + gx;
 }
+
+function writeInstance(idx: number, gx: number, gy: number, type: TileType, isWater: boolean): void {
+  if (!land) return;
+  const obj = _scratch;
+  const topY = isWater ? -0.5 : 0;
+  obj.position.set(gx + 0.5, topY - TILE_HEIGHT / 2, gy + 0.5);
+  obj.rotation.set(0, 0, 0);
+  obj.scale.set(1, 1, 1);
+  obj.updateMatrix();
+  land.setMatrixAt(idx, obj.matrix);
+  land.setColorAt(idx, tileTint(gx, gy, type));
+}
+
+const _scratch = new Object3D();
 
 function buildLand(): InstancedMesh {
   const tiles = GRID_W * GRID_H;
@@ -70,41 +81,30 @@ function buildLand(): InstancedMesh {
     vertexColors: false,
     flatShading: true,
   });
-  // We use per-instance color so we still get one draw call.
+  // Per-instance color keeps the whole grid in one draw call.
   const mesh = new InstancedMesh(geom, mat, tiles);
   mesh.receiveShadow = true;
   mesh.name = 'land';
 
-  const obj = new Object3D();
-  let idx = 0;
+  lastTypes = new Array(tiles).fill('?');
   for (let gy = 0; gy < GRID_H; gy++) {
     for (let gx = 0; gx < GRID_W; gx++) {
       const tile = state.grid[gy]?.[gx];
       const isWater = tile?.type === 'water';
-      // For water tiles, drop the land box well below the water
-      // surface so the water plane visually replaces it.
-      // Non-water tiles: position so the box TOP sits at y=0, which
-      // means entities placed at y=0 sit cleanly on the ground.
-      const topY = isWater ? -0.5 : 0;
       const type = (isWater ? 'soil' : (tile?.type ?? 'grass')) as TileType;
-      obj.position.set(gx + 0.5, topY - TILE_HEIGHT / 2, gy + 0.5);
-      obj.rotation.set(0, 0, 0);
-      obj.scale.set(1, 1, 1);
-      obj.updateMatrix();
-      mesh.setMatrixAt(idx, obj.matrix);
-      mesh.setColorAt(idx, tileTint(gx, gy, type));
-      idx++;
+      const i = indexOf(gx, gy);
+      writeInstance(i, gx, gy, type, isWater);
+      lastTypes[i] = tile?.type ?? 'grass';
     }
   }
   if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  mesh.instanceMatrix.needsUpdate = true;
   mesh.count = tiles;
   return mesh;
 }
 
 function buildWater(): Mesh {
   // Single plane covering the world extents at near-ground height.
-  // Non-water tiles are land boxes that sit above this plane, so
-  // only true water tiles read as water (the land elsewhere occludes).
   const geom = new PlaneGeometry(GRID_W, GRID_H, 1, 1);
   geom.rotateX(-Math.PI / 2);
   // Water surface sits a fingernail below ground level so the
@@ -127,30 +127,46 @@ function buildWater(): Mesh {
 
 export function initTerrain(): void {
   const { terrain } = getSceneRoot();
-  rebuildIfChanged(true);
-  waterMesh = buildWater();
-  terrain.add(waterMesh);
-}
-
-function rebuildIfChanged(force = false): void {
-  const sig = gridSignature();
-  if (!force && sig === lastGridSignature) return;
-  lastGridSignature = sig;
-  const { terrain } = getSceneRoot();
   if (land) {
     terrain.remove(land);
     land.geometry.dispose();
     (land.material as MeshLambertMaterial).dispose();
     land.dispose();
+    land = null;
   }
   land = buildLand();
   terrain.add(land);
+  waterMesh = buildWater();
+  terrain.add(waterMesh);
+}
+
+function updateDirtyInstances(): void {
+  if (!land) return;
+  let matrixDirty = false;
+  let colorDirty = false;
+  for (let gy = 0; gy < GRID_H; gy++) {
+    for (let gx = 0; gx < GRID_W; gx++) {
+      const i = indexOf(gx, gy);
+      const t = state.grid[gy]?.[gx];
+      const cur = t?.type ?? 'grass';
+      if (cur === lastTypes[i]) continue;
+      const isWater = cur === 'water';
+      const type = (isWater ? 'soil' : cur) as TileType;
+      writeInstance(i, gx, gy, type, isWater);
+      lastTypes[i] = cur;
+      matrixDirty = true;
+      colorDirty = true;
+    }
+  }
+  if (matrixDirty) land.instanceMatrix.needsUpdate = true;
+  if (colorDirty && land.instanceColor) land.instanceColor.needsUpdate = true;
 }
 
 export function updateTerrain(timeS: number): void {
-  rebuildIfChanged();
+  updateDirtyInstances();
   if (waterMat) {
     const h = (Math.sin(timeS * 0.6) * 0.5 + 0.5) * 0.04;
     waterMat.color.setHSL(0.56 + h * 0.05, 0.6, 0.55);
   }
+  void waterMesh;
 }

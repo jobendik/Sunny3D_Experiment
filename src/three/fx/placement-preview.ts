@@ -4,9 +4,15 @@
 //  When state.placing is set, draw a translucent ghost of the
 //  thing being placed under the cursor, plus a colored footprint
 //  outline (green = ok, red = blocked).
+//
+//  The ghost mesh clones each material so it can render translucent
+//  without mutating the shared (cached) materials used by the real
+//  buildings. We track the clones and dispose them when the ghost
+//  is rebuilt or hidden — without this, every placement attempt
+//  leaks a handful of materials.
 // =============================================================
 
-import { Group, Mesh, LineSegments, BufferGeometry, BufferAttribute, LineBasicMaterial, Color } from 'three';
+import { Group, Mesh, LineSegments, BufferGeometry, BufferAttribute, LineBasicMaterial, Color, Material } from 'three';
 import { state } from '../../state';
 import { TILE } from '../../constants';
 import { BUILDINGS } from '../../data/buildings';
@@ -22,6 +28,10 @@ let outline: LineSegments | null = null;
 let outlineMat: LineBasicMaterial | null = null;
 let lastSig = '';
 let ghost: Group | null = null;
+// Material clones owned by the ghost. We dispose these when the
+// ghost is removed (rebuild or hide), since shared cached materials
+// from procgen/materials.ts must not be disposed.
+let ghostMats: Material[] = [];
 
 function makeOutlineGeom(w: number, d: number): BufferGeometry {
   const v: number[] = [];
@@ -46,24 +56,36 @@ export function installPlacementPreview(): void {
   fx.add(group);
 }
 
-function setOpacity(node: Group | Mesh, opacity: number): void {
-  // We must NOT mutate the materials in place — they're cached and
-  // shared across every other mesh that uses the same color. Clone
-  // each material on the way down so the ghost has its own copy.
+function disposeGhost(): void {
+  if (!ghost || !group) return;
+  group.remove(ghost);
+  for (const m of ghostMats) {
+    m.dispose();
+  }
+  ghostMats = [];
+  ghost = null;
+}
+
+function makeGhostTranslucent(node: Group, opacity: number): void {
+  // Clone each material so the ghost's transparency doesn't bleed
+  // into the cached materials shared by real buildings. Track the
+  // clones so we can dispose them later.
   node.traverse(obj => {
     const mesh = obj as Mesh & { isMesh?: boolean };
     if (!mesh.isMesh) return;
     if (Array.isArray(mesh.material)) {
       mesh.material = mesh.material.map(m => {
-        const c = (m as { clone: () => typeof m }).clone();
-        (c as unknown as { transparent: boolean }).transparent = true;
-        (c as unknown as { opacity: number }).opacity = opacity;
+        const c = (m as Material).clone();
+        c.transparent = true;
+        c.opacity = opacity;
+        ghostMats.push(c);
         return c;
       });
     } else {
-      const c = (mesh.material as { clone: () => typeof mesh.material }).clone();
-      (c as unknown as { transparent: boolean }).transparent = true;
-      (c as unknown as { opacity: number }).opacity = opacity;
+      const c = (mesh.material as Material).clone();
+      c.transparent = true;
+      c.opacity = opacity;
+      ghostMats.push(c);
       mesh.material = c;
     }
   });
@@ -74,10 +96,8 @@ export function updatePlacementPreview(): void {
   const p = state.placing;
   if (!p) {
     group.visible = false;
-    if (ghost) {
-      group.remove(ghost);
-      ghost = null;
-    }
+    disposeGhost();
+    lastSig = '';
     return;
   }
   const w = screenToWorld(mousePos.x, mousePos.y);
@@ -114,23 +134,18 @@ export function updatePlacementPreview(): void {
 
   group.visible = true;
   group.position.set(gx, 0, gy);
-  // Rebuild outline if footprint changed
-  if (outline.geometry.attributes.position?.count !== 8 || lastSig !== sig + ',' + footprintW + 'x' + footprintD) {
+
+  const fullSig = sig + ',' + footprintW + 'x' + footprintD;
+  if (lastSig !== fullSig) {
     outline.geometry.dispose();
     outline.geometry = makeOutlineGeom(footprintW, footprintD);
-  }
-  outlineMat.color.setStyle(ok ? '#4ad84a' : '#e84040');
-
-  // Build ghost mesh if missing or signature changed
-  if (lastSig !== sig + ',' + footprintW + 'x' + footprintD) {
-    if (ghost) { group.remove(ghost); ghost = null; }
+    disposeGhost();
     if (p.type && !p.decor && !p.tree) {
       ghost = makeBuildingMesh(p.type, footprintW, footprintD);
-    }
-    if (ghost) {
-      setOpacity(ghost, 0.5);
+      makeGhostTranslucent(ghost, 0.5);
       group.add(ghost);
     }
-    lastSig = sig + ',' + footprintW + 'x' + footprintD;
+    lastSig = fullSig;
   }
+  outlineMat.color.setStyle(ok ? '#4ad84a' : '#e84040');
 }

@@ -20,7 +20,7 @@ import {
   Vector3,
 } from 'three';
 import { state } from '../state';
-import { DAY_SECONDS, GRID_W, GRID_H } from '../constants';
+import { DAY_SECONDS, GRID_W, GRID_H, TILE } from '../constants';
 import { nowSeconds } from '../utils';
 import { getSceneRoot } from './scene-root';
 
@@ -143,13 +143,15 @@ export function initLighting(): LightingSnapshot {
 
   sun = new DirectionalLight(0xfff0cc, 1.2);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
-  // The world is 18×18 units. Cover it generously.
+  // 1024² is plenty: the iso framing only ever has ~12-14 tiles
+  // worth of land on screen, and we re-aim the shadow frustum
+  // around the camera target each frame (see updateLighting).
+  sun.shadow.mapSize.set(1024, 1024);
   const sc = sun.shadow.camera;
-  sc.left = -20;
-  sc.right = 20;
-  sc.top = 20;
-  sc.bottom = -20;
+  sc.left = -14;
+  sc.right = 14;
+  sc.top = 14;
+  sc.bottom = -14;
   sc.near = 1;
   sc.far = 80;
   sun.shadow.bias = -0.0004;
@@ -157,12 +159,11 @@ export function initLighting(): LightingSnapshot {
 
   moon = new DirectionalLight(0xa8c0ff, 0);
   moon.castShadow = false;
-
-  // Always look at the center of the farm.
-  const cx = GRID_W / 2;
-  const cz = GRID_H / 2;
-  sun.target.position.set(cx, 0, cz);
-  moon.target.position.set(cx, 0, cz);
+  // Initial target; updateLighting() re-aims this each frame to
+  // follow the camera so the shadow frustum stays where the player
+  // is looking.
+  sun.target.position.set(GRID_W / 2, 0, GRID_H / 2);
+  moon.target.position.set(GRID_W / 2, 0, GRID_H / 2);
 
   // Small fill light from the opposite side so shadowed faces
   // aren't pitch-black against the bright sun.
@@ -189,9 +190,17 @@ export function updateLighting(): LightingSnapshot {
   const dayPhase = MathUtils.clamp((dayElapsed - 0.18) / 0.64, 0, 1);
   const sunAngle = dayPhase * Math.PI;
   _sunDir.set(Math.cos(sunAngle) * 30, Math.sin(sunAngle) * 35 + 10, -Math.sin(sunAngle) * 8);
-  const cx = GRID_W / 2;
-  const cz = GRID_H / 2;
+  // Re-aim sun + shadow frustum to track the camera target. The
+  // shadow camera's 28×28 unit window then always covers what the
+  // player is actually looking at, so shadow texels stay crisp at
+  // any zoom level instead of being wasted on off-screen land.
+  const tx = state.camX / TILE;
+  const tz = state.camY / TILE;
+  const cx = MathUtils.clamp(tx, 0, GRID_W);
+  const cz = MathUtils.clamp(tz, 0, GRID_H);
   sun.position.set(cx + _sunDir.x, _sunDir.y, cz + _sunDir.z);
+  sun.target.position.set(cx, 0, cz);
+  moon.target.position.set(cx, 0, cz);
 
   // Moon arcs across the night half.
   let mt = dayElapsed;
@@ -208,6 +217,11 @@ export function updateLighting(): LightingSnapshot {
     state.weather === 'cloudy' ? 0.75 : 1;
   sun.intensity = s.sun * 1.3 * wMul;
   moon.intensity = s.moon * 0.35;
+  // No point paying for a shadow pass once the sun is below the
+  // horizon — the moonlight is too weak to cast meaningful shadows
+  // in this style, and skipping it cuts a draw pass through every
+  // castShadow mesh in the scene.
+  sun.castShadow = sun.intensity > 0.05;
 
   // Hemisphere reads from the sky's top color so bounce light tracks
   // sunrise/sunset hue.

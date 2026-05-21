@@ -42,11 +42,20 @@ function makeCropMesh(crop: string, stage: number): Group {
   const g = new Group();
   const c = CROP_COLORS[crop] ?? CROP_COLORS.wheat!;
   if (stage === 0) {
-    // Tiny seedling: 2 small green leaves
-    const s1 = new Mesh(sphere(0.04, 6, 4), mat(c.stem));
-    s1.scale.set(1.4, 0.6, 1);
-    s1.position.y = 0.06;
-    g.add(s1);
+    // Tiny seedling: two leaflets opening from a short stem. Reads
+    // clearly at iso as a "just-planted" mark — a single squashed
+    // sphere here looks like a UFO from above.
+    const stem = new Mesh(cyl(0.015, 0.015, 0.06, 6), mat(c.stem));
+    stem.position.y = 0.03;
+    g.add(stem);
+    for (let i = 0; i < 2; i++) {
+      const leaf = new Mesh(sphere(0.05, 8, 6), mat(c.stem));
+      leaf.scale.set(1, 0.35, 0.6);
+      const ang = i === 0 ? -0.6 : 0.6;
+      leaf.position.set(Math.cos(ang) * 0.05, 0.07, Math.sin(ang) * 0.05);
+      leaf.rotation.y = ang;
+      g.add(leaf);
+    }
   } else if (stage === 1) {
     // Sprout: small stalk + bud
     const stem = new Mesh(cyl(0.02, 0.02, 0.18, 6), mat(c.stem));
@@ -136,9 +145,13 @@ function makeCropMesh(crop: string, stage: number): Group {
 export function updateCrops(timeS: number): void {
   const { entities } = getSceneRoot();
   const seen = new Set<string>();
+  // Walk the 18×18 grid each frame, but bail fast on tiles without
+  // a crop. At 324 cells this is far cheaper than mesh updates.
   for (let gy = 0; gy < GRID_H; gy++) {
+    const row = state.grid[gy];
+    if (!row) continue;
     for (let gx = 0; gx < GRID_W; gx++) {
-      const t = state.grid[gy]?.[gx];
+      const t = row[gx];
       if (!t || !t.crop) continue;
       const stage = cropStage(t);
       if (stage < 0) continue;
@@ -146,9 +159,7 @@ export function updateCrops(timeS: number): void {
       seen.add(key);
       let m = mounted.get(key);
       if (!m || m.crop !== t.crop || m.stage !== stage) {
-        if (m) {
-          entities.remove(m.root);
-        }
+        if (m) entities.remove(m.root);
         const root = makeCropMesh(t.crop, stage);
         root.position.set(gx + 0.5, 0, gy + 0.5);
         entities.add(root);

@@ -17,6 +17,7 @@ export function openHelp(): void {
       <kbd>Drag</kbd><span>Pan the camera</span>
       <kbd>Pinch</kbd><span>Zoom in/out</span>
       <kbd>2-finger drag</kbd><span>Pan while zoomed</span>
+      <kbd>Tap ↻</kbd><span>Rotate the view 90°</span>
       <kbd>Long-press</kbd><span>Inspect a tile (tooltip)</span>
       <kbd>Tap 📋</kbd><span>Open Quests & Orders</span>
       <kbd>Tap ⋯</kbd><span>More options (Barn, Decor, …)</span>
@@ -28,6 +29,8 @@ export function openHelp(): void {
       <kbd>3</kbd><span>Seed tool — plant your selected seed</span>
       <kbd>Drag</kbd><span>Pan the camera</span>
       <kbd>Scroll</kbd><span>Zoom in/out</span>
+      <kbd>W A S D</kbd><span>Pan with the keyboard</span>
+      <kbd>Q</kbd><span>Rotate the view 90°</span>
       <kbd>Tap building</kbd><span>Open its panel</span>
       <kbd>Tap crow</kbd><span>Scare it away & earn bonus</span>
       <kbd>Esc</kbd><span>Cancel placement / close menu</span>

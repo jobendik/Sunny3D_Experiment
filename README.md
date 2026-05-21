@@ -194,7 +194,9 @@ workflow env or override in `vite.config.ts`.
 | ------------- | ------ |
 | `1` / `2` / `3` | Hand / Plow / Seed tool |
 | Drag | Pan the camera |
+| `W` `A` `S` `D` | Pan with the keyboard |
 | Scroll / Pinch | Zoom |
+| `Q` / Tap ↻ | Rotate the view 90° |
 | Tap building | Open its panel |
 | Tap crow | Shoo it away |
 | `Esc` | Cancel placement / close modal |

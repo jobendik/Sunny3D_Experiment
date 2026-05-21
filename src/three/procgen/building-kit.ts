@@ -20,9 +20,32 @@ import {
   ShapeGeometry,
   Shape,
   Color,
+  MeshLambertMaterial,
 } from 'three';
 import { box, cyl, cone } from './geometries';
 import { mat } from './materials';
+
+// Shared window-glass material — all window panes across all 21
+// buildings use this single material so a one-line emissive update
+// in buildings-manager lights up the whole farm at night.
+const _glassDayColor = new Color('#b8d4e8');
+const _glassNightColor = new Color('#fff0b0');
+const _glassEmissive = new Color('#000000');
+const windowGlassMat = new MeshLambertMaterial({
+  color: _glassDayColor.clone(),
+  emissive: _glassEmissive.clone(),
+  flatShading: true,
+});
+
+/** Drive window glow from outside (called once per frame). */
+export function setWindowGlow(intensity: number): void {
+  const t = Math.max(0, Math.min(1, intensity));
+  // Color: cool-blue daylight → warm-yellow lamplight.
+  windowGlassMat.color.copy(_glassDayColor).lerp(_glassNightColor, t);
+  // Emissive: only "on" once it's actually night, then ramps up.
+  const e = t * t; // gentle ease
+  windowGlassMat.emissive.setRGB(e * 0.95, e * 0.7, e * 0.25);
+}
 
 export interface WallOpts {
   w: number;            // tile-units along x
@@ -208,8 +231,9 @@ export interface WindowOpts {
   facing?: 'south' | 'north';
 }
 
-/** Window pane — frame + glass. Glass color encodes glow intensity
- *  by being switched between cool blue (day) and warm yellow (lit). */
+/** Window pane — frame + glass. The glass mesh uses a shared
+ *  module-level material (windowGlassMat) so setWindowGlow() can
+ *  light up every window on every building in one assignment. */
 export function windowPane(o: WindowOpts): Group {
   const g = new Group();
   const w = o.w ?? 0.22;
@@ -217,13 +241,11 @@ export function windowPane(o: WindowOpts): Group {
   const y = o.y ?? 0.65;
   const frameColor = o.color ?? '#3a2a18';
   const facing = o.facing ?? (o.faceZ < 0.5 ? 'south' : 'north');
-  const glow = o.glow ?? 0;
-  const glassColor = glow > 0.1 ? new Color('#fff5b0').lerp(new Color('#f4b942'), 1 - glow).getStyle() : '#b8d4e8';
 
   const frame = new Mesh(box(w + 0.04, h + 0.04, 0.04), mat(frameColor));
   frame.position.set(o.faceX, y, o.faceZ + (facing === 'south' ? -0.01 : 0.01));
   g.add(frame);
-  const glass = new Mesh(box(w, h, 0.03), mat(glassColor, glow > 0.1 ? { emissive: glassColor } : {}));
+  const glass = new Mesh(box(w, h, 0.03), windowGlassMat);
   glass.position.set(o.faceX, y, o.faceZ + (facing === 'south' ? -0.022 : 0.022));
   g.add(glass);
   // Cross-frame

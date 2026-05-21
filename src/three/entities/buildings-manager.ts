@@ -14,7 +14,7 @@ import { BUILDINGS } from '../../data/buildings';
 import { getSceneRoot } from '../scene-root';
 import { makeBuildingMesh } from '../buildings';
 import type { LightingSnapshot } from '../lighting';
-import { nowSeconds } from '../../utils';
+import { setWindowGlow } from '../procgen/building-kit';
 
 interface MountedBuilding {
   id: string;
@@ -27,6 +27,10 @@ const mounted = new Map<string, MountedBuilding>();
 export function updateBuildings(light: LightingSnapshot): void {
   const { entities } = getSceneRoot();
   const seen = new Set<string>();
+
+  // Single-assignment night glow on every window across every
+  // building — the shared windowGlassMat handles the rest.
+  setWindowGlow(light.windows);
 
   for (const b of state.buildings) {
     seen.add(b.id);
@@ -47,15 +51,6 @@ export function updateBuildings(light: LightingSnapshot): void {
       // Rotate around the world Z axis (local axle direction).
       sails.rotation.z += 0.4 * (1 / 60);
     }
-    // Window glow: emissive on glass panes (faked via material color).
-    // Walking the tree every frame is fine — meshes are small.
-    if (light.windows > 0) {
-      // We rely on the building factory having set up glass with an
-      // emissive color; here we just modulate the renderer-level
-      // exposure via materials? For now: shimmer is implicit through
-      // the lighting profile. No-op.
-    }
-    void light;
   }
 
   // Remove buildings that no longer exist.
@@ -66,7 +61,6 @@ export function updateBuildings(light: LightingSnapshot): void {
       mounted.delete(id);
     }
   }
-  void nowSeconds;
 }
 
 function disposeTree(root: Group): void {
