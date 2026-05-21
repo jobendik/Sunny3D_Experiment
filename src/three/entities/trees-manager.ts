@@ -6,13 +6,46 @@
 //  with a procedurally-built mesh group.
 // =============================================================
 
-import { Group, Mesh } from 'three';
+import { Group, Mesh, PlaneGeometry, MeshBasicMaterial, CanvasTexture, DoubleSide, Color } from 'three';
 import { state } from '../../state';
 import { getSceneRoot } from '../scene-root';
 import { ORCHARDS } from '../../data/orchards';
 import { getTreeStage } from '../../systems/trees';
 import { cyl, sphere } from '../procgen/geometries';
 import { mat } from '../procgen/materials';
+
+let _shadowTex: CanvasTexture | null = null;
+function shadowTex(): CanvasTexture {
+  if (_shadowTex) return _shadowTex;
+  const size = 64;
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d')!;
+  const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  g.addColorStop(0, 'rgba(0,0,0,0.6)');
+  g.addColorStop(0.7, 'rgba(0,0,0,0.15)');
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+  _shadowTex = new CanvasTexture(c);
+  return _shadowTex;
+}
+
+function makeTreeShadow(stage: number): Mesh {
+  const r = stage >= 2 ? 1.1 : stage === 1 ? 0.75 : 0.35;
+  const geom = new PlaneGeometry(r, r);
+  geom.rotateX(-Math.PI / 2);
+  const m = new Mesh(geom, new MeshBasicMaterial({
+    map: shadowTex(),
+    color: new Color('#ffffff'),
+    transparent: true,
+    opacity: 0.5,
+    depthWrite: false,
+    side: DoubleSide,
+  }));
+  m.position.y = 0.03;
+  return m;
+}
 
 interface TreeMounted {
   id: string;
@@ -42,6 +75,8 @@ function makeTreeMesh(type: string, stage: number, seed = 0): Group {
   const g = new Group();
   const trunkC = trunkColor(type);
   const leafC = leafColor(seed, stage >= 1);
+  // Drop a soft round shadow under every tree so it grounds visually.
+  g.add(makeTreeShadow(stage));
   if (stage === 0) {
     const sap = new Mesh(cyl(0.025, 0.025, 0.18, 6), mat(trunkC));
     sap.position.y = 0.09;

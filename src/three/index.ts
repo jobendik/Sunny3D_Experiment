@@ -18,6 +18,7 @@ import { installOuterWorld, updateOuterWorld } from './terrain/outer-world';
 import { installFogOfWar, updateFogOfWar } from './terrain/fog-of-war';
 import { installLakeDecor, updateLakeDecor } from './terrain/lake-decor';
 import { installWildflowers } from './terrain/wildflowers';
+import { installScatter } from './terrain/scatter';
 import { installBirds, updateBirds } from './fx/birds';
 import { installGodRays, updateGodRays } from './fx/god-rays';
 import { updateBuildings } from './entities/buildings-manager';
@@ -60,6 +61,7 @@ export function init3d(): void {
   installFogOfWar();
   installLakeDecor();
   installWildflowers();
+  installScatter();
   installBirds();
   installGodRays();
   // Prime the composer so its first frame isn't a stutter.
