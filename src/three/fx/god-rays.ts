@@ -28,11 +28,14 @@ const RAYS: Ray[] = [];
 let group: Group | null = null;
 
 function makeRay(): Ray {
-  // Tall narrow cone — the cone shape inherently fakes the
-  // "spreading shaft" silhouette of a light ray.
-  const geom = new ConeGeometry(2.2, 14, 18, 1, true);
+  // Tall, very wide & soft cone. The cone shape stays but the edges
+  // are dramatically feathered so it reads as a hazy "shaft of light
+  // through dust" rather than a stage spotlight. Wider radius +
+  // radial fade means individual rays blur into the sky instead of
+  // painting visible silhouettes on the ground.
+  const geom = new ConeGeometry(3.4, 16, 24, 1, true);
   // Translate so the apex is at origin and the cone opens downward.
-  geom.translate(0, -7, 0);
+  geom.translate(0, -8, 0);
   const mat = new ShaderMaterial({
     uniforms: {
       uTime: { value: 0 },
@@ -46,9 +49,11 @@ function makeRay(): Ray {
     vertexShader: /* glsl */ `
       varying float vY;
       varying vec3 vNormal;
+      varying vec3 vLocal;
       void main() {
-        vY = (position.y + 7.0) / 14.0;    // 0 at apex, 1 at base
+        vY = (position.y + 8.0) / 16.0;    // 0 at apex (top), 1 at base
         vNormal = normal;
+        vLocal = position;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }
     `,
@@ -58,15 +63,18 @@ function makeRay(): Ray {
       uniform float uTime;
       varying float vY;
       varying vec3 vNormal;
+      varying vec3 vLocal;
       void main() {
-        // Fade from bright apex to invisible base.
-        float a = pow(1.0 - vY, 2.2);
-        // Edge fade — softer at the silhouette so the cone doesn't
-        // look like a hard-edged cone.
-        float edge = pow(max(0.0, vNormal.y), 0.5);
-        a *= 0.55 + 0.45 * edge;
-        // Subtle shimmer
-        a *= 0.85 + 0.15 * sin(uTime * 3.0 + vY * 12.0);
+        // Vertical fade — barely visible at top, gone at bottom so
+        // the shaft never paints the ground.
+        float a = pow(1.0 - vY, 3.0) * 0.55;
+        // Strong silhouette fade — when the cone face is edge-on to
+        // the viewer, drop alpha to nothing. This is the key trick
+        // for "looks like haze, not like a cone".
+        float edge = pow(max(0.0, vNormal.y), 1.6);
+        a *= edge;
+        // Subtle volumetric shimmer
+        a *= 0.75 + 0.25 * sin(uTime * 2.0 + vY * 8.0);
         gl_FragColor = vec4(uColor, a * uIntensity);
       }
     `,
@@ -82,14 +90,15 @@ export function installGodRays(): void {
   group.name = 'god-rays';
   fx.add(group);
   const cx = GRID_W / 2, cz = GRID_H / 2;
-  // 5 rays scattered around the play area + outer ring.
-  for (let i = 0; i < 5; i++) {
+  // 3 rays scattered well outside the playable area so they never
+  // land directly on buildings/crops as a "spotlight".
+  for (let i = 0; i < 3; i++) {
     const r = makeRay();
-    const ang = (i / 5) * Math.PI * 2 + Math.random() * 0.4;
-    const dist = 4 + Math.random() * 8;
+    const ang = (i / 3) * Math.PI * 2 + Math.random() * 0.4;
+    const dist = 11 + Math.random() * 6;
     r.mesh.position.set(
       cx + Math.cos(ang) * dist,
-      7,
+      8,
       cz + Math.sin(ang) * dist,
     );
     // Tilt rays toward the sun's general direction — we don't need
@@ -109,7 +118,10 @@ export function updateGodRays(timeS: number, light: LightingSnapshot): void {
   const t = light.dayElapsed;
   const rise = Math.max(0, 1 - Math.abs((t - 0.21) * 12));
   const set = Math.max(0, 1 - Math.abs((t - 0.80) * 12));
-  const intensity = Math.max(rise, set) * 0.55;
+  // Peak intensity dropped dramatically — these are atmospheric
+  // haze hints, not spotlights. Bell curves further narrowed so the
+  // effect only shows for a brief window around dawn & dusk.
+  const intensity = Math.max(rise, set) * 0.18;
   for (const r of RAYS) {
     r.mat.uniforms.uTime.value = timeS + r.phase;
     r.mat.uniforms.uIntensity.value = intensity;

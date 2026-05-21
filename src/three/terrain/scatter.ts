@@ -154,11 +154,13 @@ export function installScatter(): void {
         seed = (seed * 1664525 + 1013904223) >>> 0;
         return (seed & 0xffff) / 0xffff;
       };
-      // Pick a prop type
+      // Pick a prop type — bushes dominate (most "farm meadow"
+      // feel), stones are common, mushrooms are a rare delight so
+      // the field doesn't read as "fairy forest".
       const k = rand();
       let prop: Group;
-      if (k < 0.45) prop = makeStoneCluster(rand);
-      else if (k < 0.85) prop = makeBush(rand);
+      if (k < 0.40) prop = makeStoneCluster(rand);
+      else if (k < 0.94) prop = makeBush(rand);
       else prop = makeMushroomClump(rand);
       prop.position.set(
         gx + 0.25 + rand() * 0.5,
