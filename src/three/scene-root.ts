@@ -46,5 +46,8 @@ export function getSceneRoot(): SceneRoot {
   scene.add(terrain, decor, entities, fx, sky, weather);
 
   cached = { scene, terrain, decor, entities, fx, sky, weather };
+  // Expose for debug — `window.__scene` is read by the debug helper
+  // to toggle group visibility from the devtools console.
+  (window as unknown as { __scene?: Scene }).__scene = scene;
   return cached;
 }

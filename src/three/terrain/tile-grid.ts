@@ -1,16 +1,22 @@
 // =============================================================
 //  TERRAIN — TILE GRID
 //
-//  One InstancedMesh of small chamfered tiles, color-per-instance.
-//  The blocky-but-rounded look is what gives the farm its
-//  Hay-Day / cozy-acres silhouette — flat planes read as washed-out
-//  from an iso camera, and sharp boxes feel like LEGO. Chamfered
-//  edges catch the rim light at sunrise and feel "soft".
+//  One InstancedMesh of 1×0.22×1 box tiles, color-per-instance.
+//  The blocky look is what gives the farm its Hay-Day / cozy-acres
+//  silhouette — flat planes read as washed-out from an iso camera
+//  and sharp boxes feel like LEGO.
 //
-//  Each tile gets a tiny amount of per-coord noise applied to BOTH
-//  its color and its height, so even a uniform grass field has the
-//  organic, hand-painted feel of a storybook farm rather than a
-//  Minecraft floor.
+//  Tile color comes from a small palette of greens/tans (one per
+//  TileType) plus per-coord lightness jitter so a grass field reads
+//  as patches of meadow rather than a perfectly uniform billiard
+//  table. The richer per-fragment noise pattern lives in
+//  tile-material.ts and runs only on the top face.
+//
+//  Tiles butt edge-to-edge (TILE_INSET = 0) and sit at a single
+//  height — both intentional. Any insets or per-tile vertical
+//  offsets expose the dark Lambert-lit sides between tile tops,
+//  which ACES tone-maps into a brown lattice that destroys the
+//  meadow feel.
 //
 //  Rebuilds: only the tile *instances* whose type changed are
 //  touched (plow/harvest/dig). The mesh itself is never recreated
@@ -20,7 +26,7 @@
 import {
   InstancedMesh,
   Object3D,
-  BufferGeometry,
+  BoxGeometry,
   Mesh,
   Color,
   PlaneGeometry,
@@ -32,12 +38,9 @@ import { state } from '../../state';
 import { GRID_W, GRID_H } from '../../constants';
 import { getSceneRoot } from '../scene-root';
 import { tileMaterial } from './tile-material';
-import { chamferedTileGeometry } from './tile-geometry';
 import type { TileType } from '../../types';
 
 const TILE_HEIGHT = 0.22;        // visible thickness of each tile box
-const TILE_INSET = 0;            // tiles butt against each other — the bevel reads the seam
-const TILE_BEVEL = 0.025;        // subtle chamfer that catches rim light without screaming "grid"
 
 const TILE_COLORS: Record<TileType, Color> = {
   grass:  new Color('#7fcf63'),
@@ -75,14 +78,14 @@ function tileTint(gx: number, gy: number, type: TileType): Color {
   return c;
 }
 
-/** Subtle per-tile vertical offset — under 0.05u so it doesn't break
- *  building footprints, but enough to catch the eye at low pitch. */
-function tileHeightOffset(gx: number, gy: number, type: TileType): number {
-  if (type === 'water' || type === 'plowed') return 0;
-  // Two-octave value-noise for soft rolling height.
-  const a = smoothHash(gx, gy, 7);
-  const b = smoothHash(Math.floor(gx / 2), Math.floor(gy / 2), 13);
-  return (a * 0.6 + b * 0.4 - 0.5) * 0.06;
+/** Per-tile vertical offset. We KEEP this at 0 — any variation
+ *  here exposes the sides of adjacent tiles to the camera, and
+ *  with ACES tone mapping the dim Lambert-lit sides shift toward
+ *  brown, painting an obvious grid pattern between every tile.
+ *  The "rolling meadow" feel comes from the grass-blade vertex
+ *  shader sway + the noise pattern in tile-material instead. */
+function tileHeightOffset(_gx: number, _gy: number, _type: TileType): number {
+  return 0;
 }
 
 let land: InstancedMesh | null = null;
@@ -134,13 +137,16 @@ function writeInstance(mesh: InstancedMesh, idx: number, gx: number, gy: number,
   mesh.setColorAt(idx, tileTint(gx, gy, type));
 }
 
+// Tiles touch edge-to-edge; no need to inset the geometry. Kept as
+// a constant so a future change can re-introduce a seam if desired.
+const TILE_INSET = 0;
+
 function buildLand(): InstancedMesh {
   const tiles = GRID_W * GRID_H;
-  const geom: BufferGeometry = chamferedTileGeometry(
+  const geom = new BoxGeometry(
     1 - TILE_INSET * 2,
     TILE_HEIGHT,
     1 - TILE_INSET * 2,
-    TILE_BEVEL,
   );
   const mat = tileMaterial();
   // Per-instance color keeps the whole grid in one draw call.
