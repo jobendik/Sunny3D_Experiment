@@ -36,6 +36,8 @@ import { installBoatAtDock, updateBoatAtDock } from './decor/boat-at-dock';
 import { installMailbox, updateMailbox } from './decor/mailbox';
 import { installRoadsideStand, updateRoadsideStand } from './decor/roadside-stand';
 import { installNewspaperStand } from './decor/newspaper-stand';
+import { installRequestBoard } from './decor/request-board';
+import { installCoopSignpost, updateCoopSignpost } from './decor/coop-signpost';
 import { installSky, updateSky } from './sky/sky-dome';
 import { installWeather, updateWeather } from './fx/weather-particles';
 import { updateTreasureChests } from './fx/treasure-chests';
@@ -63,6 +65,8 @@ export function init3d(): void {
   installMailbox();
   installRoadsideStand();
   installNewspaperStand();
+  installRequestBoard();
+  installCoopSignpost();
   installGrassBlades();
   installSky();
   installWeather();
@@ -105,6 +109,7 @@ export function render3d(dt: number): void {
   updateBoatAtDock(timeS);
   updateMailbox(timeS);
   updateRoadsideStand(timeS);
+  updateCoopSignpost(timeS);
   updateCrows(timeS);
   updateDog(timeS);
   updateSky();

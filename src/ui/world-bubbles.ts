@@ -50,6 +50,12 @@ import {
 import {
   NEWS_X, NEWS_Z, NEWS_BUBBLE_Y,
 } from '../three/decor/newspaper-stand';
+import {
+  REQUEST_BOARD_X, REQUEST_BOARD_Z, REQUEST_BOARD_BUBBLE_Y,
+} from '../three/decor/request-board';
+import {
+  SIGNPOST_X, SIGNPOST_Z, SIGNPOST_BUBBLE_Y,
+} from '../three/decor/coop-signpost';
 import { ITEMS } from '../data/items';
 import { unreadCount as mailboxUnreadCount } from '../systems/mailbox';
 
@@ -551,15 +557,29 @@ export function computeBubbleTargets(): BubbleTarget[] {
     });
   }
 
-  // Co-Op signpost near the home centre when the Club is unlocked.
+  // -------- Request Board (Phase 1.6) --------
+  // Birdhouse-topped board near the home centre. Always visible — it
+  // acts as the friendship/neighbourhood hub even before the Club
+  // tier unlocks. Until Phase 3 ships the dedicated panel, it routes
+  // to the friendship panel.
+  out.push({
+    key: 'hub:requests',
+    wx: REQUEST_BOARD_X, wy: REQUEST_BOARD_BUBBLE_Y, wz: REQUEST_BOARD_Z,
+    icon: '🤝',
+    kind: 'hub',
+    tap: () => document.getElementById('open-friendship')?.click(),
+  });
+
+  // -------- Co-Op Signpost (Phase 1.8) --------
+  // Appears when the Club tier is at least teaser-visible. Tap → club.
   {
     const clubGate = gateForButton('open-club');
     const status = clubGate ? gateStatus(clubGate) : 'hidden';
     if (status === 'unlocked' || status === 'attention') {
       out.push({
         key: 'hub:club',
-        wx: HOME_CENTER_X - 5, wy: 2.0, wz: HOME_CENTER_Y - 3,
-        icon: '🤝',
+        wx: SIGNPOST_X, wy: SIGNPOST_BUBBLE_Y, wz: SIGNPOST_Z,
+        icon: '🏆',
         kind: 'hub',
         tap: () => document.getElementById('open-club')?.click(),
       });
