@@ -19,6 +19,8 @@ export function updateHUD(): void {
   const fill = document.getElementById('xp-fill') as HTMLElement;
   if (fill) fill.style.width = pct + '%';
   document.getElementById('xp-label')!.textContent = `${state.xp} / ${need} XP`;
+  const srLabel = document.getElementById('xp-sr-label');
+  if (srLabel) srLabel.textContent = `Level ${state.level}, ${state.xp} of ${need} experience points`;
   // FV3-style XP ring around the profile avatar. pathLength is 100,
   // so dashoffset = 100 - pct.
   const ring = document.getElementById('profile-ring-fill') as SVGCircleElement | null;

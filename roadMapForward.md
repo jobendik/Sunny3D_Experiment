@@ -664,11 +664,11 @@ Track every meaningful task. Tick the box when committed AND pushed AND the type
 - [ ] 3.5 — Family-friendly chat mode + profanity filter
 
 ### Phase 4 — Accessibility Finish
-- [ ] 4.1 — `src/ui/focus-trap.ts` helper
-- [ ] 4.2 — Apply focus trap to modal + every bottom sheet + side panel
-- [ ] 4.3 — `.sr-only` utility class + audit usage
-- [ ] 4.4 — Tab order + ARIA roles audit (dialog, tablist, tab)
-- [ ] 4.5 — Lighthouse a11y ≥ 90 verified
+- [x] 4.1 — `src/ui/focus-trap.ts` helper
+- [x] 4.2 — Apply focus trap to modal + every bottom sheet + side panel
+- [x] 4.3 — `.sr-only` utility class + audit usage
+- [x] 4.4 — Tab order + ARIA roles audit (dialog, tablist, tab)
+- [ ] 4.5 — Lighthouse a11y ≥ 90 verified  *(needs browser-side QA — defer to Phase 11)*
 
 ### Phase 5 — Onboarding Polish
 - [ ] 5.1 — Farm naming as tutorial step 0
@@ -727,6 +727,7 @@ Append a one-line entry per session here. Keep newest at top. Don't delete entri
 YYYY-MM-DD  Phase X.Y started / completed — commit <sha> — note
 ```
 
+- 2026-05-22  Phase 4 (4.1–4.4) complete — new src/ui/focus-trap.ts exports trapFocus(rootEl) returning a release function. Applied to the central modal harness (src/ui/modal.ts wraps it around the .modal panel + adds Esc-to-close + role="dialog" + aria-modal + role="tablist"/role="tab" + keyboard activation on tabs). Applied to every bottom sheet via showSheet/hideSheet in mobile-shell.ts (per-sheet release map). Applied to the side panel via openSidePanel/closeSidePanel. Added .sr-only utility class + :focus-visible ring (honey-500, brighter under .high-contrast). Added a companion sr-only span next to the XP bar so screen readers announce "Level X, Y of Z experience points" instead of the visible "Y / Z XP". 4.5 (Lighthouse verification) needs a browser run and is deferred to Phase 11. Files: src/ui/focus-trap.ts (new), src/ui/modal.ts (focus trap + ARIA + Esc), src/ui/mobile-shell.ts (per-sheet focus trap + side panel trap), src/ui/hud.ts (sr-only XP), index.html (sr-only span), src/style.css (.sr-only + :focus-visible). Typecheck + build green.
 - 2026-05-22  Phase 2 complete — Shop now has 7 tabs (Seeds/Trees/Sell/Buy/Supplies remain for backwards compat; added Offers + Pass per FV3 grammar). Offers tab: Daily Deal card (buyable for diamonds), Surprise Box card, Piggy Bank card, Maggie's Offers placeholder (Phase 6), plus an "Earn through play" Gem Pack panel with 4 packs (Cart/Safe/Chest/Vault) — no real IAP. Pass tab: 3-track summary (Free / Elite / Platinum) with "Open Pass" button, plus a 3-card "Upcoming Bundles" preview. New top-right offer-pill (40px round, cherry tint, pulses) appears whenever a daily deal or surprise box is ready; tap → opens shop with Offers tab focused. Files: src/ui/shop.ts (+~190 lines), src/ui/hud.ts (offer-pill update logic), src/main.ts (offer-pill click wiring + openShop arity change), index.html (offer-pill markup), style.css (~150 new lines for pill + offer-card + gem-pack + pass-shop layouts). Typecheck + build green.
 - 2026-05-22  Phase 1.11 + 1.12 + 1.13 + 1.14 complete — Festival Cart at (16, 0, 26.2) — covered wagon with coloured panels, striped canopy, gold-hubbed wheels, and a 7-flag bunting that waves. Visible only when state.festivalCart.unlocked && endsAt > now (fixed inferred-active checks in both world-bubbles.ts and mobile-shell.ts to use endsAt instead of nonexistent `active` field). Train Station at east edge (25.6, 0, 16) with platform/house/overhang/sign/window/door, two iron rails + 22 sleepers, and a locomotive (boiler, smokestack, cab, cow-catcher, 3 wheel-pairs, coal tender). Engine smoothly interpolates from off-screen east → parked at the platform when state.train.status === 'returned'. Hot-Air Balloon at altitude y=8: striped envelope, basket, ropes, flickering burner; circular slow drift radius 2.5 plus vertical bob, visible only when state.balloon.active. Phase 1.14 verified by source review — all 3D props sit outside or at the edges of the home grid; corner FABs are screen-fixed and don't overlap. Files: festival-cart.ts, train-station.ts, balloon.ts (all new), three/index.ts, world-bubbles.ts, ui/mobile-shell.ts. Typecheck + build green.
 - 2026-05-22  Phase 1.9 + 1.10 complete — Wheel Stand at (7.5, 0, 25.4) west of the order truck: cyl back disc + 8 coloured boxed-slice spokes, central hub, pointer cone, two cyl pillars. Spins idly at 0.4 rad/s, accelerates to 1.6 rad/s when canSpin()===true. 🎡 bubble pulses only when a daily spin is available. Sanctuary Easel at (12.5, 0, 11.5) on the east lakeshore: tripod cylinder legs + open journal with sketch lines + a small flower bouquet + a field of wildflowers at the base. Page-pivot breathes gently when state.sanctuary.active. 📖 bubble visible once sanctuary unlocked, pulses when active. Files: src/three/decor/wheel-stand.ts (new), sanctuary-easel.ts (new), three/index.ts, world-bubbles.ts. Typecheck + build green.

@@ -190,6 +190,29 @@
 }
 
 /* =====================================================================
+   ACCESSIBILITY UTILITIES (Phase 4.3)
+   ===================================================================== */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Visible focus ring for keyboard users — respects high-contrast. */
+:focus-visible {
+  outline: 3px solid var(--honey-500);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+body.high-contrast :focus-visible {
+  outline-color: #ffe000;
+  outline-width: 4px;
+}
+
+/* =====================================================================
    GLOBAL RESET
    ===================================================================== */
 * {
