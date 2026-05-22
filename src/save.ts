@@ -18,6 +18,7 @@ const CURRENT_SAVE_VERSION = 6;
 interface SaveData {
   saveVersion?: number;
   coins: number;
+  gems?: number;
   xp: number;
   level: number;
   day: number;
@@ -104,6 +105,7 @@ export function saveGame(): void {
   const data: SaveData = {
     saveVersion: CURRENT_SAVE_VERSION,
     coins: state.coins,
+    gems: state.gems,
     xp: state.xp,
     level: state.level,
     day: state.day,
@@ -233,6 +235,7 @@ export function loadGame(): boolean {
     data = migrateSave(data);
 
     state.coins = data.coins;
+    state.gems = data.gems ?? 5;
     state.xp = data.xp;
     state.level = data.level;
     state.day = data.day;

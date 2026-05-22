@@ -7,6 +7,7 @@ import type { GameState } from './types';
 
 export const state: GameState = {
   coins: 100,
+  gems: 5,
   xp: 0,
   level: 1,
   day: 1,

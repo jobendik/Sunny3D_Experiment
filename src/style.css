@@ -242,22 +242,252 @@ button {
 }
 
 /* =====================================================================
-   TOP HUD — two tiers of polished badges
+   TOP HUD — Hay Day grammar
+   Left corner stack: hamburger + level/XP + ambient info (weather/day/season)
+   Right corner stack: coins, gems, offer bubble
+   The middle of the screen is intentionally free — the world dominates.
    ===================================================================== */
 .hud-top {
   position: absolute;
   top: calc(10px + var(--safe-top));
   left: calc(10px + var(--safe-left));
   right: calc(10px + var(--safe-right));
-  display: flex; flex-direction: column;
-  gap: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
   pointer-events: none;
   z-index: 20;
 }
-.hud-top-row {
-  display: flex; gap: 10px; align-items: center;
+.hud-corner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: auto;
+  max-width: 50vw;
 }
+.hud-corner-tl { align-items: flex-start; }
+.hud-corner-tr { align-items: flex-end; }
+
+/* Backwards-compatible aliases — old code paths referencing hud-top-row /
+   hud-top-secondary stop existing in HTML but a few CSS rules may still
+   target them. Provide no-op stand-ins. */
+.hud-top-row { display: flex; gap: 10px; align-items: center; }
+.hud-top-secondary { display: none; }
 .hud-spacer { flex: 1; }
+
+/* ---------------- Hamburger / global menu ---------------- */
+.icon-btn.hud-menu-btn {
+  --d: 42px;
+  width: var(--d); height: var(--d);
+  display: grid; place-items: center;
+  background:
+    radial-gradient(circle at 30% 25%, #fffae0 0%, #f8d089 35%, #e0a020 70%, #94601a 100%);
+  border: 2px solid #8a5410;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  box-shadow:
+    0 0 0 2px rgba(255, 240, 180, 0.4) inset,
+    0 2px 0 #6e4214,
+    0 4px 10px rgba(70, 40, 6, 0.4);
+  pointer-events: auto;
+  position: relative;
+}
+.icon-btn.hud-menu-btn::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 55%);
+  pointer-events: none;
+}
+.icon-btn.hud-menu-btn:active { transform: translateY(2px); box-shadow: var(--press); }
+.hud-menu-bars {
+  display: grid;
+  gap: 4px;
+  width: 20px;
+  pointer-events: none;
+  position: relative;
+}
+.hud-menu-bars span {
+  display: block;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--ink);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+/* ---------------- Level + XP group (Hay Day signature) ---------------- */
+.level-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--grad-glass);
+  border: 2px solid rgba(196, 162, 106, 0.85);
+  border-radius: var(--r-pill);
+  padding: 4px 12px 4px 4px;
+  box-shadow: var(--lift-1);
+  position: relative;
+  pointer-events: auto;
+}
+.level-group::before {
+  content: '';
+  position: absolute;
+  inset: 2px 2px auto 2px;
+  height: 45%;
+  border-radius: var(--r-pill);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+.level-group .xp-bar-wrap {
+  /* Inside the group the XP track shouldn't have its own paper panel. */
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  min-width: 140px;
+  max-width: clamp(140px, 22vw, 240px);
+}
+.level-group .xp-bar-wrap::before { display: none; }
+
+/* ---------------- Ambient info stack (weather/season/day) ---------------- */
+.ambient-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  pointer-events: auto;
+  max-width: clamp(180px, 32vw, 320px);
+}
+.ambient-stack .badge {
+  font-size: var(--fs-12);
+  padding: 3px 10px;
+  min-height: 28px;
+}
+
+/* ---------------- Currency stack (right corner) ---------------- */
+.currency-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: auto;
+}
+.currency-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 4px 6px;
+  min-height: 36px;
+  min-width: 120px;
+  border: 2px solid rgba(196, 162, 106, 0.85);
+  border-radius: var(--r-pill);
+  background: var(--grad-glass);
+  box-shadow: var(--lift-1);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--fs-16);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  justify-content: flex-end;
+  transition: transform 0.12s var(--ease-out), filter 0.12s var(--ease-out);
+}
+.currency-pill::before {
+  content: '';
+  position: absolute;
+  inset: 2px 2px auto 2px;
+  height: 45%;
+  border-radius: var(--r-pill);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+.currency-pill:hover { transform: translateY(-1px); filter: brightness(1.04); }
+.currency-pill:active { transform: translateY(1px); }
+.currency-pill .icon,
+.currency-pill .gem-ico {
+  width: 26px; height: 26px;
+  display: inline-grid; place-items: center;
+  flex-shrink: 0;
+}
+.currency-pill .gem-ico svg { width: 100%; height: 100%; display: block; }
+.currency-pill .currency-value {
+  flex: 1;
+  text-align: right;
+}
+.currency-pill .currency-plus {
+  display: inline-grid;
+  place-items: center;
+  width: 18px; height: 18px;
+  margin-right: -4px;
+  border-radius: 50%;
+  background: var(--sage-500);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  border: 1.5px solid #1f4a23;
+  text-shadow: none;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.15);
+}
+
+.currency-pill.coin-pill {
+  background:
+    radial-gradient(ellipse at 25% 30%, #fffae0 0%, #fde5a2 30%, #f4cb6a 60%, #c8861d 100%);
+  border-color: #8a5410;
+  color: #4a2f08;
+  text-shadow: 0 1px 0 rgba(255, 240, 170, 0.65);
+  overflow: hidden;
+}
+.currency-pill.gem-pill {
+  background:
+    linear-gradient(180deg, #eaf6ff 0%, #c5e2f0 60%, #8fc1de 100%);
+  border-color: #1f6a98;
+  color: #0b3c5d;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+/* ---------------- Offer / gift bubble ---------------- */
+.offer-bubble {
+  position: relative;
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 2px solid #b3293c;
+  background: radial-gradient(circle at 30% 25%, #ffe3c4 0%, #ff9d8f 35%, #e54a5e 70%, #841623 100%);
+  cursor: pointer;
+  font-size: 26px;
+  pointer-events: auto;
+  box-shadow:
+    0 0 0 2px rgba(255, 220, 200, 0.4) inset,
+    0 3px 0 #6c1622,
+    0 6px 14px rgba(180, 30, 50, 0.4);
+  animation: offer-pulse 2.4s ease-in-out infinite;
+}
+.offer-bubble::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 55%);
+  pointer-events: none;
+}
+.offer-bubble:active { transform: translateY(2px); box-shadow: 0 1px 0 #6c1622, var(--press); }
+.offer-bubble-ico { position: relative; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25)); }
+@keyframes offer-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.05); }
+}
+.offer-bubble-pip {
+  position: absolute;
+  top: -3px; right: -3px;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--sage-500);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(40, 80, 20, 0.5);
+}
 
 /* Base "pill" — gives every HUD chip a consistent material */
 .badge {
@@ -502,7 +732,8 @@ button {
 }
 
 /* =====================================================================
-   BOTTOM ACTION BAR — solid floor of cozy controls
+   BOTTOM HUD — Hay Day grammar
+   Corner-anchored Shop (left) and Social (right). Tool dock in the middle.
    ===================================================================== */
 .hud-bottom {
   position: absolute;
@@ -513,6 +744,212 @@ button {
   z-index: 20;
   pointer-events: none;
 }
+
+/* ---------------- Corner-anchored FABs (shop / social) ---------------- */
+.corner-fab {
+  position: absolute;
+  bottom: calc(14px + var(--safe-bottom));
+  width: 76px;
+  height: 76px;
+  border-radius: 22px;
+  border: 2px solid var(--paper-edge-dk);
+  cursor: pointer;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px;
+  background:
+    linear-gradient(180deg, #fff7e1 0%, #fbe9c0 55%, #f1d493 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 250, 220, 0.7) inset,
+    0 4px 0 #94734a,
+    0 10px 24px rgba(40, 24, 8, 0.45);
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+  transition: transform 0.12s var(--ease-out), filter 0.12s var(--ease-out);
+}
+.corner-fab::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: calc(22px - 2px);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 50%);
+  pointer-events: none;
+}
+.corner-fab:hover { transform: translateY(-1px); filter: brightness(1.04); }
+.corner-fab:active { transform: translateY(2px); box-shadow: 0 1px 0 #94734a, 0 1px 4px rgba(0, 0, 0, 0.2) inset; }
+.corner-fab-ico {
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+}
+.corner-fab-ico-emoji { font-size: 30px; line-height: 1; }
+.corner-fab-label {
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  line-height: 1;
+  opacity: 0.9;
+}
+.corner-fab-badge {
+  position: absolute;
+  top: -6px; right: -6px;
+  min-width: 22px; height: 22px;
+  padding: 0 5px;
+  border-radius: 999px;
+  display: grid; place-items: center;
+  background: var(--cherry-500);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(150, 30, 40, 0.45);
+  text-shadow: none;
+}
+
+.corner-shop {
+  left: calc(14px + var(--safe-left));
+  background:
+    linear-gradient(180deg, #fffcf0 0%, #ffe9a3 45%, #e2a83c 100%);
+  border-color: #8a5410;
+  color: #4a2f08;
+  text-shadow: 0 1px 0 rgba(255, 240, 170, 0.6);
+  box-shadow:
+    0 1px 0 rgba(255, 250, 200, 0.7) inset,
+    0 4px 0 #8a5410,
+    0 10px 24px rgba(80, 40, 6, 0.5);
+}
+.corner-shop:active { box-shadow: 0 1px 0 #8a5410, 0 1px 4px rgba(0, 0, 0, 0.2) inset; }
+
+.corner-social {
+  right: calc(14px + var(--safe-right));
+  background:
+    linear-gradient(180deg, #d6f3ff 0%, #9cd6ee 50%, #4a9fd2 100%);
+  border-color: #1a5a82;
+  color: #0b3c5d;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  box-shadow:
+    0 1px 0 rgba(220, 245, 255, 0.7) inset,
+    0 4px 0 #1f4a6b,
+    0 10px 24px rgba(20, 50, 80, 0.45);
+}
+.corner-social:active { box-shadow: 0 1px 0 #1f4a6b, 0 1px 4px rgba(0, 0, 0, 0.2) inset; }
+
+/* ---------------- Center tool dock ---------------- */
+.tool-dock {
+  position: relative;
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px;
+  background:
+    var(--tex-paper),
+    linear-gradient(180deg, #fff7e1 0%, #fbe9c0 100%);
+  background-blend-mode: multiply, normal;
+  border: 2px solid var(--paper-edge-dk);
+  border-radius: var(--r-xl);
+  box-shadow: var(--lift-3);
+  pointer-events: auto;
+  max-width: calc(100vw - 200px);
+  overflow-x: auto;
+  scrollbar-width: none;
+  justify-content: center;
+}
+.tool-dock::-webkit-scrollbar { display: none; }
+.tool-dock::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: calc(var(--r-xl) - 2px);
+  border: 1px solid rgba(255, 245, 200, 0.7);
+  pointer-events: none;
+}
+.tool-pill {
+  position: relative;
+  background: var(--grad-btn);
+  border: 1.5px solid #8a6028;
+  border-radius: var(--r-md);
+  padding: 5px 10px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--ink);
+  box-shadow: var(--lift-1);
+  font-size: 11px;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 2px;
+  min-height: 56px;
+  min-width: 56px;
+  flex-shrink: 0;
+  touch-action: manipulation;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+  transition: transform 0.12s var(--ease-out), filter 0.12s var(--ease-out);
+}
+.tool-pill::before {
+  content: '';
+  position: absolute;
+  inset: 1px 1px auto 1px;
+  height: 40%;
+  border-radius: calc(var(--r-md) - 1px) calc(var(--r-md) - 1px) 40% 40% / calc(var(--r-md) - 1px) calc(var(--r-md) - 1px) 8px 8px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+.tool-pill .ico {
+  width: 26px; height: 26px;
+  display: inline-block;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.4));
+}
+.tool-pill .ico-more {
+  width: 26px; height: 26px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 22px; line-height: 1;
+  color: var(--ink);
+}
+.tool-pill:hover { transform: translateY(-1px); filter: brightness(1.04); }
+.tool-pill:active { transform: translateY(2px); box-shadow: var(--press); }
+.tool-pill-label {
+  font-size: 10px;
+  letter-spacing: 0.2px;
+  line-height: 1.05;
+  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.tool-pill-label small {
+  display: block;
+  font-size: 9px;
+  opacity: 0.85;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tool-pill.active {
+  background: var(--grad-btn-active);
+  border-color: #8a5410;
+  color: #4a2f08;
+  text-shadow: 0 1px 0 rgba(255, 240, 170, 0.6);
+  box-shadow:
+    0 1px 0 rgba(255, 250, 200, 0.6) inset,
+    0 3px 0 #6e4214,
+    0 0 0 2px rgba(244, 185, 66, 0.3),
+    0 6px 18px rgba(244, 185, 66, 0.45);
+  animation: tool-pulse 2.2s ease-in-out infinite;
+}
+.tool-pill-more {
+  background:
+    linear-gradient(180deg, #fff1c4 0%, #ffce4a 100%);
+  border-color: #8a5410;
+}
+
+/* ---------------- Legacy compatibility shims ---------------- */
+/* The action-bar selector still appears in a few places (feature-visibility,
+   tutorial spotlights). Map it to the new tool-dock so styles compose. */
 .action-bar {
   position: relative;
   display: flex; gap: 6px;
@@ -532,7 +969,6 @@ button {
 }
 .action-bar::-webkit-scrollbar { display: none; }
 .action-bar::before {
-  /* Hairline gold rim */
   content: '';
   position: absolute;
   inset: 1px;
@@ -1295,6 +1731,53 @@ button {
   width: 34px; height: 34px;
   display: flex; align-items: center; justify-content: center;
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
+}
+
+/* ---------------- Hamburger drawer (left-side variant) ---------------- */
+.hud-drawer {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: min(320px, 80vw);
+  transform: translateX(-100%);
+  background:
+    var(--tex-paper),
+    var(--grad-paper);
+  background-blend-mode: multiply, normal;
+  border-right: 3px solid var(--paper-edge-dk);
+  border-radius: 0 22px 22px 0;
+  padding: calc(20px + var(--safe-top)) 18px calc(22px + var(--safe-bottom)) calc(18px + var(--safe-left));
+  z-index: 46;
+  box-shadow: 6px 0 30px rgba(0, 0, 0, 0.45);
+  transition: transform 0.3s var(--ease-out);
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+.hud-drawer.open { transform: translateX(0); }
+.hud-drawer .hud-drawer-handle {
+  width: 5px; height: 48px;
+  background: linear-gradient(180deg, #c4a26a, #94734a);
+  border-radius: 3px;
+  position: absolute;
+  right: 8px; top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.55;
+}
+.hud-drawer-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--wood-2);
+  font-size: var(--fs-14);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-align: center;
+}
+.hud-drawer-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
 }
 
 /* =====================================================================
@@ -3351,6 +3834,7 @@ button {
     left: calc(7px + var(--safe-left));
     right: calc(7px + var(--safe-right));
   }
+  .hud-corner { gap: 6px; max-width: 56vw; }
   .badge {
     font-size: var(--fs-13);
     padding: 5px 10px;
@@ -3367,9 +3851,11 @@ button {
     border-width: 2px;
     max-width: none;
   }
+  .level-group .xp-bar-wrap { min-width: 100px; max-width: 28vw; }
   .xp-bar { height: 15px; }
   .xp-bar-label { font-size: 10px; }
-  .hud-top-secondary .badge {
+  .hud-top-secondary .badge,
+  .ambient-stack .badge {
     padding: 3px 9px;
     font-size: var(--fs-12);
     min-height: 28px;
@@ -3381,6 +3867,53 @@ button {
     min-height: 36px;
     font-size: 18px;
   }
+  .icon-btn.hud-menu-btn { --d: 38px; }
+  .icon-btn.hud-menu-btn .hud-menu-bars { width: 16px; }
+  .icon-btn.hud-menu-btn .hud-menu-bars span { height: 2.5px; }
+  .currency-pill {
+    min-width: 96px;
+    min-height: 32px;
+    font-size: var(--fs-13);
+    padding: 3px 10px 3px 4px;
+  }
+  .currency-pill .icon, .currency-pill .gem-ico { width: 22px; height: 22px; }
+  .currency-pill .currency-plus { width: 16px; height: 16px; font-size: 12px; }
+  .offer-bubble { width: 44px; height: 44px; font-size: 22px; }
+  .corner-fab {
+    width: 68px; height: 68px;
+    border-radius: 18px;
+    padding: 4px;
+  }
+  .corner-fab-ico { width: 32px; height: 32px; }
+  .corner-fab-ico-emoji { font-size: 24px; }
+  .corner-fab-label { font-size: 10px; }
+  .corner-shop { left: calc(8px + var(--safe-left)); bottom: calc(8px + var(--safe-bottom)); }
+  .corner-social { right: calc(8px + var(--safe-right)); bottom: calc(8px + var(--safe-bottom)); }
+  .tool-dock {
+    padding: 6px 8px;
+    gap: 4px;
+    border-width: 2px;
+    border-radius: var(--r-lg);
+    max-width: calc(100vw - 180px);
+  }
+  .tool-pill {
+    min-height: 58px;
+    min-width: 50px;
+    padding: 4px 6px;
+  }
+  .tool-pill .ico, .tool-pill .ico-more { width: 22px; height: 22px; }
+  .tool-pill .ico-more { font-size: 20px; }
+  .tool-pill-label { font-size: 9px; }
+  .tool-pill-label small {
+    display: block;
+    font-size: 9px;
+    opacity: 0.85;
+    max-width: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .hud-drawer-grid { grid-template-columns: repeat(3, 1fr); }
 
   /* Side panel becomes drawer */
   .side-panel {
@@ -3531,6 +4064,7 @@ button {
 @media (max-height: 500px) and (orientation: landscape) {
   .hud-top { gap: 4px; }
   .hud-top-secondary { display: none; }
+  .ambient-stack { display: none; }
   .side-panel { width: min(280px, 70vw); }
   #toasts { top: calc(70px + var(--safe-top)); }
   .event-banner, .placing-banner { top: calc(70px + var(--safe-top)); }
@@ -3538,6 +4072,11 @@ button {
   .fab-quests:active { transform: translateY(calc(-50% + 2px)) scale(0.85); }
   .btn { min-height: 52px; }
   .action-bar { padding: 5px; }
+  .tool-pill { min-height: 50px; }
+  .tool-dock { padding: 5px; }
+  .corner-fab { width: 60px; height: 60px; border-radius: 16px; }
+  .corner-fab-label { display: none; }
+  .corner-fab-ico { width: 30px; height: 30px; }
 }
 
 @media (max-width: 360px) {

@@ -921,6 +921,7 @@ export interface DecorSetsRoot {
 
 export interface GameState {
   coins: number;
+  gems: number;
   xp: number;
   level: number;
   day: number;
