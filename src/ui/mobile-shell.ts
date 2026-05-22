@@ -244,8 +244,8 @@ function buildQEBEntries(): QEBEntry[] {
 
   // Festival Cart — when active
   if (gateAllows('open-cart')) {
-    const cart = (state as { festivalCart?: { active?: boolean } }).festivalCart;
-    if (cart?.active) {
+    const cart = state.festivalCart;
+    if (cart?.unlocked && cart.endsAt > Date.now() / 1000) {
       out.push({
         id: 'cart', icon: '🎪', label: 'Cart',
         open: () => clickHidden('open-cart'),

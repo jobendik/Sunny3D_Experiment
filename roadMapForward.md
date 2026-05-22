@@ -645,10 +645,10 @@ Track every meaningful task. Tick the box when committed AND pushed AND the type
 - [x] 1.8 — 3D Co-Op Signpost
 - [x] 1.9 — 3D Daily Wheel fairground prop
 - [x] 1.10 — 3D Sanctuary Easel
-- [ ] 1.11 — 3D Festival Cart (conditional)
-- [ ] 1.12 — 3D Train Station + rolling train
-- [ ] 1.13 — 3D Hot-Air Balloon (active animation)
-- [ ] 1.14 — FAB / camera-overlap cleanup pass
+- [x] 1.11 — 3D Festival Cart (conditional)
+- [x] 1.12 — 3D Train Station + rolling train
+- [x] 1.13 — 3D Hot-Air Balloon (active animation)
+- [x] 1.14 — FAB / camera-overlap cleanup pass
 
 ### Phase 2 — Shop Taxonomy + Offer Bubble + Gem Packs
 - [ ] 2.1 — Refactor shop into Buildings / Decor / Offers / Pass / Helpers
@@ -727,6 +727,7 @@ Append a one-line entry per session here. Keep newest at top. Don't delete entri
 YYYY-MM-DD  Phase X.Y started / completed — commit <sha> — note
 ```
 
+- 2026-05-22  Phase 1.11 + 1.12 + 1.13 + 1.14 complete — Festival Cart at (16, 0, 26.2) — covered wagon with coloured panels, striped canopy, gold-hubbed wheels, and a 7-flag bunting that waves. Visible only when state.festivalCart.unlocked && endsAt > now (fixed inferred-active checks in both world-bubbles.ts and mobile-shell.ts to use endsAt instead of nonexistent `active` field). Train Station at east edge (25.6, 0, 16) with platform/house/overhang/sign/window/door, two iron rails + 22 sleepers, and a locomotive (boiler, smokestack, cab, cow-catcher, 3 wheel-pairs, coal tender). Engine smoothly interpolates from off-screen east → parked at the platform when state.train.status === 'returned'. Hot-Air Balloon at altitude y=8: striped envelope, basket, ropes, flickering burner; circular slow drift radius 2.5 plus vertical bob, visible only when state.balloon.active. Phase 1.14 verified by source review — all 3D props sit outside or at the edges of the home grid; corner FABs are screen-fixed and don't overlap. Files: festival-cart.ts, train-station.ts, balloon.ts (all new), three/index.ts, world-bubbles.ts, ui/mobile-shell.ts. Typecheck + build green.
 - 2026-05-22  Phase 1.9 + 1.10 complete — Wheel Stand at (7.5, 0, 25.4) west of the order truck: cyl back disc + 8 coloured boxed-slice spokes, central hub, pointer cone, two cyl pillars. Spins idly at 0.4 rad/s, accelerates to 1.6 rad/s when canSpin()===true. 🎡 bubble pulses only when a daily spin is available. Sanctuary Easel at (12.5, 0, 11.5) on the east lakeshore: tripod cylinder legs + open journal with sketch lines + a small flower bouquet + a field of wildflowers at the base. Page-pivot breathes gently when state.sanctuary.active. 📖 bubble visible once sanctuary unlocked, pulses when active. Files: src/three/decor/wheel-stand.ts (new), sanctuary-easel.ts (new), three/index.ts, world-bubbles.ts. Typecheck + build green.
 - 2026-05-22  Phase 1.7 complete — Ranger Tower at NW corner (5.5, 0, 5.5), facing SE. Log-cabin-on-stilts with 4 cyl legs + diagonal braces, slatted-log walls (5 rows), gable cone roof, ladder on the south face, sky-blue observation flag on top. Expeditions hub bubble 🗺️ now anchors to the tower y=3.4 instead of piggybacking the fishingdock. Files: src/three/decor/ranger-tower.ts (new), three/index.ts, world-bubbles.ts. Typecheck + build green.
 - 2026-05-22  Phase 1.6 + 1.8 complete — Request Board birdhouse at (11, 13) with 3 pinned coloured request cards + bird hole + perch + finial. Co-Op Signpost at (12, 13) with 3 arrows pointing in different directions (sage/cherry/sky) and a fluttering red flag. Removed the old proxy world bubble (which was floating in mid-air at HOME_CENTER_X-5) and re-anchored the 🤝 (request) and 🏆 (club) bubbles to the actual meshes. Files: src/three/decor/request-board.ts (new), coop-signpost.ts (new), three/index.ts, world-bubbles.ts. Typecheck + build green.

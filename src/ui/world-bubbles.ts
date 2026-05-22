@@ -66,6 +66,15 @@ import {
   EASEL_X, EASEL_Z, EASEL_BUBBLE_Y,
 } from '../three/decor/sanctuary-easel';
 import { canSpin as canSpinWheel } from '../systems/wheel';
+import {
+  CART_X, CART_Z, CART_BUBBLE_Y,
+} from '../three/decor/festival-cart';
+import {
+  STATION_X, STATION_Z, STATION_BUBBLE_Y,
+} from '../three/decor/train-station';
+import {
+  BALLOON_X, BALLOON_Z, BALLOON_BUBBLE_Y,
+} from '../three/decor/balloon';
 import { ITEMS } from '../data/items';
 import { unreadCount as mailboxUnreadCount } from '../systems/mailbox';
 
@@ -495,6 +504,41 @@ export function computeBubbleTargets(): BubbleTarget[] {
         });
       }
     }
+  }
+
+  // -------- Festival Cart (Phase 1.11) --------
+  if (state.festivalCart?.unlocked && state.festivalCart.endsAt > now) {
+    out.push({
+      key: 'hub:cart',
+      wx: CART_X, wy: CART_BUBBLE_Y, wz: CART_Z,
+      icon: '🎪',
+      kind: 'hub',
+      tap: () => document.getElementById('open-cart')?.click(),
+    });
+  }
+
+  // -------- Train Station (Phase 1.12) --------
+  if (state.train?.unlocked) {
+    const returned = state.train.status === 'returned';
+    out.push({
+      key: 'hub:train',
+      wx: STATION_X, wy: STATION_BUBBLE_Y, wz: STATION_Z,
+      icon: '🚂',
+      kind: returned ? 'ready' : 'hub',
+      pulse: returned,
+      tap: () => document.getElementById('open-train')?.click(),
+    });
+  }
+
+  // -------- Hot-Air Balloon (Phase 1.13) --------
+  if (state.balloon?.active) {
+    out.push({
+      key: 'hub:balloon',
+      wx: BALLOON_X, wy: BALLOON_BUBBLE_Y, wz: BALLOON_Z,
+      icon: '🎈',
+      kind: 'hub',
+      tap: () => document.getElementById('open-balloon')?.click(),
+    });
   }
 
   // -------- Daily Wheel Stand (Phase 1.9) --------
