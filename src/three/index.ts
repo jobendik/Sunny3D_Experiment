@@ -39,6 +39,8 @@ import { installNewspaperStand } from './decor/newspaper-stand';
 import { installRequestBoard } from './decor/request-board';
 import { installCoopSignpost, updateCoopSignpost } from './decor/coop-signpost';
 import { installRangerTower, updateRangerTower } from './decor/ranger-tower';
+import { installWheelStand, updateWheelStand } from './decor/wheel-stand';
+import { installSanctuaryEasel, updateSanctuaryEasel } from './decor/sanctuary-easel';
 import { installSky, updateSky } from './sky/sky-dome';
 import { installWeather, updateWeather } from './fx/weather-particles';
 import { updateTreasureChests } from './fx/treasure-chests';
@@ -69,6 +71,8 @@ export function init3d(): void {
   installRequestBoard();
   installCoopSignpost();
   installRangerTower();
+  installWheelStand();
+  installSanctuaryEasel();
   installGrassBlades();
   installSky();
   installWeather();
@@ -113,6 +117,8 @@ export function render3d(dt: number): void {
   updateRoadsideStand(timeS);
   updateCoopSignpost(timeS);
   updateRangerTower(timeS);
+  updateWheelStand(timeS);
+  updateSanctuaryEasel(timeS);
   updateCrows(timeS);
   updateDog(timeS);
   updateSky();

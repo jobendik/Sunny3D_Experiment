@@ -59,6 +59,13 @@ import {
 import {
   RANGER_X, RANGER_Z, RANGER_BUBBLE_Y,
 } from '../three/decor/ranger-tower';
+import {
+  WHEEL_X, WHEEL_Z, WHEEL_BUBBLE_Y,
+} from '../three/decor/wheel-stand';
+import {
+  EASEL_X, EASEL_Z, EASEL_BUBBLE_Y,
+} from '../three/decor/sanctuary-easel';
+import { canSpin as canSpinWheel } from '../systems/wheel';
 import { ITEMS } from '../data/items';
 import { unreadCount as mailboxUnreadCount } from '../systems/mailbox';
 
@@ -488,6 +495,33 @@ export function computeBubbleTargets(): BubbleTarget[] {
         });
       }
     }
+  }
+
+  // -------- Daily Wheel Stand (Phase 1.9) --------
+  // The wheel spins in 3D regardless; the bubble appears only when
+  // a daily spin is actually available (pulses).
+  if (canSpinWheel()) {
+    out.push({
+      key: 'hub:wheel',
+      wx: WHEEL_X, wy: WHEEL_BUBBLE_Y, wz: WHEEL_Z,
+      icon: '🎡',
+      kind: 'ready',
+      pulse: true,
+      tap: () => document.getElementById('open-wheel')?.click(),
+    });
+  }
+
+  // -------- Sanctuary Easel (Phase 1.10) --------
+  if (state.sanctuary?.unlocked) {
+    const active = !!state.sanctuary.active;
+    out.push({
+      key: 'hub:sanctuary',
+      wx: EASEL_X, wy: EASEL_BUBBLE_Y, wz: EASEL_Z,
+      icon: '📖',
+      kind: active ? 'ready' : 'hub',
+      pulse: active,
+      tap: () => document.getElementById('open-sanctuary')?.click(),
+    });
   }
 
   // -------- Newspaper Stand (Phase 1.5) --------
