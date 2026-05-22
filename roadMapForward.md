@@ -3,7 +3,37 @@
 **Document type:** Self-contained implementation guide for cross-session continuity.
 **Goal:** Bring Sunny Acres to full Hay Day + FarmVille 3 feature parity.
 **Owner:** Claude (the assistant). The user (`jobendik@gmail.com`) may start fresh chats — this doc is the memory.
-**Branch:** `claude/affectionate-bohr-T0gNH` (commit and push every meaningful step).
+**Branch:** any short-lived `claude/*` branch off `main`. All completed work has been merged to `main` via PR.
+
+---
+
+## Current Status — Snapshot
+
+_Last updated 2026-05-22 after the Phase 1 + 2 + 4 push._
+
+| Phase | Items | Status |
+|---|---|---|
+| 1 — Diegetic 3D world objects | 14 / 14 | ✅ shipped, merged to main (PR #16, #17) |
+| 2 — Shop taxonomy + offer pill + gem packs + bundles | 4 / 4 | ✅ shipped, merged |
+| 3 — Co-op chat + donations + gift caps | 0 / 5 | ⬜ not started |
+| 4 — Accessibility | 4 / 5 | 🟧 4.5 (Lighthouse) deferred to Phase 11 |
+| 5 — Onboarding polish | 0 / 5 | ⬜ not started |
+| 6 — Monetization-grammar completeness | 0 / 5 | ⬜ not started |
+| 7 — Animal husbandry depth | 0 / 5 | ⬜ not started |
+| 8 — Live-ops calendar (Sky Race / County Fair / Country Camping / Fishing Tournament) | 0 / 5 | ⬜ not started |
+| 9 — Performance + virtualization | 0 / 5 | ⬜ not started |
+| 10 — Real-world CSR campaigns | 0 / 2 | ⬜ not started |
+| 11 — Final QA pass | 0 / 6 | ⬜ not started |
+
+**Done so far:** 22 / 56 items. **Next unchecked item:** Phase 3.1 — Co-op chat panel.
+
+**Verified facts about the codebase as of this snapshot:**
+- 14 files in `src/three/decor/` (one per Phase-1 prop).
+- `src/ui/focus-trap.ts` exists; `trapFocus` is used by `src/ui/modal.ts` and `src/ui/mobile-shell.ts`.
+- `src/ui/shop.ts` declares 7 tabs: Seeds, Trees, Sell, Buy, Supplies, Offers, Pass.
+- `index.html` has `#offer-pill` in the `.currency-stack`; `src/ui/hud.ts` exports `updateOfferPill`.
+- `.sr-only` and `:focus-visible` rules live in `src/style.css`.
+- `npm run typecheck && npm run build` are clean.
 
 ---
 
@@ -14,12 +44,13 @@
 3. Read **Section 3 (Implementation Patterns)** so new code matches the existing style.
 4. Jump to the **Master Checklist (Section 15)** at the bottom — find the first unchecked item.
 5. Open the phase that contains that item and read its acceptance criteria.
-6. Implement, run `npm run typecheck && npm run build` (must pass), then commit + push.
-7. **Check the box in the Master Checklist** and push the doc update in the same commit.
-8. Repeat.
+6. Implement on a fresh `claude/<short-name>` branch off `main`, run `npm run typecheck && npm run build` (must pass), commit + push.
+7. **Check the box in the Master Checklist** and push the doc update in the same commit. Update the **Current Status** snapshot at the top of this doc.
+8. Open a draft PR, then merge it to `main` (after CI passes) before starting the next phase.
+9. Repeat.
 
 **Rules of engagement:**
-- Do **not** rewrite this document. Only edit the checkbox state and add notes under "Session Log" (Section 16).
+- Do **not** rewrite this document. Only edit the checkbox state, the Current Status snapshot, and add notes under "Session Log" (Section 16).
 - Do **not** introduce external dependencies. The game stays zero-dependency.
 - Do **not** break save/load. Bump `SAVE_VERSION` in `src/save.ts` only with a defensive migration.
 - Do **not** invent new model identifiers. Don't put model IDs into commits, PRs, or code.
@@ -727,6 +758,7 @@ Append a one-line entry per session here. Keep newest at top. Don't delete entri
 YYYY-MM-DD  Phase X.Y started / completed — commit <sha> — note
 ```
 
+- 2026-05-22  All Phase 1/2/4 work merged to `main` via PR #16 and PR #17. Local branch in sync. Added "Current Status" snapshot section at the top of this doc so any future session sees progress at a glance. Confirmed via grep + ls that every ticked item has corresponding source code on `main`: 14 files in src/three/decor/, src/ui/focus-trap.ts present, trapFocus used in modal.ts + mobile-shell.ts, shop.ts declares 7 tabs (including Offers + Pass), #offer-pill in index.html, .sr-only + :focus-visible in style.css. Typecheck + build green.
 - 2026-05-22  Phase 4 (4.1–4.4) complete — new src/ui/focus-trap.ts exports trapFocus(rootEl) returning a release function. Applied to the central modal harness (src/ui/modal.ts wraps it around the .modal panel + adds Esc-to-close + role="dialog" + aria-modal + role="tablist"/role="tab" + keyboard activation on tabs). Applied to every bottom sheet via showSheet/hideSheet in mobile-shell.ts (per-sheet release map). Applied to the side panel via openSidePanel/closeSidePanel. Added .sr-only utility class + :focus-visible ring (honey-500, brighter under .high-contrast). Added a companion sr-only span next to the XP bar so screen readers announce "Level X, Y of Z experience points" instead of the visible "Y / Z XP". 4.5 (Lighthouse verification) needs a browser run and is deferred to Phase 11. Files: src/ui/focus-trap.ts (new), src/ui/modal.ts (focus trap + ARIA + Esc), src/ui/mobile-shell.ts (per-sheet focus trap + side panel trap), src/ui/hud.ts (sr-only XP), index.html (sr-only span), src/style.css (.sr-only + :focus-visible). Typecheck + build green.
 - 2026-05-22  Phase 2 complete — Shop now has 7 tabs (Seeds/Trees/Sell/Buy/Supplies remain for backwards compat; added Offers + Pass per FV3 grammar). Offers tab: Daily Deal card (buyable for diamonds), Surprise Box card, Piggy Bank card, Maggie's Offers placeholder (Phase 6), plus an "Earn through play" Gem Pack panel with 4 packs (Cart/Safe/Chest/Vault) — no real IAP. Pass tab: 3-track summary (Free / Elite / Platinum) with "Open Pass" button, plus a 3-card "Upcoming Bundles" preview. New top-right offer-pill (40px round, cherry tint, pulses) appears whenever a daily deal or surprise box is ready; tap → opens shop with Offers tab focused. Files: src/ui/shop.ts (+~190 lines), src/ui/hud.ts (offer-pill update logic), src/main.ts (offer-pill click wiring + openShop arity change), index.html (offer-pill markup), style.css (~150 new lines for pill + offer-card + gem-pack + pass-shop layouts). Typecheck + build green.
 - 2026-05-22  Phase 1.11 + 1.12 + 1.13 + 1.14 complete — Festival Cart at (16, 0, 26.2) — covered wagon with coloured panels, striped canopy, gold-hubbed wheels, and a 7-flag bunting that waves. Visible only when state.festivalCart.unlocked && endsAt > now (fixed inferred-active checks in both world-bubbles.ts and mobile-shell.ts to use endsAt instead of nonexistent `active` field). Train Station at east edge (25.6, 0, 16) with platform/house/overhang/sign/window/door, two iron rails + 22 sleepers, and a locomotive (boiler, smokestack, cab, cow-catcher, 3 wheel-pairs, coal tender). Engine smoothly interpolates from off-screen east → parked at the platform when state.train.status === 'returned'. Hot-Air Balloon at altitude y=8: striped envelope, basket, ropes, flickering burner; circular slow drift radius 2.5 plus vertical bob, visible only when state.balloon.active. Phase 1.14 verified by source review — all 3D props sit outside or at the edges of the home grid; corner FABs are screen-fixed and don't overlap. Files: festival-cart.ts, train-station.ts, balloon.ts (all new), three/index.ts, world-bubbles.ts, ui/mobile-shell.ts. Typecheck + build green.
