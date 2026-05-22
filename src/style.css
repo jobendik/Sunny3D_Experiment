@@ -6490,6 +6490,112 @@ body.family-friendly .mailbox-letter-body {
   border-color: var(--plum-700);
 }
 .world-bubble--hub .world-bubble-ico { color: #fff; }
+.world-bubble--chatter::before {
+  background:
+    radial-gradient(ellipse at 30% 25%,
+      #ffffff 0%, #f3eedb 55%, #d6c896 100%);
+  border-color: var(--paper-edge-dk);
+  border-radius: 50% 50% 50% 14%;
+}
+.world-bubble--chatter .world-bubble-ico { font-size: 20px; }
+.world-bubble--chatter {
+  animation: chatter-float 4.8s var(--ease-out) infinite;
+}
+@keyframes chatter-float {
+  0%, 100% { filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.28)); }
+  50%      { filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.32)); }
+}
+
+/* Profile pass-track badges */
+.profile-badges {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  margin-bottom: 2px;
+  line-height: 1;
+}
+.profile-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  font-size: 13px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fffaee 0%, #fce5b6 100%);
+  border: 1.5px solid var(--paper-edge-dk);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 1px 3px rgba(60, 30, 8, 0.25);
+}
+.profile-badge--elite {
+  background: linear-gradient(180deg, #ffe8a8 0%, #f4b942 100%);
+  border-color: #a06c08;
+}
+.profile-badge--platinum {
+  background: linear-gradient(180deg, #f0e4ff 0%, #d8b3ec 100%);
+  border-color: var(--plum-700);
+}
+
+/* =====================================================================
+   ANIMAL LIFECYCLE — pen-panel chips, breed row, sell button
+   ===================================================================== */
+.lifecycle-stage {
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  margin: 2px 0;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+}
+.lifecycle-baby .lifecycle-stage { color: var(--honey-700); }
+.lifecycle-mature .lifecycle-stage { color: var(--cherry-700); }
+.lifecycle-hint {
+  font-size: 11px;
+  color: var(--ink-mute);
+  text-align: center;
+  margin-top: 2px;
+}
+.shop-item.lifecycle-baby {
+  background: linear-gradient(180deg, #fffbe0 0%, #ffe7a8 100%);
+  border-color: var(--honey-600);
+}
+.shop-item.lifecycle-mature {
+  background: linear-gradient(180deg, #fff1f3 0%, #ffd0d6 100%);
+  border-color: var(--cherry-500);
+}
+.breed-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 0;
+  padding: 8px 12px;
+  background: linear-gradient(180deg, #fff1f3 0%, #ffd0d6 100%);
+  border: 2px solid var(--cherry-500);
+  border-radius: var(--r-md);
+  box-shadow: var(--lift-1);
+}
+.breed-row-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--cherry-700);
+  flex: 1;
+}
+.ghost-btn {
+  background: transparent;
+  border: 1.5px solid var(--paper-edge-dk);
+  color: var(--ink-soft);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  margin-top: 4px;
+  transition: filter .12s var(--ease-out);
+}
+.ghost-btn:hover { filter: brightness(0.96); background: rgba(0, 0, 0, 0.04); }
 .world-bubble--pulse::before {
   animation: bubble-glow 1.4s var(--ease-out) infinite;
 }

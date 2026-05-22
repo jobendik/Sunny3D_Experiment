@@ -378,6 +378,14 @@ export function loadGame(): boolean {
         a.ty = a.ty ?? a.ay;
         a.frame = 0;
         a.frameT = rand(2);
+        // Lifecycle migration: legacy animals are treated as full-grown
+        // adults, so the player's existing herd survives the new system.
+        // Babies' bornAt is also rebased to keep their grow-in timer
+        // consistent across the offline window.
+        if (a.bornAt !== undefined) a.bornAt += delta;
+        if (a.stage === undefined) a.stage = 'adult';
+        if (a.bornAt === undefined) a.bornAt = curNow - 120;
+        if (a.produceCount === undefined) a.produceCount = 0;
       }
     }
     for (const id in state.prodQueues) {

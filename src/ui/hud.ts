@@ -1,6 +1,7 @@
 import { state } from '../state';
 import { clamp, xpForLevel } from '../utils';
 import { nextBigUnlock } from '../systems/unlocks';
+import { isEliteUnlocked, isPlatinumUnlocked } from '../systems/season-pass';
 
 const numFmt = new Intl.NumberFormat('en-US');
 
@@ -28,4 +29,28 @@ export function updateHUD(): void {
       ? `Lv ${state.level} · ${state.xp}/${need} XP\nNext unlock at Lv ${next.level}: ${next.label}`
       : `Lv ${state.level} — All major content unlocked!`;
   }
+  // Elite + Platinum pass badges on the profile pill — small cosmetic
+  // chip that signals "this farmer earned the premium track" without
+  // any monetization cue (both tracks are gameplay-earned).
+  updatePassBadges();
 }
+
+function updatePassBadges(): void {
+  const meta = document.querySelector<HTMLElement>('.profile-meta');
+  if (!meta) return;
+  let row = meta.querySelector<HTMLElement>('.profile-badges');
+  if (!row) {
+    row = document.createElement('div');
+    row.className = 'profile-badges';
+    row.setAttribute('aria-label', 'Earned pass tracks');
+    meta.insertBefore(row, meta.firstChild);
+  }
+  const elite = isEliteUnlocked();
+  const platinum = isPlatinumUnlocked();
+  const want =
+    (platinum ? '<span class="profile-badge profile-badge--platinum" title="Platinum pass track earned">💎</span>' : '') +
+    (elite ? '<span class="profile-badge profile-badge--elite" title="Elite pass track earned">🏅</span>' : '');
+  if (row.innerHTML !== want) row.innerHTML = want;
+  row.style.display = (elite || platinum) ? '' : 'none';
+}
+

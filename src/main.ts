@@ -150,6 +150,7 @@ import { bindOrderMeter, renderOrderMeter } from './ui/order-meter-hud';
 import { maybeShowStorageInterrupt } from './ui/storage-interrupt';
 import { initStorageInterrupt } from './systems/storage-interrupt';
 import { bindFeedTray, tickFeedTray } from './ui/feed-tray';
+import { initChatter, tickChatter } from './systems/chatter';
 
 // Note: starting farm layout (lake, paths, soil hints, pre-plowed
 // patch) is now built by `generateWorld()` in three/terrain/world-gen.ts
@@ -236,6 +237,7 @@ function frame(now: number): void {
   bubbleT += dt;
   if (bubbleT > 0.16) {
     bubbleT = 0;
+    tickChatter();
     refreshWorldBubbleTargets();
   }
   tickWorldBubbles();
@@ -356,6 +358,7 @@ function init(): void {
   initStorageInterrupt();
   bindOrderMeter();
   bindFeedTray();
+  initChatter();
   maybeEnableDebug();
   // Rebase market stall offline sales.
   if (loaded && state.lastSessionEndedAt) {

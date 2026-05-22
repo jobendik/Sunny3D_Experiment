@@ -12,6 +12,7 @@ import { state } from '../../state';
 import { TILE } from '../../constants';
 import { BUILDINGS } from '../../data/buildings';
 import { ANIMALS } from '../../data/animals';
+import { visualScale } from '../../systems/lifecycle';
 import { getSceneRoot } from '../scene-root';
 import { sphere, cyl, box } from '../procgen/geometries';
 import { mat } from '../procgen/materials';
@@ -139,10 +140,16 @@ export function updateAnimals(timeS: number): void {
         m.root.rotation.y = -Math.atan2(dz, dx);
       }
       // Subtle bob + tiny per-step squish so the herd reads as
-      // walking pets rather than dragged sprites.
+      // walking pets rather than dragged sprites. Babies render
+      // smaller (lifecycle.ts visualScale handles the grow-in).
       const phase = a.frame * 0.5 + timeS * 4 + i * 0.7;
       m.root.position.y = Math.sin(phase) * 0.020;
-      m.root.scale.set(1, 1 + Math.sin(phase * 2) * 0.04, 1);
+      const s = visualScale(a);
+      m.root.scale.set(
+        s,
+        s * (1 + Math.sin(phase * 2) * 0.04),
+        s,
+      );
     }
   }
   for (const [k, m] of mounted) {

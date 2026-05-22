@@ -10,6 +10,7 @@ import {
 } from '../systems/storage-interrupt';
 import { siloUsage, barnUsage } from '../systems/storage';
 import { sfx } from '../audio/sfx';
+import { openStoragePanel } from './storage-panel';
 
 let modalEl: HTMLElement | null = null;
 let bound = false;
@@ -56,8 +57,9 @@ function bind(): void {
   document.getElementById('storage-interrupt-upgrade')?.addEventListener('click', () => {
     hide();
     markStorageInterruptDismissed();
-    // The Inventory panel hosts barn/silo upgrade tabs.
-    document.getElementById('open-inventory')?.click();
+    // FV3 grammar: tap "Upgrade" → land directly on the storage controls,
+    // not the full inventory.
+    openStoragePanel();
     sfx.click();
   });
   document.getElementById('storage-interrupt-barn')?.addEventListener('click', () => {

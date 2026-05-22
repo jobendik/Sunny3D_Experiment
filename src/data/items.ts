@@ -52,6 +52,11 @@ export const ITEMS: Record<string, ItemDef> = {
   speedup:    { name: 'Speed Boost', icon: 'speedup',    sell: 28,  level: 4 },
   priority:   { name: 'Priority',    icon: 'priority',   sell: 50,  level: 5 },
   qualityink: { name: 'Quality Ink', icon: 'qualityink', sell: 90,  level: 6 },
+  // FV3-grammar tokens — earned through gameplay, never purchasable.
+  // Exotic animal tokens unlock rare animal varieties when redeemed.
+  // Scout Favors are spent at the Festival Cart's premium shop tab.
+  exotictoken: { name: 'Exotic Token', icon: 'exotictoken', sell: 0, level: 6 },
+  scoutfavor:  { name: 'Scout Favor',  icon: 'scoutfavor',  sell: 0, level: 8 },
   // Bait
   worm:       { name: 'Earthworm',   icon: 'worm',       sell: 1,   level: 3 },
   fly:        { name: 'Mayfly',      icon: 'fly',        sell: 6,   level: 5 },
