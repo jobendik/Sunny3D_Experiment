@@ -32,6 +32,51 @@ import { gateForButton, gateStatus } from '../systems/feature-visibility';
 import { openProductionPanel } from './production-panel';
 import { openPenPanel } from './pen-panel';
 import { openStoragePanel } from './storage-panel';
+import { openSidePanel } from './mobile-shell';
+import {
+  ORDER_TRUCK_X, ORDER_TRUCK_Z, ORDER_TRUCK_BUBBLE_Y,
+} from '../three/decor/order-truck';
+import {
+  BOAT_X, BOAT_Z, BOAT_BUBBLE_Y, BOAT_CRATE_BUBBLE_Y,
+  getCrateWorldPosition,
+} from '../three/decor/boat-at-dock';
+import {
+  MAILBOX_X, MAILBOX_Z, MAILBOX_BUBBLE_Y,
+} from '../three/decor/mailbox';
+import {
+  STAND_X, STAND_Z, STAND_BUBBLE_Y, STAND_SLOT_BUBBLE_Y,
+  getStandSlotWorldPosition,
+} from '../three/decor/roadside-stand';
+import {
+  NEWS_X, NEWS_Z, NEWS_BUBBLE_Y,
+} from '../three/decor/newspaper-stand';
+import {
+  REQUEST_BOARD_X, REQUEST_BOARD_Z, REQUEST_BOARD_BUBBLE_Y,
+} from '../three/decor/request-board';
+import {
+  SIGNPOST_X, SIGNPOST_Z, SIGNPOST_BUBBLE_Y,
+} from '../three/decor/coop-signpost';
+import {
+  RANGER_X, RANGER_Z, RANGER_BUBBLE_Y,
+} from '../three/decor/ranger-tower';
+import {
+  WHEEL_X, WHEEL_Z, WHEEL_BUBBLE_Y,
+} from '../three/decor/wheel-stand';
+import {
+  EASEL_X, EASEL_Z, EASEL_BUBBLE_Y,
+} from '../three/decor/sanctuary-easel';
+import { canSpin as canSpinWheel } from '../systems/wheel';
+import {
+  CART_X, CART_Z, CART_BUBBLE_Y,
+} from '../three/decor/festival-cart';
+import {
+  STATION_X, STATION_Z, STATION_BUBBLE_Y,
+} from '../three/decor/train-station';
+import {
+  BALLOON_X, BALLOON_Z, BALLOON_BUBBLE_Y,
+} from '../three/decor/balloon';
+import { ITEMS } from '../data/items';
+import { unreadCount as mailboxUnreadCount } from '../systems/mailbox';
 
 const POOL_SIZE = 28;
 const tmpVec = new Vector3();
@@ -370,35 +415,248 @@ export function computeBubbleTargets(): BubbleTarget[] {
       tap: () => openStoragePanel(),
     });
   }
-  // Fishing Dock → Ranger-Tower-style hub for Expeditions when unlocked.
-  for (const b of state.buildings) {
-    if (b.type !== 'fishingdock') continue;
+  // -------- Ranger Tower → Expeditions hub (Phase 1.7) --------
+  // Anchors above the dedicated tower mesh in the NW corner. Replaces
+  // the old fishing-dock piggyback proxy.
+  {
     const expGate = gateForButton('open-expeditions');
-    if (!expGate) break;
-    const status = gateStatus(expGate);
-    if (status !== 'unlocked' && status !== 'attention') break;
-    const def = BUILDINGS[b.type];
-    if (!def) break;
-    const cx = b.x + def.w / 2;
-    const cz = b.y + def.h / 2;
-    out.push({
-      key: `hub:expeditions:${b.id}`,
-      wx: cx, wy: 2.6, wz: cz,
-      icon: '🗺️',
-      kind: 'hub',
-      tap: () => document.getElementById('open-expeditions')?.click(),
-    });
-    break;
+    const status = expGate ? gateStatus(expGate) : 'hidden';
+    if (status === 'unlocked' || status === 'attention') {
+      out.push({
+        key: 'hub:expeditions',
+        wx: RANGER_X, wy: RANGER_BUBBLE_Y, wz: RANGER_Z,
+        icon: '🗺️',
+        kind: 'hub',
+        tap: () => document.getElementById('open-expeditions')?.click(),
+      });
+    }
   }
-  // Co-Op signpost near the home centre when the Club is unlocked.
+  // -------- Boat at Dock (Phase 1.2) --------
+  // Hub bubble when the boat is docked. Plus a per-crate "need" bubble
+  // for every unfilled crate, mirroring Hay Day's crate icons. The
+  // per-crate icon shows the requested item's emoji; we mark crates the
+  // player can't currently fill with a pulsing "!" instead.
+  if (state.boat?.unlocked && state.boat.state === 'docked') {
+    out.push({
+      key: 'hub:boat',
+      wx: BOAT_X, wy: BOAT_BUBBLE_Y, wz: BOAT_Z,
+      icon: '⛵',
+      kind: 'hub',
+      tap: () => document.getElementById('open-boat')?.click(),
+    });
+    const crates = state.boat.crates;
+    for (let i = 0; i < Math.min(crates.length, 3); i++) {
+      const c = crates[i]!;
+      if (c.filled >= c.needed) continue;
+      const pos = getCrateWorldPosition(i);
+      if (!pos) continue;
+      const have = state.inv[c.itemKey] ?? 0;
+      const room = c.needed - c.filled;
+      const canFill = have >= room;
+      const itemIcon = ITEMS[c.itemKey]?.icon ?? '📦';
+      out.push({
+        key: `boat-crate:${i}`,
+        wx: pos.x, wy: BOAT_CRATE_BUBBLE_Y, wz: pos.z,
+        icon: canFill ? itemIcon : '!',
+        kind: canFill ? 'feed' : 'full',
+        pulse: !canFill,
+        tap: () => document.getElementById('open-boat')?.click(),
+      });
+    }
+  }
+
+  // -------- Roadside Stand (Phase 1.4) --------
+  // Hub bubble (cart icon) on top of the thatched stand, plus a
+  // per-slot bubble for each slot that's listed (shows the item)
+  // or sold (pulses a coin icon — tap to claim).
+  if (state.marketStall?.unlocked) {
+    const slots = state.marketStall.slots;
+    const anySold = slots.some(s => s.status === 'sold');
+    out.push({
+      key: 'hub:stand',
+      wx: STAND_X, wy: STAND_BUBBLE_Y, wz: STAND_Z,
+      icon: anySold ? '💰' : '🛒',
+      kind: anySold ? 'ready' : 'hub',
+      pulse: anySold,
+      tap: () => document.getElementById('open-stall')?.click(),
+    });
+    for (let i = 0; i < Math.min(slots.length, 3); i++) {
+      const s = slots[i]!;
+      const pos = getStandSlotWorldPosition(i);
+      if (!pos) continue;
+      if (s.status === 'sold') {
+        out.push({
+          key: `stand-slot:${i}:sold`,
+          wx: pos.x, wy: STAND_SLOT_BUBBLE_Y, wz: pos.z,
+          icon: '💰',
+          kind: 'ready',
+          pulse: true,
+          tap: () => document.getElementById('open-stall')?.click(),
+        });
+      } else if (s.status === 'listed') {
+        const itemIcon = ITEMS[s.itemKey]?.icon ?? '📦';
+        out.push({
+          key: `stand-slot:${i}:listed`,
+          wx: pos.x, wy: STAND_SLOT_BUBBLE_Y, wz: pos.z,
+          icon: itemIcon,
+          kind: 'feed',
+          tap: () => document.getElementById('open-stall')?.click(),
+        });
+      }
+    }
+  }
+
+  // -------- Festival Cart (Phase 1.11) --------
+  if (state.festivalCart?.unlocked && state.festivalCart.endsAt > now) {
+    out.push({
+      key: 'hub:cart',
+      wx: CART_X, wy: CART_BUBBLE_Y, wz: CART_Z,
+      icon: '🎪',
+      kind: 'hub',
+      tap: () => document.getElementById('open-cart')?.click(),
+    });
+  }
+
+  // -------- Train Station (Phase 1.12) --------
+  if (state.train?.unlocked) {
+    const returned = state.train.status === 'returned';
+    out.push({
+      key: 'hub:train',
+      wx: STATION_X, wy: STATION_BUBBLE_Y, wz: STATION_Z,
+      icon: '🚂',
+      kind: returned ? 'ready' : 'hub',
+      pulse: returned,
+      tap: () => document.getElementById('open-train')?.click(),
+    });
+  }
+
+  // -------- Hot-Air Balloon (Phase 1.13) --------
+  if (state.balloon?.active) {
+    out.push({
+      key: 'hub:balloon',
+      wx: BALLOON_X, wy: BALLOON_BUBBLE_Y, wz: BALLOON_Z,
+      icon: '🎈',
+      kind: 'hub',
+      tap: () => document.getElementById('open-balloon')?.click(),
+    });
+  }
+
+  // -------- Daily Wheel Stand (Phase 1.9) --------
+  // The wheel spins in 3D regardless; the bubble appears only when
+  // a daily spin is actually available (pulses).
+  if (canSpinWheel()) {
+    out.push({
+      key: 'hub:wheel',
+      wx: WHEEL_X, wy: WHEEL_BUBBLE_Y, wz: WHEEL_Z,
+      icon: '🎡',
+      kind: 'ready',
+      pulse: true,
+      tap: () => document.getElementById('open-wheel')?.click(),
+    });
+  }
+
+  // -------- Sanctuary Easel (Phase 1.10) --------
+  if (state.sanctuary?.unlocked) {
+    const active = !!state.sanctuary.active;
+    out.push({
+      key: 'hub:sanctuary',
+      wx: EASEL_X, wy: EASEL_BUBBLE_Y, wz: EASEL_Z,
+      icon: '📖',
+      kind: active ? 'ready' : 'hub',
+      pulse: active,
+      tap: () => document.getElementById('open-sanctuary')?.click(),
+    });
+  }
+
+  // -------- Newspaper Stand (Phase 1.5) --------
+  // Pulses when there's something fresh: a new day's edition or an
+  // open gazette help request the player can fulfill.
+  {
+    const g = state.gazette;
+    if (g) {
+      const newEdition = g.lastReadDay !== state.day;
+      const helpFulfillable = g.helpRequests.some(
+        hr => !hr.done && (state.inv[hr.itemKey] ?? 0) >= hr.qty,
+      );
+      const pulse = newEdition || helpFulfillable;
+      out.push({
+        key: 'hub:news',
+        wx: NEWS_X, wy: NEWS_BUBBLE_Y, wz: NEWS_Z,
+        icon: '📰',
+        kind: pulse ? 'ready' : 'hub',
+        pulse,
+        tap: () => document.getElementById('open-gazette')?.click(),
+      });
+    }
+  }
+
+  // -------- Mailbox (Phase 1.3) --------
+  // Pinned above the rural mailbox. Visible only when there's unread
+  // mail — Alfred's flag in 3D already telegraphs presence/absence,
+  // so the bubble is the explicit "tap to read" affordance.
+  {
+    const unread = mailboxUnreadCount();
+    if (unread > 0) {
+      out.push({
+        key: 'hub:mailbox',
+        wx: MAILBOX_X, wy: MAILBOX_BUBBLE_Y, wz: MAILBOX_Z,
+        icon: '📬',
+        kind: 'hub',
+        pulse: true,
+        tap: () => document.getElementById('open-mailbox')?.click(),
+      });
+    }
+  }
+
+  // -------- Order Truck hub (Phase 1.1) --------
+  // Pinned above the wooden cart parked at the south entrance.
+  // Badge counts orders the player can fulfill right now +
+  // claimable quest rewards. Tapping opens the Quests/Orders side
+  // panel (same surface as the QEB "Orders" entry).
+  {
+    const fulfillable = state.orders.filter(o => {
+      for (const k in o.items) {
+        const need = o.items[k]!;
+        const have = state.inv[k] ?? 0;
+        if (have < need) return false;
+      }
+      return true;
+    }).length;
+    const claimable = state.quests.filter(q => q.complete).length;
+    const total = fulfillable + claimable;
+    out.push({
+      key: 'hub:orders',
+      wx: ORDER_TRUCK_X, wy: ORDER_TRUCK_BUBBLE_Y, wz: ORDER_TRUCK_Z,
+      icon: total > 0 ? (total > 9 ? '9+' : `${total}`) : '📋',
+      kind: total > 0 ? 'ready' : 'hub',
+      pulse: total > 0,
+      tap: () => openSidePanel(),
+    });
+  }
+
+  // -------- Request Board (Phase 1.6) --------
+  // Birdhouse-topped board near the home centre. Always visible — it
+  // acts as the friendship/neighbourhood hub even before the Club
+  // tier unlocks. Until Phase 3 ships the dedicated panel, it routes
+  // to the friendship panel.
+  out.push({
+    key: 'hub:requests',
+    wx: REQUEST_BOARD_X, wy: REQUEST_BOARD_BUBBLE_Y, wz: REQUEST_BOARD_Z,
+    icon: '🤝',
+    kind: 'hub',
+    tap: () => document.getElementById('open-friendship')?.click(),
+  });
+
+  // -------- Co-Op Signpost (Phase 1.8) --------
+  // Appears when the Club tier is at least teaser-visible. Tap → club.
   {
     const clubGate = gateForButton('open-club');
     const status = clubGate ? gateStatus(clubGate) : 'hidden';
     if (status === 'unlocked' || status === 'attention') {
       out.push({
         key: 'hub:club',
-        wx: HOME_CENTER_X - 5, wy: 2.0, wz: HOME_CENTER_Y - 3,
-        icon: '🤝',
+        wx: SIGNPOST_X, wy: SIGNPOST_BUBBLE_Y, wz: SIGNPOST_Z,
+        icon: '🏆',
         kind: 'hub',
         tap: () => document.getElementById('open-club')?.click(),
       });

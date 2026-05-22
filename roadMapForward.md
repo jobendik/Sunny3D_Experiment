@@ -635,26 +635,26 @@ Keep the **legacy tabs as a sub-menu inside Buildings** ("Seeds & Crops" — sub
 Track every meaningful task. Tick the box when committed AND pushed AND the typecheck + build pass.
 
 ### Phase 1 — Diegetic 3D World Objects
-- [ ] 1.1 — 3D Truck Order Board mesh + bubble hub
-- [ ] 1.2 — 3D Boat at Dock (docked / sailing / returning states)
-- [ ] 1.3 — 3D Mailbox with flag animation
-- [ ] 1.4 — 3D Roadside Shop Stand
-- [ ] 1.5 — 3D Newspaper Stand
-- [ ] 1.6 — 3D Neighbourhood Request Board (birdhouse)
-- [ ] 1.7 — 3D Ranger Tower (replace fishingdock-piggyback)
-- [ ] 1.8 — 3D Co-Op Signpost
-- [ ] 1.9 — 3D Daily Wheel fairground prop
-- [ ] 1.10 — 3D Sanctuary Easel
-- [ ] 1.11 — 3D Festival Cart (conditional)
-- [ ] 1.12 — 3D Train Station + rolling train
-- [ ] 1.13 — 3D Hot-Air Balloon (active animation)
-- [ ] 1.14 — FAB / camera-overlap cleanup pass
+- [x] 1.1 — 3D Truck Order Board mesh + bubble hub
+- [x] 1.2 — 3D Boat at Dock (docked / sailing / returning states)
+- [x] 1.3 — 3D Mailbox with flag animation
+- [x] 1.4 — 3D Roadside Shop Stand
+- [x] 1.5 — 3D Newspaper Stand
+- [x] 1.6 — 3D Neighbourhood Request Board (birdhouse)
+- [x] 1.7 — 3D Ranger Tower (replace fishingdock-piggyback)
+- [x] 1.8 — 3D Co-Op Signpost
+- [x] 1.9 — 3D Daily Wheel fairground prop
+- [x] 1.10 — 3D Sanctuary Easel
+- [x] 1.11 — 3D Festival Cart (conditional)
+- [x] 1.12 — 3D Train Station + rolling train
+- [x] 1.13 — 3D Hot-Air Balloon (active animation)
+- [x] 1.14 — FAB / camera-overlap cleanup pass
 
 ### Phase 2 — Shop Taxonomy + Offer Bubble + Gem Packs
-- [ ] 2.1 — Refactor shop into Buildings / Decor / Offers / Pass / Helpers
-- [ ] 2.2 — Live Offer Bubble in top-right currency stack
-- [ ] 2.3 — Gem Pack panel under Offers (no real IAP)
-- [ ] 2.4 — Multi-season Pass Bundles card
+- [x] 2.1 — Refactor shop into Buildings / Decor / Offers / Pass / Helpers
+- [x] 2.2 — Live Offer Bubble in top-right currency stack
+- [x] 2.3 — Gem Pack panel under Offers (no real IAP)
+- [x] 2.4 — Multi-season Pass Bundles card
 
 ### Phase 3 — Co-op Chat + Donations + Gift Caps
 - [ ] 3.1 — Co-op chat panel (simulated peer messages, rolling buffer)
@@ -664,11 +664,11 @@ Track every meaningful task. Tick the box when committed AND pushed AND the type
 - [ ] 3.5 — Family-friendly chat mode + profanity filter
 
 ### Phase 4 — Accessibility Finish
-- [ ] 4.1 — `src/ui/focus-trap.ts` helper
-- [ ] 4.2 — Apply focus trap to modal + every bottom sheet + side panel
-- [ ] 4.3 — `.sr-only` utility class + audit usage
-- [ ] 4.4 — Tab order + ARIA roles audit (dialog, tablist, tab)
-- [ ] 4.5 — Lighthouse a11y ≥ 90 verified
+- [x] 4.1 — `src/ui/focus-trap.ts` helper
+- [x] 4.2 — Apply focus trap to modal + every bottom sheet + side panel
+- [x] 4.3 — `.sr-only` utility class + audit usage
+- [x] 4.4 — Tab order + ARIA roles audit (dialog, tablist, tab)
+- [ ] 4.5 — Lighthouse a11y ≥ 90 verified  *(needs browser-side QA — defer to Phase 11)*
 
 ### Phase 5 — Onboarding Polish
 - [ ] 5.1 — Farm naming as tutorial step 0
@@ -727,6 +727,17 @@ Append a one-line entry per session here. Keep newest at top. Don't delete entri
 YYYY-MM-DD  Phase X.Y started / completed — commit <sha> — note
 ```
 
+- 2026-05-22  Phase 4 (4.1–4.4) complete — new src/ui/focus-trap.ts exports trapFocus(rootEl) returning a release function. Applied to the central modal harness (src/ui/modal.ts wraps it around the .modal panel + adds Esc-to-close + role="dialog" + aria-modal + role="tablist"/role="tab" + keyboard activation on tabs). Applied to every bottom sheet via showSheet/hideSheet in mobile-shell.ts (per-sheet release map). Applied to the side panel via openSidePanel/closeSidePanel. Added .sr-only utility class + :focus-visible ring (honey-500, brighter under .high-contrast). Added a companion sr-only span next to the XP bar so screen readers announce "Level X, Y of Z experience points" instead of the visible "Y / Z XP". 4.5 (Lighthouse verification) needs a browser run and is deferred to Phase 11. Files: src/ui/focus-trap.ts (new), src/ui/modal.ts (focus trap + ARIA + Esc), src/ui/mobile-shell.ts (per-sheet focus trap + side panel trap), src/ui/hud.ts (sr-only XP), index.html (sr-only span), src/style.css (.sr-only + :focus-visible). Typecheck + build green.
+- 2026-05-22  Phase 2 complete — Shop now has 7 tabs (Seeds/Trees/Sell/Buy/Supplies remain for backwards compat; added Offers + Pass per FV3 grammar). Offers tab: Daily Deal card (buyable for diamonds), Surprise Box card, Piggy Bank card, Maggie's Offers placeholder (Phase 6), plus an "Earn through play" Gem Pack panel with 4 packs (Cart/Safe/Chest/Vault) — no real IAP. Pass tab: 3-track summary (Free / Elite / Platinum) with "Open Pass" button, plus a 3-card "Upcoming Bundles" preview. New top-right offer-pill (40px round, cherry tint, pulses) appears whenever a daily deal or surprise box is ready; tap → opens shop with Offers tab focused. Files: src/ui/shop.ts (+~190 lines), src/ui/hud.ts (offer-pill update logic), src/main.ts (offer-pill click wiring + openShop arity change), index.html (offer-pill markup), style.css (~150 new lines for pill + offer-card + gem-pack + pass-shop layouts). Typecheck + build green.
+- 2026-05-22  Phase 1.11 + 1.12 + 1.13 + 1.14 complete — Festival Cart at (16, 0, 26.2) — covered wagon with coloured panels, striped canopy, gold-hubbed wheels, and a 7-flag bunting that waves. Visible only when state.festivalCart.unlocked && endsAt > now (fixed inferred-active checks in both world-bubbles.ts and mobile-shell.ts to use endsAt instead of nonexistent `active` field). Train Station at east edge (25.6, 0, 16) with platform/house/overhang/sign/window/door, two iron rails + 22 sleepers, and a locomotive (boiler, smokestack, cab, cow-catcher, 3 wheel-pairs, coal tender). Engine smoothly interpolates from off-screen east → parked at the platform when state.train.status === 'returned'. Hot-Air Balloon at altitude y=8: striped envelope, basket, ropes, flickering burner; circular slow drift radius 2.5 plus vertical bob, visible only when state.balloon.active. Phase 1.14 verified by source review — all 3D props sit outside or at the edges of the home grid; corner FABs are screen-fixed and don't overlap. Files: festival-cart.ts, train-station.ts, balloon.ts (all new), three/index.ts, world-bubbles.ts, ui/mobile-shell.ts. Typecheck + build green.
+- 2026-05-22  Phase 1.9 + 1.10 complete — Wheel Stand at (7.5, 0, 25.4) west of the order truck: cyl back disc + 8 coloured boxed-slice spokes, central hub, pointer cone, two cyl pillars. Spins idly at 0.4 rad/s, accelerates to 1.6 rad/s when canSpin()===true. 🎡 bubble pulses only when a daily spin is available. Sanctuary Easel at (12.5, 0, 11.5) on the east lakeshore: tripod cylinder legs + open journal with sketch lines + a small flower bouquet + a field of wildflowers at the base. Page-pivot breathes gently when state.sanctuary.active. 📖 bubble visible once sanctuary unlocked, pulses when active. Files: src/three/decor/wheel-stand.ts (new), sanctuary-easel.ts (new), three/index.ts, world-bubbles.ts. Typecheck + build green.
+- 2026-05-22  Phase 1.7 complete — Ranger Tower at NW corner (5.5, 0, 5.5), facing SE. Log-cabin-on-stilts with 4 cyl legs + diagonal braces, slatted-log walls (5 rows), gable cone roof, ladder on the south face, sky-blue observation flag on top. Expeditions hub bubble 🗺️ now anchors to the tower y=3.4 instead of piggybacking the fishingdock. Files: src/three/decor/ranger-tower.ts (new), three/index.ts, world-bubbles.ts. Typecheck + build green.
+- 2026-05-22  Phase 1.6 + 1.8 complete — Request Board birdhouse at (11, 13) with 3 pinned coloured request cards + bird hole + perch + finial. Co-Op Signpost at (12, 13) with 3 arrows pointing in different directions (sage/cherry/sky) and a fluttering red flag. Removed the old proxy world bubble (which was floating in mid-air at HOME_CENTER_X-5) and re-anchored the 🤝 (request) and 🏆 (club) bubbles to the actual meshes. Files: src/three/decor/request-board.ts (new), coop-signpost.ts (new), three/index.ts, world-bubbles.ts. Typecheck + build green.
+- 2026-05-22  Phase 1.5 complete — A-frame newspaper stand at (17.5, 0, 25.3), east of the south entrance. Tilted "DAILY ACRE" sign + 4 rolled papers in a tray. World bubble 📰 pulses when there's a new edition unread OR a help request the player can fulfill. Tap → opens gazette. Files: src/three/decor/newspaper-stand.ts (new), three/index.ts, world-bubbles.ts. Typecheck + build green.
+- 2026-05-22  Phase 1.4 complete — Thatched roadside stand at (5.5, 0, 19) just outside the W home edge, facing east. Counter, chalkboard with white scribbles, layered-cone thatched roof, 3 goods crates, apple bin. Goods puffs visible only when the corresponding stall slot status === 'listed'. World bubbles: 🛒 hub (becomes 💰 when any slot is sold), per-slot item icon when listed, pulsing 💰 when sold. Files: src/three/decor/roadside-stand.ts (new), three/index.ts, world-bubbles.ts. Typecheck + build green.
+- 2026-05-22  Phase 1.3 complete — Rural mailbox on a post at (9.5, 0, 25.4), west of the order truck, facing east. Curved-top red box, gold flag on a pivot that smoothly rotates up when unreadCount() > 0 (with a tiny spring oscillation). Flowers + dirt mound at the base. World bubble 📬 only appears when there's unread mail. Files: src/three/decor/mailbox.ts (new), three/index.ts, world-bubbles.ts. Typecheck + build green.
+- 2026-05-22  Phase 1.2 complete — Boat dock platform + boat hull mesh at the NW lake shoreline. Dock always visible; boat visible only when state.boat.state==='docked', bobs gently with sail flutter + flag wiggle. World bubbles: hub ⛵ above the boat, plus one per-crate bubble showing item emoji (or pulsing "!" when player lacks inventory). All bubbles open the boat panel. Files: src/three/decor/boat-at-dock.ts (new), src/three/index.ts (wiring), src/ui/world-bubbles.ts (hub + crate bubbles). Typecheck + build green.
+- 2026-05-22  Phase 1.1 complete — Order Truck 3D mesh at (12.5, 0, 25.5), facing north. Chalkboard-textured sign reads "ORDERS · tap to open". World-bubble hub anchored at y=2.4, badge shows fulfillable+claimable count, tap → side panel. Files: src/three/decor/order-truck.ts (new), src/three/index.ts (install+update wiring), src/ui/world-bubbles.ts (hub bubble). Typecheck + build green.
 - 2026-05-22  Roadmap forward doc authored. Audit complete; 75% of Hay Day/FV3 grammar already implemented. Phase 1 is the largest gap. No code yet.
 
 ---

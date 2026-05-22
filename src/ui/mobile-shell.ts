@@ -35,6 +35,7 @@ import { hasPendingBox } from '../systems/surprise-box';
 import { piggyPct } from '../systems/piggy-bank';
 import { setScenicMode } from '../systems/settings';
 import { toggleEditMode, setEditMode } from '../systems/edit-mode';
+import { trapFocus } from './focus-trap';
 
 // =============================================================
 //  SHEETS / DRAWERS
@@ -55,6 +56,10 @@ export function closeBookSheet(): void { hideSheet('book-sheet', 'book-scrim'); 
 export function openHudDrawer(): void { showSheet('hud-menu-drawer', 'hud-menu-scrim'); }
 export function closeHudDrawer(): void { hideSheet('hud-menu-drawer', 'hud-menu-scrim'); }
 
+// Phase 4.2 — focus-trap releases keyed by sheetId so each sheet
+// has its own lifecycle.
+const sheetReleases: Record<string, () => void> = {};
+
 function showSheet(sheetId: string, scrimId: string): void {
   const sheet = document.getElementById(sheetId);
   const scrim = document.getElementById(scrimId);
@@ -62,7 +67,15 @@ function showSheet(sheetId: string, scrimId: string): void {
   sheet.classList.add('open');
   scrim.classList.add('open');
   sheet.setAttribute('aria-hidden', 'false');
+  // Phase 4.4 — sheets are dialogs.
+  sheet.setAttribute('role', 'dialog');
+  sheet.setAttribute('aria-modal', 'true');
   haptic(8);
+  // Install focus trap. Defer one tick so contents are rendered.
+  setTimeout(() => {
+    if (sheetReleases[sheetId]) sheetReleases[sheetId]!();
+    sheetReleases[sheetId] = trapFocus(sheet);
+  }, 0);
 }
 function hideSheet(sheetId: string, scrimId: string): void {
   const sheet = document.getElementById(sheetId);
@@ -71,20 +84,39 @@ function hideSheet(sheetId: string, scrimId: string): void {
   sheet.classList.remove('open');
   scrim.classList.remove('open');
   sheet.setAttribute('aria-hidden', 'true');
+  if (sheetReleases[sheetId]) {
+    sheetReleases[sheetId]!();
+    delete sheetReleases[sheetId];
+  }
 }
 
 // =============================================================
 //  ORDER BOARD / QUESTS SIDE PANEL
 // =============================================================
 
+let sidePanelRelease: (() => void) | null = null;
+
 export function openSidePanel(): void {
-  document.getElementById('side-panel')?.classList.add('open');
+  const panel = document.getElementById('side-panel');
   document.getElementById('side-panel-scrim')?.classList.add('open');
+  if (panel) {
+    panel.classList.add('open');
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-modal', 'true');
+    setTimeout(() => {
+      if (sidePanelRelease) sidePanelRelease();
+      sidePanelRelease = trapFocus(panel);
+    }, 0);
+  }
   haptic(8);
 }
 export function closeSidePanel(): void {
   document.getElementById('side-panel')?.classList.remove('open');
   document.getElementById('side-panel-scrim')?.classList.remove('open');
+  if (sidePanelRelease) {
+    sidePanelRelease();
+    sidePanelRelease = null;
+  }
 }
 
 // =============================================================
@@ -244,8 +276,8 @@ function buildQEBEntries(): QEBEntry[] {
 
   // Festival Cart — when active
   if (gateAllows('open-cart')) {
-    const cart = (state as { festivalCart?: { active?: boolean } }).festivalCart;
-    if (cart?.active) {
+    const cart = state.festivalCart;
+    if (cart?.unlocked && cart.endsAt > Date.now() / 1000) {
       out.push({
         id: 'cart', icon: '🎪', label: 'Cart',
         open: () => clickHidden('open-cart'),

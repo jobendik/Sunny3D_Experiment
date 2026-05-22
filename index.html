@@ -81,7 +81,8 @@
               <div class="xp-fill" id="xp-fill">
                 <span class="xp-sheen" aria-hidden="true"></span>
               </div>
-              <div class="xp-bar-label" id="xp-label">0 / 10 XP</div>
+              <div class="xp-bar-label" id="xp-label" aria-hidden="true">0 / 10 XP</div>
+              <span class="sr-only" id="xp-sr-label">Level 1, 0 of 10 experience points</span>
             </div>
           </div>
         </div>
@@ -122,6 +123,10 @@
           <span class="currency-value" id="coin-amount">100</span>
           <span class="currency-plus" aria-hidden="true">+</span>
           <span class="badge-glint" aria-hidden="true"></span>
+        </button>
+        <button class="offer-pill" id="offer-pill" type="button" title="Offers" aria-label="Offers" hidden>
+          <span class="offer-pill-ico" aria-hidden="true">🎁</span>
+          <span class="offer-pill-pip" id="offer-pill-pip" aria-hidden="true"></span>
         </button>
       </div>
     </div>
