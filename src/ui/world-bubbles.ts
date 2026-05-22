@@ -40,7 +40,11 @@ import {
   BOAT_X, BOAT_Z, BOAT_BUBBLE_Y, BOAT_CRATE_BUBBLE_Y,
   getCrateWorldPosition,
 } from '../three/decor/boat-at-dock';
+import {
+  MAILBOX_X, MAILBOX_Z, MAILBOX_BUBBLE_Y,
+} from '../three/decor/mailbox';
 import { ITEMS } from '../data/items';
+import { unreadCount as mailboxUnreadCount } from '../systems/mailbox';
 
 const POOL_SIZE = 28;
 const tmpVec = new Vector3();
@@ -429,6 +433,24 @@ export function computeBubbleTargets(): BubbleTarget[] {
         kind: canFill ? 'feed' : 'full',
         pulse: !canFill,
         tap: () => document.getElementById('open-boat')?.click(),
+      });
+    }
+  }
+
+  // -------- Mailbox (Phase 1.3) --------
+  // Pinned above the rural mailbox. Visible only when there's unread
+  // mail — Alfred's flag in 3D already telegraphs presence/absence,
+  // so the bubble is the explicit "tap to read" affordance.
+  {
+    const unread = mailboxUnreadCount();
+    if (unread > 0) {
+      out.push({
+        key: 'hub:mailbox',
+        wx: MAILBOX_X, wy: MAILBOX_BUBBLE_Y, wz: MAILBOX_Z,
+        icon: '📬',
+        kind: 'hub',
+        pulse: true,
+        tap: () => document.getElementById('open-mailbox')?.click(),
       });
     }
   }
