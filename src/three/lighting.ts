@@ -159,12 +159,16 @@ export function initLighting(): LightingSnapshot {
   // baked AO around buildings & trees.
   sun.shadow.mapSize.set(2048, 2048);
   const sc = sun.shadow.camera;
-  sc.left = -18;
-  sc.right = 18;
-  sc.top = 18;
-  sc.bottom = -18;
+  // Shadow frustum scaled to roughly the home zone (≈18 tiles across).
+  // The frustum tracks the camera target in updateLighting() so a 24-
+  // unit window always covers what the player is looking at, even on
+  // the bigger 32-unit world.
+  sc.left = -22;
+  sc.right = 22;
+  sc.top = 22;
+  sc.bottom = -22;
   sc.near = 1;
-  sc.far = 90;
+  sc.far = 110;
   sun.shadow.bias = -0.00028;
   sun.shadow.normalBias = 0.045;
   sun.shadow.radius = 4.5;       // softer VSM penumbra → "baked" feel
@@ -205,13 +209,14 @@ export function updateLighting(): LightingSnapshot {
   const sunAngle = dayPhase * Math.PI;
   _sunDir.set(Math.cos(sunAngle) * 30, Math.sin(sunAngle) * 35 + 10, -Math.sin(sunAngle) * 8);
   // Re-aim sun + shadow frustum to track the camera target. The
-  // shadow camera's 28×28 unit window then always covers what the
-  // player is actually looking at, so shadow texels stay crisp at
-  // any zoom level instead of being wasted on off-screen land.
+  // shadow camera's window always covers what the player is actually
+  // looking at, so shadow texels stay crisp at any zoom level instead
+  // of being wasted on off-screen land. Clamp slightly inside the
+  // world bounds so the frustum still catches scenery beyond HOME.
   const tx = state.camX / TILE;
   const tz = state.camY / TILE;
-  const cx = MathUtils.clamp(tx, 0, GRID_W);
-  const cz = MathUtils.clamp(tz, 0, GRID_H);
+  const cx = MathUtils.clamp(tx, 4, GRID_W - 4);
+  const cz = MathUtils.clamp(tz, 4, GRID_H - 4);
   sun.position.set(cx + _sunDir.x, _sunDir.y, cz + _sunDir.z);
   sun.target.position.set(cx, 0, cz);
   moon.target.position.set(cx, 0, cz);

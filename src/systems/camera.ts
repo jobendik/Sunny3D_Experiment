@@ -58,7 +58,11 @@ export function worldToScreen(wx: number, wy: number): { x: number; y: number } 
 }
 
 export function clampCamera(): void {
-  const margin = 240;
+  // Generous margin so the player can pan to see the entire 32×32
+  // world plus a comfortable view of the outer decorative landscape.
+  // Soft-clamping rather than a hard wall keeps the iso pan feeling
+  // smooth at the borders.
+  const margin = 360;
   state.camX = clamp(state.camX, -margin, GRID_W * TILE + margin);
   state.camY = clamp(state.camY, -margin, GRID_H * TILE + margin);
 }

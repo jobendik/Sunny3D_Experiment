@@ -1,18 +1,14 @@
 import { state } from '../state';
-import { GRID_W, GRID_H, TILE } from '../constants';
+import { GRID_W, GRID_H, TILE, WORLD_SEED } from '../constants';
 import { BUILDINGS } from '../data/buildings';
 import { DECORATIONS } from '../data/decorations';
+import { generateWorld } from '../three/terrain/world-gen';
+import { canBuildOn } from '../three/terrain/world-data';
 import type { BuildingInstance, Tile } from '../types';
 
+/** Build a fresh world. Called on a brand-new save. */
 export function initGrid(): void {
-  state.grid = [];
-  for (let y = 0; y < GRID_H; y++) {
-    const row: Tile[] = [];
-    for (let x = 0; x < GRID_W; x++) {
-      row.push({ type: 'grass', crop: null, plantedAt: 0, watered: false, building: null });
-    }
-    state.grid.push(row);
-  }
+  state.grid = generateWorld(WORLD_SEED);
 }
 
 export function markBuildingTiles(): void {
@@ -62,10 +58,8 @@ export function canPlaceBuilding(type: string, gx: number, gy: number): boolean 
       const y = gy + dy;
       if (x < 0 || y < 0 || x >= GRID_W || y >= GRID_H) return false;
       const t = state.grid[y]![x]!;
-      if (t.building) return false;
-      if (t.type !== 'grass' && t.type !== 'plowed' && t.type !== 'soil') return false;
-      if (t.crop) return false;
-      if (t.tree) return false;
+      // Tile-level validity (region unlocked, no obstacle, etc.).
+      if (!canBuildOn(t)) return false;
       if (state.decor.some(d => {
         const dD = DECORATIONS[d.type]!;
         return x >= d.x && x < d.x + dD.w && y >= d.y && y < d.y + dD.h;

@@ -82,13 +82,23 @@ function smoothHash(gx: number, gy: number, salt = 0): number {
   return (h & 0xffff) / 0xffff;
 }
 
-function tileTint(gx: number, gy: number, type: TileType): Color {
+// Cool desaturated colour that locked land blends toward — gives
+// expansion regions a "misty wild meadow" cast that reads clearly as
+// "not yet yours" without requiring a heavy overlay.
+const LOCKED_TINT = new Color('#7a8e8d');
+
+function tileTint(gx: number, gy: number, type: TileType, locked: boolean): Color {
   const variants = TILE_VARIANTS[type] ?? [TILE_COLORS[type]];
   const v = variants[Math.floor(smoothHash(gx, gy, 11) * variants.length)] ?? TILE_COLORS[type];
   // Add ±3% lightness wobble for extra organic feel.
   const n = (smoothHash(gx, gy, 23) - 0.5) * 0.06;
   const c = v.clone();
   c.offsetHSL(0, 0, n);
+  if (locked) {
+    // Pull strongly toward the cool fog tint and darken slightly.
+    c.lerp(LOCKED_TINT, 0.42);
+    c.offsetHSL(0, -0.15, -0.04);
+  }
   return c;
 }
 
@@ -126,9 +136,11 @@ function computeWaterBBox(): WaterBBox {
   if (!any) return { x0: 0, y0: 0, x1: 1, y1: 1, hasWater: false };
   return { x0, y0, x1, y1, hasWater: true };
 }
-// Per-instance cached tile type. The grid is small (324 entries) so
-// a flat string[] beats a Map for cache locality.
-let lastTypes: (TileType | '?')[] = [];
+// Per-instance cached tile-type + locked flag. The grid is small
+// (1024 entries) so a flat string[] beats a Map for cache locality.
+// We encode locked-state as a `:1` suffix so a single string compare
+// catches type AND unlock changes (e.g. region unlocks repaint tiles).
+let lastTypes: string[] = [];
 
 function indexOf(gx: number, gy: number): number {
   return gy * GRID_W + gx;
@@ -136,7 +148,7 @@ function indexOf(gx: number, gy: number): number {
 
 const _scratch = new Object3D();
 
-function writeInstance(mesh: InstancedMesh, idx: number, gx: number, gy: number, type: TileType, isWater: boolean): void {
+function writeInstance(mesh: InstancedMesh, idx: number, gx: number, gy: number, type: TileType, isWater: boolean, locked: boolean): void {
   const obj = _scratch;
   // Water tiles sink ~0.7u below grade so the water plane (-0.30)
   // fully covers their tops. Land tiles get a tiny per-tile height
@@ -148,7 +160,7 @@ function writeInstance(mesh: InstancedMesh, idx: number, gx: number, gy: number,
   obj.scale.set(1, 1, 1);
   obj.updateMatrix();
   mesh.setMatrixAt(idx, obj.matrix);
-  mesh.setColorAt(idx, tileTint(gx, gy, type));
+  mesh.setColorAt(idx, tileTint(gx, gy, type, locked));
 }
 
 // Tiles touch edge-to-edge; no need to inset the geometry. Kept as
@@ -176,8 +188,9 @@ function buildLand(): InstancedMesh {
       const isWater = tile?.type === 'water';
       const type = (isWater ? 'soil' : (tile?.type ?? 'grass')) as TileType;
       const i = indexOf(gx, gy);
-      writeInstance(mesh, i, gx, gy, type, isWater);
-      lastTypes[i] = tile?.type ?? 'grass';
+      const locked = !!tile && tile.unlocked === false;
+      writeInstance(mesh, i, gx, gy, type, isWater, locked);
+      lastTypes[i] = `${tile?.type ?? 'grass'}:${locked ? 1 : 0}`;
     }
   }
   if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
@@ -315,11 +328,13 @@ function updateDirtyInstances(): void {
       const i = indexOf(gx, gy);
       const t = state.grid[gy]?.[gx];
       const cur = t?.type ?? 'grass';
-      if (cur === lastTypes[i]) continue;
+      const locked = !!t && t.unlocked === false;
+      const key = `${cur}:${locked ? 1 : 0}`;
+      if (key === lastTypes[i]) continue;
       const isWater = cur === 'water';
       const type = (isWater ? 'soil' : cur) as TileType;
-      writeInstance(land, i, gx, gy, type, isWater);
-      lastTypes[i] = cur;
+      writeInstance(land, i, gx, gy, type, isWater, locked);
+      lastTypes[i] = key;
       matrixDirty = true;
       colorDirty = true;
     }

@@ -19,6 +19,8 @@ import { installFogOfWar, updateFogOfWar } from './terrain/fog-of-war';
 import { installLakeDecor, updateLakeDecor } from './terrain/lake-decor';
 import { installWildflowers } from './terrain/wildflowers';
 import { installScatter } from './terrain/scatter';
+import { installObstacles, updateObstacles } from './terrain/obstacle-meshes';
+import { installRegionVeil, updateRegionVeil } from './terrain/region-veil';
 import { installBirds, updateBirds } from './fx/birds';
 import { installGodRays, updateGodRays } from './fx/god-rays';
 import { updateBuildings } from './entities/buildings-manager';
@@ -62,6 +64,8 @@ export function init3d(): void {
   installLakeDecor();
   installWildflowers();
   installScatter();
+  installObstacles();
+  installRegionVeil();
   installBirds();
   installGodRays();
   // Prime the composer so its first frame isn't a stutter.
@@ -77,6 +81,8 @@ export function render3d(dt: number): void {
   updateGrassBlades(timeS, light);
   updateOuterWorld(timeS);
   updateFogOfWar(timeS, light);
+  updateRegionVeil(timeS, light);
+  updateObstacles(timeS);
   updateLakeDecor(timeS);
   updateBirds(timeS, dt, light);
   updateGodRays(timeS, light);

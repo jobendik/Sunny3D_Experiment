@@ -10,6 +10,8 @@ import { updateHUD } from '../ui/hud';
 import { spawnParticles, floatText } from './particles';
 import { addItem, removeItem } from './inventory';
 import { applyFertilizer, tileGrowthBoost } from './soil';
+import { canPlow, canPlant, canClear, plowBlockedReason, obstacleLabel, obstacleClearTool } from '../three/terrain/world-data';
+import { clearObstacleVisualAt } from '../three/terrain/obstacle-meshes';
 import { addXP } from './xp';
 import { questProgress } from './quests';
 import { dailyChallengeProgress } from './daily';
@@ -51,8 +53,14 @@ export function tryPlaceDecoration(gx: number, gy: number): void {
         return;
       }
       const tile = state.grid[y]![x]!;
-      if (tile.type !== 'grass' || tile.crop || tile.building || tile.tree) {
+      if (tile.type !== 'grass' || tile.crop || tile.building || tile.tree || tile.obstacle) {
         toast('Need clear grass', 'error');
+        sfx.error();
+        return;
+      }
+      // Block placing decoration on locked / forest_edge land.
+      if (tile.region && tile.region !== 'home' && !tile.unlocked) {
+        toast('Unlock that area first', 'error');
         sfx.error();
         return;
       }
@@ -85,9 +93,10 @@ export function tryPlaceDecoration(gx: number, gy: number): void {
 
 export function tryPlow(gx: number, gy: number): void {
   const t = state.grid[gy]![gx]!;
-  if (t.building || t.crop || t.tree) { sfx.error(); return; }
-  if (t.type === 'plowed') {
-    // Apply fertilizer if held — otherwise just unplow
+  // Plowed-tile branch: either fertilize or un-plow. Doesn't depend
+  // on canPlow (we know the tile is already plowed).
+  if (t.type === 'plowed' && !t.building && !t.crop && !t.tree && !t.obstacle) {
+    // Apply fertilizer if held — otherwise just unplow.
     if ((state.inv.fertilizer ?? 0) > 0) {
       removeItem('fertilizer', 1);
       applyFertilizer(gx, gy);
@@ -100,18 +109,30 @@ export function tryPlow(gx: number, gy: number): void {
     spawnParticles(gx * TILE + TILE / 2, gy * TILE + TILE / 2, '#6e4520', 6);
     return;
   }
-  if (t.type === 'grass' || t.type === 'soil') {
-    t.type = 'plowed';
-    state.stats.plowed += 1;
-    sfx.plow();
-    spawnParticles(gx * TILE + TILE / 2, gy * TILE + TILE / 2, '#8b5a2b', 10);
-    checkAchievements();
+  // Otherwise we're trying to plow a grass/soil tile. Use canPlow so
+  // obstacles, locked regions, water, paths, etc. all bail correctly.
+  if (!canPlow(t)) {
+    const reason = plowBlockedReason(t);
+    if (reason) toast(reason, 'error');
+    sfx.error();
+    return;
   }
+  t.type = 'plowed';
+  state.stats.plowed += 1;
+  sfx.plow();
+  spawnParticles(gx * TILE + TILE / 2, gy * TILE + TILE / 2, '#8b5a2b', 10);
+  checkAchievements();
 }
 
 export function tryPlant(gx: number, gy: number): void {
   const t = state.grid[gy]![gx]!;
-  if (t.type !== 'plowed' || t.crop || t.building) { sfx.error(); return; }
+  if (!canPlant(t)) {
+    const reason = plowBlockedReason(t)
+      ?? (t.type !== 'plowed' ? 'Plow this tile first' : null);
+    if (reason) toast(reason, 'error');
+    sfx.error();
+    return;
+  }
   const cropKey = state.selectedSeed;
   const crop = CROPS[cropKey]!;
   if (state.level < crop.level) {
@@ -134,8 +155,45 @@ export function tryPlant(gx: number, gy: number): void {
   updateHUD();
 }
 
+/** Attempt to clear a tile-level obstacle with the hand tool. The
+ *  hand tool doesn't require a specific item in the inventory — we
+ *  treat it as the player's everyday "scratch with the trowel" tool
+ *  for low-effort cleanup. The expansion plot system still gates the
+ *  REGION (you have to unlock the plot first via the Expansion panel),
+ *  but once unlocked the per-tile cleanup is a tap with the hand. */
+export function tryClearObstacle(gx: number, gy: number): boolean {
+  const t = state.grid[gy]?.[gx];
+  if (!t || !canClear(t)) return false;
+  const ob = t.obstacle!;
+  const label = obstacleLabel(ob.kind);
+  void obstacleClearTool;   // reserved for future "tool required" gating
+  t.obstacle = null;
+  clearObstacleVisualAt(gx, gy);
+  sfx.plow();
+  spawnParticles(gx * TILE + TILE / 2, gy * TILE + TILE / 2, '#8a6a3a', 14);
+  floatText(gx * TILE + TILE / 2, gy * TILE + TILE / 2 - 10, `Cleared ${label}!`, '#3a8020');
+  // Small reward — encourages clearing as a rhythm action.
+  state.coins += 5;
+  state.stats.earned += 5;
+  addXP(2);
+  updateHUD();
+  return true;
+}
+
 export function tryHarvestOrInteract(gx: number, gy: number): void {
   const t = state.grid[gy]![gx]!;
+  // Hand-tool tap on a clearable obstacle: remove it.
+  if (t.obstacle && canClear(t)) {
+    tryClearObstacle(gx, gy);
+    return;
+  }
+  // Hand-tool tap on a locked tile: surface a friendly reason.
+  if (t.obstacle && !canClear(t)) {
+    const reason = plowBlockedReason(t);
+    if (reason) toast(reason, 'error');
+    sfx.error();
+    return;
+  }
   if (t.crop && cropStage(t) === 3) {
     const crop = CROPS[t.crop]!;
     if (isWithered(t)) {

@@ -6,7 +6,10 @@
 import './style.css';
 import { state } from './state';
 import { SW, SH } from './canvas';
-import { TILE, GRID_W, GRID_H, DAY_SECONDS } from './constants';
+import {
+  TILE, GRID_W, GRID_H, DAY_SECONDS,
+  HOME_CENTER_X, HOME_CENTER_Y, HOME_W, HOME_H,
+} from './constants';
 import { clamp, nowSeconds } from './utils';
 import { ensureAudio, sfx } from './audio/sfx';
 import { startMusic, stopMusic } from './audio/music';
@@ -92,7 +95,7 @@ import { openFriendshipPanel } from './ui/friendship-panel';
 // Phase 4-15 expansion systems
 import { initBalloon } from './systems/balloon';
 import { initFestivalCart, maybeRolloverCart } from './systems/festival-cart';
-import { initExpansion } from './systems/expansion';
+import { initExpansion, syncRegionUnlocks } from './systems/expansion';
 import { initClub, maybeRolloverClub } from './systems/club';
 import { initVillage } from './systems/village';
 import { initExpeditions } from './systems/expeditions';
@@ -124,48 +127,10 @@ import { openExpansionPanel } from './ui/expansion-panel';
 import { openRecipeBook } from './ui/recipe-book-panel';
 import { openMuseum } from './ui/museum-panel';
 
-function setupInitialFarm(): void {
-  // Irregular lake in the upper-left — ~20 tiles, big enough to build
-  // a fishing dock alongside and to make the corner feel like real water.
-  const lake: ReadonlyArray<readonly [number, number]> = [
-    [0, 0], [1, 0], [2, 0], [3, 0],
-    [0, 1], [1, 1], [2, 1], [3, 1], [4, 1],
-    [0, 2], [1, 2], [2, 2], [3, 2], [4, 2], [5, 2],
-    [1, 3], [2, 3], [3, 3], [4, 3],
-    [2, 4], [3, 4],
-  ];
-  for (const [x, y] of lake) state.grid[y]![x]!.type = 'water';
-
-  // Cross-shaped path: south entrance up to the heart of the farm, with a
-  // short west branch toward the lake that hints "this way to fish".
-  const entranceX = Math.floor(GRID_W / 2);
-  const branchY = 5;
-  for (let gy = GRID_H - 1; gy >= branchY; gy--) {
-    state.grid[gy]![entranceX]!.type = 'path';
-  }
-  for (let gx = entranceX - 3; gx < entranceX; gx++) {
-    state.grid[branchY]![gx]!.type = 'path';
-  }
-
-  // Soil patches that subtly suggest gameplay zones: NE for animal pens,
-  // SE for production buildings, SW for orchards. Soil is mechanically
-  // equivalent to grass for placement — these are purely visual hints.
-  const soilZones: ReadonlyArray<readonly [number, number]> = [
-    // NE — pen zone
-    [13, 1], [14, 1], [15, 1], [16, 1],
-    [13, 2], [14, 2], [15, 2], [16, 2],
-    [14, 3], [15, 3],
-    // SE — production zone
-    [11, 11], [12, 11], [13, 11], [14, 11],
-    [10, 12], [11, 12], [12, 12], [13, 12], [14, 12], [15, 12],
-    [11, 13], [12, 13], [13, 13], [14, 13],
-    // SW — orchard zone
-    [1, 12], [2, 12], [3, 12],
-    [1, 13], [2, 13], [3, 13],
-    [2, 14], [3, 14],
-  ];
-  for (const [x, y] of soilZones) state.grid[y]![x]!.type = 'soil';
-}
+// Note: starting farm layout (lake, paths, soil hints, pre-plowed
+// patch) is now built by `generateWorld()` in three/terrain/world-gen.ts
+// — see initGrid() in systems/grid.ts. setupInitialFarm() has been
+// retired in favour of that single deterministic generator.
 
 function bindToolbarHandlers(): void {
   document.getElementById('modal-close')!.addEventListener('click', closeModal);
@@ -267,15 +232,9 @@ function init(): void {
 
   const loaded = loadGame();
   if (!loaded) {
-    setupInitialFarm();
-    // Small starter plot tucked next to the path junction: 4×2 plowed soil
-    // on the east side of the vertical path, just below the shore branch.
-    const entranceX = Math.floor(GRID_W / 2);
-    for (let y = 6; y <= 7; y++) {
-      for (let x = entranceX + 1; x <= entranceX + 4; x++) {
-        state.grid[y]![x]!.type = 'plowed';
-      }
-    }
+    // generateWorld() inside initGrid() already laid down the lake,
+    // path network, soil hint zones and a small pre-plowed starter
+    // patch — no additional setup needed for a brand-new save.
     maybeUnlockOrders();
   }
   markBuildingTiles();
@@ -317,6 +276,7 @@ function init(): void {
   initBalloon();
   initFestivalCart(); maybeRolloverCart();
   initExpansion();
+  syncRegionUnlocks();
   initClub(); maybeRolloverClub();
   initVillage();
   initExpeditions();
@@ -348,10 +308,15 @@ function init(): void {
   maybeRolloverGazette();
   track(loaded ? 'session_resume' : 'session_new', { level: state.level });
 
-  state.camX = (GRID_W * TILE) / 2;
-  state.camY = (GRID_H * TILE) / 2;
-  state.camScale = Math.min(SW() / (GRID_W * TILE), SH() / (GRID_H * TILE)) * 0.9;
-  state.camScale = clamp(state.camScale, 0.45, 1.6);
+  // Centre the camera on the home zone (the playable starting area)
+  // and choose a default zoom that frames roughly the home block plus
+  // a one-tile peek of locked land on each side — locked regions feel
+  // present without dominating the screen.
+  state.camX = HOME_CENTER_X * TILE;
+  state.camY = HOME_CENTER_Y * TILE;
+  const framePx = (Math.max(HOME_W, HOME_H) + 4) * TILE;
+  state.camScale = Math.min(SW() / framePx, SH() / framePx) * 0.95;
+  state.camScale = clamp(state.camScale, 0.45, 1.8);
 
   if (state.quests.length === 0) refillQuests();
   renderQuests();
@@ -390,10 +355,13 @@ function init(): void {
       setTimeout(openHelp, 1600);
     });
     // Drop a starter chest near the entrance plot so the new player gets an
-    // immediate "wow" moment within the first 30 seconds of play.
+    // immediate "wow" moment within the first 30 seconds of play. We pick
+    // the first tile of the pre-plowed starter patch which world-gen
+    // lays just east of the south-entrance path, one tile below the
+    // east/west branch.
     setTimeout(() => {
-      const entrance = Math.floor(GRID_W / 2);
-      const tx = entrance + 1, ty = 7;
+      const tx = Math.floor(HOME_CENTER_X) + 1;
+      const ty = 11;          // matches world-gen's starter-patch row
       if (state.treasures && !state.treasures.chests.some(c => c.gx === tx && c.gy === ty)) {
         state.treasures.chests.push({
           id: 'startergift', gx: tx, gy: ty,

@@ -8,6 +8,7 @@ import { toast } from '../ui/toasts';
 import { updateHUD } from '../ui/hud';
 import { spawnParticles, floatText } from './particles';
 import { addItem } from './inventory';
+import { isTileUnlocked, plowBlockedReason } from '../three/terrain/world-data';
 import { addXP } from './xp';
 import { questProgress } from './quests';
 import { dailyChallengeProgress } from './daily';
@@ -27,6 +28,11 @@ export function plantTree(type: string, gx: number, gy: number): boolean {
   if (state.level < def.level) { toast('Level too low!', 'error'); return false; }
   if (state.coins < def.seedCost) { toast('Not enough coins!', 'error'); sfx.cantAfford(); return false; }
   const t = state.grid[gy]![gx]!;
+  if (!isTileUnlocked(t) || t.obstacle) {
+    const reason = plowBlockedReason(t) ?? 'Cannot plant here';
+    toast(reason, 'error');
+    return false;
+  }
   if (t.type !== 'plowed' && t.type !== 'soil') { toast('Must plant on soil!', 'error'); return false; }
   if (t.tree || t.building || t.crop) { toast('Tile occupied!', 'error'); return false; }
   state.coins -= def.seedCost;

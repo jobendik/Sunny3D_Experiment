@@ -4,11 +4,16 @@
 // =============================================================
 
 import { state } from './state';
-import { SAVE_KEY } from './constants';
+import { SAVE_KEY, GRID_W, GRID_H, WORLD_SEED } from './constants';
 import { nowSeconds, rand } from './utils';
+import { generateWorld, embedLegacyGrid } from './three/terrain/world-gen';
+import { regionForCoord } from './three/terrain/world-data';
 import type { GameState, Tile } from './types';
 
-const CURRENT_SAVE_VERSION = 5;
+// v6 introduces the 32×32 world with regions + tile obstacles. v5
+// saves stored an 18×18 grid; the migration generates a fresh 32×32
+// world and embeds the old grid into the centre (see embedLegacyGrid).
+const CURRENT_SAVE_VERSION = 6;
 
 interface SaveData {
   saveVersion?: number;
@@ -89,6 +94,10 @@ interface SaveData {
   toolShed?: GameState['toolShed'];
   buildingUpgrades?: GameState['buildingUpgrades'];
   decorSets?: GameState['decorSets'];
+  // Transient migration hints (not stored in localStorage; set by
+  // migrateSave() and read by loadGame() to shift entity coords).
+  _migrateOffsetX?: number;
+  _migrateOffsetY?: number;
 }
 
 export function saveGame(): void {
@@ -102,6 +111,7 @@ export function saveGame(): void {
     grid: state.grid.map(row => row.map(t => ({
       type: t.type, crop: t.crop, plantedAt: t.plantedAt,
       watered: false, building: t.building, tree: t.tree,
+      region: t.region, unlocked: t.unlocked, obstacle: t.obstacle ?? null,
     }))),
     inv: state.inv,
     buildings: state.buildings,
@@ -190,6 +200,22 @@ function migrateSave(data: SaveData): SaveData {
     // v5: Phase 4-15 expansion fields default to undefined; init() handles defaults.
     data.saveVersion = 5;
   }
+  if (data.saveVersion < 6) {
+    // v6: world grew from 18×18 to 32×32. Embed the old grid into a
+    // freshly-generated world, centred. Building/tree/decor coords
+    // are shifted in the loadGame() flow below (we don't know the
+    // offset here, so we tag it on the data object for the loader).
+    const oldH = data.grid.length;
+    const oldW = data.grid[0]?.length ?? 0;
+    if (oldW !== GRID_W || oldH !== GRID_H) {
+      const fresh = generateWorld(WORLD_SEED);
+      const { offsetX, offsetY } = embedLegacyGrid(fresh, data.grid);
+      data.grid = fresh;
+      data._migrateOffsetX = offsetX;
+      data._migrateOffsetY = offsetY;
+    }
+    data.saveVersion = 6;
+  }
   return data;
 }
 
@@ -211,7 +237,30 @@ export function loadGame(): boolean {
     state.level = data.level;
     state.day = data.day;
     state.selectedSeed = data.selectedSeed || 'wheat';
-    state.grid = data.grid.map(row => row.map(t => ({ ...t, watered: false })));
+    // Load the grid, but ALWAYS backfill region/unlocked so any older
+    // save data without those fields still answers the predicates in
+    // world-data.ts correctly. Tiles in the home region default to
+    // unlocked; expansion-region tiles default to locked and will be
+    // flipped by `syncRegionUnlocks()` if the player has already
+    // unlocked their containing plot.
+    state.grid = data.grid.map((row, gy) => row.map((t, gx) => {
+      const region = t.region ?? regionForCoord(gx, gy);
+      return {
+        ...t,
+        watered: false,
+        region,
+        unlocked: t.unlocked ?? (region === 'home'),
+        obstacle: t.obstacle ?? null,
+      };
+    }));
+    // Apply migration offset to entity coords if the grid was resized.
+    const dx = data._migrateOffsetX ?? 0;
+    const dy = data._migrateOffsetY ?? 0;
+    if (dx !== 0 || dy !== 0) {
+      for (const b of (data.buildings ?? [])) { b.x += dx; b.y += dy; }
+      for (const t of (data.trees ?? []))     { t.x += dx; t.y += dy; }
+      for (const d of (data.decor ?? []))     { d.x += dx; d.y += dy; }
+    }
     state.inv = data.inv || {};
     state.buildings = data.buildings || [];
     state.penAnimals = data.penAnimals || {};

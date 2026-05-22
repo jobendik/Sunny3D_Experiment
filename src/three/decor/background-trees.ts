@@ -72,6 +72,10 @@ export function installBackgroundTrees(): void {
       decor.add(tree);
     }
   };
-  place(inner, 0.5, 2.5, 0.85, 1.15);   // closer band
-  place(outer, 3.0, 6.0, 0.95, 1.35);   // farther band — taller silhouettes
+  // The 32×32 playable world already has forest_edge tile obstacles
+  // hugging its corners, so the background-tree ring sits one band
+  // beyond that: a sparse inner stripe just past the world border +
+  // a denser outer stripe that fills toward the fog.
+  place(inner, 1.0, 4.0, 0.85, 1.15);   // just past the playable border
+  place(outer, 5.0, 9.0, 0.95, 1.35);   // farther band — taller silhouettes
 }

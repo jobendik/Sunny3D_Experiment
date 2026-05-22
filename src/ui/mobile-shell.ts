@@ -5,7 +5,7 @@
 
 import { state } from '../state';
 import { SW, SH } from '../canvas';
-import { GRID_W, GRID_H, TILE } from '../constants';
+import { GRID_W, GRID_H, TILE, HOME_CENTER_X, HOME_CENTER_Y, HOME_W, HOME_H } from '../constants';
 import { clamp } from '../utils';
 import { sprites } from '../sprites';
 import { setBgImage } from './modal';
@@ -103,12 +103,16 @@ export function updateQuestsFabBadge(): void {
 
 // ---------------- RE-CENTER CAMERA ----------------
 export function recenterCamera(): void {
-  state.camX = (GRID_W * TILE) / 2;
-  state.camY = (GRID_H * TILE) / 2;
+  // Centre on the home zone so re-centering reliably returns the
+  // player to "their farm" regardless of how far they've panned out
+  // toward the locked expansion regions.
+  state.camX = HOME_CENTER_X * TILE;
+  state.camY = HOME_CENTER_Y * TILE;
+  const framePx = (Math.max(HOME_W, HOME_H) + 4) * TILE;
   state.camScale = clamp(
-    Math.min(SW() / (GRID_W * TILE), SH() / (GRID_H * TILE)) * 0.85,
+    Math.min(SW() / framePx, SH() / framePx) * 0.95,
     0.6,
-    1.6,
+    1.8,
   );
   sfx.click();
   haptic(8);

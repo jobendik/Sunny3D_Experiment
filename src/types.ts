@@ -118,6 +118,30 @@ export interface AchievementDef {
 
 // ---- Runtime entities ----
 
+// Tile-level obstacle that physically blocks plowing/planting/building.
+// Distinct from purely decorative items (wildflowers, mushrooms) which
+// live in their own scatter system and do not block gameplay.
+//
+// `kind` mirrors the ObstacleKind enum used by the expansion plot
+// system so the per-tile obstacle and the abstract "plot has N rocks"
+// view share vocabulary.
+export interface TileObstacle {
+  kind: ObstacleKind;
+  variant: number;       // 0..3 — for visual variety, deterministic per tile
+}
+
+// Region ids carved into the world by world-gen. The five expansion
+// region ids match the existing `state.expansion.plots` keys so the
+// expansion system can flip whole regions unlocked atomically.
+export type RegionId =
+  | 'home'           // central starting farm — always unlocked
+  | 'east_meadow'
+  | 'old_orchard'
+  | 'river_bend'
+  | 'windy_hill'
+  | 'forest_edge'    // 4 corner natural border — unlocks at L16
+  ;
+
 export interface Tile {
   type: TileType;
   crop: string | null;
@@ -125,6 +149,16 @@ export interface Tile {
   watered: boolean;
   building: string | null;
   tree?: boolean;
+  // Region & unlock state. `region` is set once by world-gen and never
+  // changes during play. `unlocked` is flipped by the expansion system
+  // when its containing plot completes. Both are optional so legacy
+  // saves load cleanly — initGrid()/migration backfills them.
+  region?: RegionId;
+  unlocked?: boolean;
+  // Tile-level obstacle. When set, the tile is rendered with the
+  // obstacle's mesh and plowing/planting/building is blocked until the
+  // obstacle is cleared.
+  obstacle?: TileObstacle | null;
 }
 
 export interface BuildingInstance {
