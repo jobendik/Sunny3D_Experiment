@@ -8,6 +8,8 @@ import { nowSeconds } from '../utils';
 import { removeItem } from './inventory';
 import { toast } from '../ui/toasts';
 import { sfx } from '../audio/sfx';
+import { updateHUD } from '../ui/hud';
+import { track } from './telemetry';
 
 export const CATALYST_DEFS = [
   { id: 'fertilizer',   name: 'Fertilizer',    price: 30,  level: 3,
@@ -91,3 +93,74 @@ export function consumeQualityFlag(buildingId: string, qualityBuff = 0): 'normal
 export const QUALITY_VALUE: Record<'normal' | 'good' | 'perfect', number> = {
   normal: 1.0, good: 1.4, perfect: 2.0,
 };
+
+/** Diamond cost to instantly complete the entire production queue. */
+export function instantQueueCost(buildingId: string): number {
+  const q = state.prodQueues[buildingId];
+  if (!q || q.length === 0) return 0;
+  const now = nowSeconds();
+  let totalSeconds = 0;
+  for (const job of q) {
+    totalSeconds += Math.max(0, job.doneAt - now);
+  }
+  // 1 diamond per ~120s of remaining queue time, minimum 1, maximum 25.
+  return Math.max(1, Math.min(25, Math.ceil(totalSeconds / 120)));
+}
+
+/** Spend diamonds to finish the entire production queue instantly. */
+export function instantQueue(buildingId: string): boolean {
+  const cost = instantQueueCost(buildingId);
+  if (cost === 0) {
+    toast('Nothing in queue', 'error');
+    sfx.error();
+    return false;
+  }
+  if (state.gems < cost) {
+    sfx.cantAfford();
+    toast(`Need ${cost} 💎`);
+    return false;
+  }
+  state.gems -= cost;
+  const q = state.prodQueues[buildingId]!;
+  const now = nowSeconds();
+  for (const job of q) {
+    job.doneAt = now;
+  }
+  sfx.bell();
+  toast(`⚡ Queue finished! (-${cost}💎)`, 'gold');
+  updateHUD();
+  track('diamond_instant_queue', { cost, jobs: q.length });
+  return true;
+}
+
+/** Diamond cost to cancel & refund a single queued job. */
+export const CANCEL_QUEUE_COST = 2;
+
+/** Spend diamonds to cancel a queued job at index (refunds inputs). */
+export function cancelQueueWithDiamonds(
+  buildingId: string,
+  queueIdx: number,
+  recipeInputs: Record<string, number>,
+): boolean {
+  const q = state.prodQueues[buildingId];
+  if (!q || !q[queueIdx]) {
+    sfx.error();
+    return false;
+  }
+  if (state.gems < CANCEL_QUEUE_COST) {
+    sfx.cantAfford();
+    toast(`Need ${CANCEL_QUEUE_COST} 💎`);
+    return false;
+  }
+  state.gems -= CANCEL_QUEUE_COST;
+  q.splice(queueIdx, 1);
+  // Refund the inputs
+  for (const k in recipeInputs) {
+    state.inv[k] = (state.inv[k] ?? 0) + recipeInputs[k]!;
+  }
+  sfx.bell();
+  toast(`Job cancelled (-${CANCEL_QUEUE_COST}💎, inputs refunded)`, 'gold');
+  updateHUD();
+  track('diamond_cancel_queue', { cost: CANCEL_QUEUE_COST });
+  return true;
+}

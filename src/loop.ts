@@ -44,6 +44,9 @@ import { tickHelpers } from './systems/helpers';
 import { tickContracts } from './systems/contracts';
 import { refreshForecast } from './systems/forecast';
 import { checkMilestones as checkJournalMilestones } from './systems/journal';
+import { tickSurpriseBox } from './systems/surprise-box';
+import { tickSanctuary } from './systems/sanctuary';
+import { mailboxTick } from './systems/mailbox';
 
 let smokeT = 0;
 
@@ -267,6 +270,25 @@ export function update(dt: number): void {
   if (state._liveEventTick > 20) {
     state._liveEventTick = 0;
     tickLiveEvent();
+  }
+
+  // Surprise box (Hay Day random reward) — check every 20s.
+  state._surpriseBoxTick = (state._surpriseBoxTick ?? 0) + dt;
+  if (state._surpriseBoxTick > 20) {
+    state._surpriseBoxTick = 0;
+    tickSurpriseBox();
+  }
+  // Sanctuary (wildlife spawns) — every 25s.
+  state._sanctuaryTick = (state._sanctuaryTick ?? 0) + dt;
+  if (state._sanctuaryTick > 25) {
+    state._sanctuaryTick = 0;
+    tickSanctuary();
+  }
+  // Mailbox — every 5 minutes.
+  state._mailboxTick = (state._mailboxTick ?? 0) + dt;
+  if (state._mailboxTick > 300) {
+    state._mailboxTick = 0;
+    mailboxTick();
   }
   // Club + helpers (lightweight, per-frame).
   tickClub(dt);

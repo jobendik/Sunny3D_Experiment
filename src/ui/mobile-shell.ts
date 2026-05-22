@@ -14,6 +14,11 @@ import { haptic } from '../input';
 import { applyFeatureVisibility, gateForButton, gateStatus, teaserMessageFor } from '../systems/feature-visibility';
 import { canSpin } from '../systems/wheel';
 import { toast } from './toasts';
+import { unreadCount } from '../systems/mailbox';
+import { hasPendingBox } from '../systems/surprise-box';
+import { piggyPct } from '../systems/piggy-bank';
+import { setScenicMode } from '../systems/settings';
+import { toggleEditMode, isEditMode, setEditMode } from '../systems/edit-mode';
 
 // ---------------- MORE SHEET ----------------
 export function openMoreSheet(): void {
@@ -124,6 +129,52 @@ export function updateQuestsFabBadge(): void {
   if (offerPip) {
     if (canSpin()) offerPip.removeAttribute('hidden');
     else offerPip.setAttribute('hidden', '');
+  }
+  // Mailbox bubble — count of unread letters.
+  const mailCount = unreadCount();
+  const mailEl = document.getElementById('mailbox-bubble-count');
+  if (mailEl) {
+    if (mailCount > 0) {
+      mailEl.removeAttribute('hidden');
+      mailEl.textContent = mailCount > 99 ? '99+' : String(mailCount);
+    } else {
+      mailEl.setAttribute('hidden', '');
+    }
+  }
+  // Mailbox pip in the More sheet
+  const mailPip = document.getElementById('mailbox-pip');
+  if (mailPip) {
+    if (mailCount > 0) mailPip.removeAttribute('hidden');
+    else mailPip.setAttribute('hidden', '');
+  }
+  // Surprise box bubble — visible only when one is pending.
+  const surpriseBubble = document.getElementById('surprise-bubble');
+  if (surpriseBubble) {
+    if (hasPendingBox()) surpriseBubble.removeAttribute('hidden');
+    else surpriseBubble.setAttribute('hidden', '');
+  }
+  const surprisePip = document.getElementById('surprise-pip');
+  if (surprisePip) {
+    if (hasPendingBox()) surprisePip.removeAttribute('hidden');
+    else surprisePip.setAttribute('hidden', '');
+  }
+  // Piggy bank bubble — only show after the player has unlocked the
+  // delivery loop and the piggy has begun to fill (>=1 gem stored).
+  const piggyBubble = document.getElementById('piggy-bubble');
+  const piggyCount = document.getElementById('piggy-bubble-count');
+  if (piggyBubble && state.piggyBank) {
+    if (state.piggyBank.gems > 0) {
+      piggyBubble.removeAttribute('hidden');
+      if (piggyCount) piggyCount.textContent = String(state.piggyBank.gems);
+      // Pulse when can break
+      if (piggyPct() >= 0.3) {
+        piggyBubble.classList.add('piggy-bubble--ready');
+      } else {
+        piggyBubble.classList.remove('piggy-bubble--ready');
+      }
+    } else {
+      piggyBubble.setAttribute('hidden', '');
+    }
   }
 }
 
@@ -238,6 +289,58 @@ export function bindMobileShell(): void {
       }
     });
   }
+  // Mailbox bubble — opens mailbox panel.
+  const mailBubble = document.getElementById('mailbox-bubble');
+  if (mailBubble) {
+    mailBubble.addEventListener('click', () => {
+      const real = document.getElementById('open-mailbox');
+      if (real) real.click();
+    });
+  }
+  // Surprise box bubble — opens surprise box reveal.
+  const surpriseBubble = document.getElementById('surprise-bubble');
+  if (surpriseBubble) {
+    surpriseBubble.addEventListener('click', () => {
+      const real = document.getElementById('open-surprise');
+      if (real) real.click();
+    });
+  }
+  // Piggy bank bubble — opens piggy bank panel.
+  const piggyBubble = document.getElementById('piggy-bubble');
+  if (piggyBubble) {
+    piggyBubble.addEventListener('click', () => {
+      const real = document.getElementById('open-piggy');
+      if (real) real.click();
+    });
+  }
+  // Hamburger drawer: Scenic Mode toggle.
+  const scenicBtn = document.getElementById('hud-menu-scenic');
+  if (scenicBtn) {
+    scenicBtn.addEventListener('click', () => {
+      closeHudDrawer();
+      setTimeout(() => setScenicMode(true), 200);
+    });
+  }
+  // Hamburger drawer: Edit Mode toggle.
+  const editBtn = document.getElementById('hud-menu-edit');
+  if (editBtn) {
+    editBtn.addEventListener('click', () => {
+      closeHudDrawer();
+      setTimeout(toggleEditMode, 200);
+      updateEditBanner();
+    });
+  }
+  // Edit Mode banner exit button.
+  const editExit = document.getElementById('edit-banner-exit');
+  if (editExit) {
+    editExit.addEventListener('click', () => {
+      setEditMode(false);
+      updateEditBanner();
+    });
+  }
+  // Observe edit-mode class changes to keep the banner in sync.
+  const obs = new MutationObserver(updateEditBanner);
+  obs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
   // Gem-pill leads to the shop (premium tab) as the simplest "spend gems"
   // affordance. Real games use this to open a gem store.
   const gemBtn = document.getElementById('gem-badge');
@@ -285,4 +388,15 @@ export function bindMobileShell(): void {
   if (ic) ic.textContent = state.musicOn ? '🎵' : '🔇';
   const icD = document.getElementById('hud-menu-music-icon');
   if (icD) icD.textContent = state.musicOn ? '🎵' : '🔇';
+}
+
+/** Sync the edit-mode banner visibility with the body class. */
+function updateEditBanner(): void {
+  const banner = document.getElementById('edit-banner');
+  if (!banner) return;
+  if (document.body.classList.contains('edit-mode')) {
+    banner.removeAttribute('hidden');
+  } else {
+    banner.setAttribute('hidden', '');
+  }
 }

@@ -919,6 +919,96 @@ export interface DecorSetsRoot {
   collectedSets: Record<string, true>;  // set id -> collected
 }
 
+// ---- Mailbox & Alfred letters / gift cards (Hay Day-style) ----
+
+export type MailKind = 'letter' | 'giftcard' | 'system' | 'event';
+
+export interface MailLetter {
+  id: string;
+  kind: MailKind;
+  senderId: string;       // villager id, "alfred", or "system"
+  title: string;
+  body: string;
+  read: boolean;
+  receivedAt: number;     // game seconds
+  reward?: {
+    coins?: number;
+    gems?: number;
+    xp?: number;
+    items?: Record<string, number>;
+  };
+  claimed?: boolean;      // for letters with rewards
+}
+
+export interface MailboxRoot {
+  letters: MailLetter[];          // up to MAILBOX_CAP (40)
+  lastDeliveryDay: number;
+  lettersDeliveredToday: number;  // resets daily, max 7
+  totalReceived: number;
+}
+
+// ---- Surprise Box (daily random-outcome box) ----
+
+export interface SurpriseBoxRoot {
+  pending: boolean;          // a box is available right now
+  nextSpawnAt: number;       // when next box will spawn
+  lastOpenedDay: number;
+  totalOpened: number;
+  rarity: 'common' | 'rare' | 'epic';
+}
+
+// ---- Piggy Bank (Hay Day-style seasonal token storage) ----
+
+export interface PiggyBankRoot {
+  gems: number;              // accumulating bonus gems unlocked when broken
+  cap: number;               // max gems it can hold this season
+  seasonStartDay: number;    // when this season's piggy started filling
+  broken: boolean;           // can claim and reset
+  fillSinceLastBreak: number;
+}
+
+// ---- Daily Deal (newspaper front-page premium offer) ----
+
+export interface DailyDealRoot {
+  day: number;
+  itemKey: string;
+  qty: number;
+  diamondCost: number;
+  baseCost: number;         // for showing discount %
+  bought: boolean;
+}
+
+// ---- Sanctuary (wildlife sightings book) ----
+
+export interface SanctuarySpecies {
+  id: string;
+  name: string;
+  emoji: string;
+  category: 'bird' | 'mammal' | 'reptile' | 'insect' | 'mythic';
+  habitat: string;
+  rarity: 1 | 2 | 3 | 4 | 5;
+  description: string;
+}
+
+export interface SanctuaryRoot {
+  unlocked: boolean;
+  sightings: Record<string, { firstSeen: number; count: number }>;
+  active: { id: string; spawnedAt: number; expiresAt: number; gx: number; gy: number } | null;
+  nextSpawnAt: number;
+  totalSightings: number;
+}
+
+// ---- Settings (accessibility / scenic mode preferences) ----
+
+export interface SettingsRoot {
+  reducedMotion: boolean;
+  largeText: boolean;
+  highContrast: boolean;
+  familyFriendly: boolean;
+  scenicMode: boolean;       // toggle to hide HUD
+  hapticOn: boolean;
+}
+
 export interface GameState {
   coins: number;
   gems: number;
@@ -1017,6 +1107,13 @@ export interface GameState {
   toolShed?: ToolShedRoot;
   buildingUpgrades?: BuildingUpgradeRoot;
   decorSets?: DecorSetsRoot;
+  // Hay Day-grammar additions (v7+)
+  mailbox?: MailboxRoot;
+  surpriseBox?: SurpriseBoxRoot;
+  piggyBank?: PiggyBankRoot;
+  dailyDeal?: DailyDealRoot;
+  sanctuary?: SanctuaryRoot;
+  settings?: SettingsRoot;
   saveVersion?: number;
   // Internal periodic timers
   _weatherPartT?: number;
@@ -1032,6 +1129,9 @@ export interface GameState {
   _visitorTick?: number;
   _contractsTick?: number;
   _liveEventTick?: number;
+  _surpriseBoxTick?: number;
+  _sanctuaryTick?: number;
+  _mailboxTick?: number;
 }
 
 // ---- Sprite cache shape ----

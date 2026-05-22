@@ -99,6 +99,17 @@
         <span class="offer-bubble-ico" aria-hidden="true">🎁</span>
         <span class="offer-bubble-pip" id="offer-bubble-pip" hidden></span>
       </button>
+      <button class="offer-bubble mailbox-bubble" id="mailbox-bubble" type="button" title="Mailbox" aria-label="Mailbox">
+        <span class="offer-bubble-ico" aria-hidden="true">📬</span>
+        <span class="mailbox-bubble-count" id="mailbox-bubble-count" hidden>0</span>
+      </button>
+      <button class="offer-bubble surprise-bubble" id="surprise-bubble" type="button" title="Surprise box" aria-label="Surprise box" hidden>
+        <span class="offer-bubble-ico surprise-bubble-ico" aria-hidden="true">📦</span>
+      </button>
+      <button class="offer-bubble piggy-bubble" id="piggy-bubble" type="button" title="Piggy Bank" aria-label="Piggy Bank" hidden>
+        <span class="offer-bubble-ico" aria-hidden="true">🐷</span>
+        <span class="piggy-bubble-count" id="piggy-bubble-count">0</span>
+      </button>
     </div>
   </div>
 
@@ -331,6 +342,32 @@
         <span class="ico-emoji">🖼️</span>
         <span>Share</span>
       </button>
+      <button class="sheet-btn" data-more="open-mailbox">
+        <span class="ico-emoji">📬</span>
+        <span>Mail</span>
+        <span class="sheet-pip" id="mailbox-pip" hidden></span>
+      </button>
+      <button class="sheet-btn" data-more="open-surprise">
+        <span class="ico-emoji">📦</span>
+        <span>Surprise</span>
+        <span class="sheet-pip" id="surprise-pip" hidden></span>
+      </button>
+      <button class="sheet-btn" data-more="open-sanctuary">
+        <span class="ico-emoji">📖</span>
+        <span>Sanctuary</span>
+      </button>
+      <button class="sheet-btn" data-more="open-piggy">
+        <span class="ico-emoji">🐷</span>
+        <span>Piggy</span>
+      </button>
+      <button class="sheet-btn" data-more="open-settings">
+        <span class="ico-emoji">⚙️</span>
+        <span>Settings</span>
+      </button>
+      <button class="sheet-btn" data-more="toggle-edit-mode">
+        <span class="ico-emoji">✂️</span>
+        <span>Edit</span>
+      </button>
       <button class="sheet-btn" data-more="open-inventory">
         <span class="ico" id="ico-inv-m"></span>
         <span>Barn</span>
@@ -433,6 +470,26 @@
         <span class="ico-emoji">🖼️</span>
         <span>Photo</span>
       </button>
+      <button class="sheet-btn" data-more="open-mailbox">
+        <span class="ico-emoji">📬</span>
+        <span>Mail</span>
+      </button>
+      <button class="sheet-btn" data-more="open-sanctuary">
+        <span class="ico-emoji">📖</span>
+        <span>Sanctuary</span>
+      </button>
+      <button class="sheet-btn" data-more="open-settings">
+        <span class="ico-emoji">⚙️</span>
+        <span>Settings</span>
+      </button>
+      <button class="sheet-btn" id="hud-menu-scenic">
+        <span class="ico-emoji">🌅</span>
+        <span>Scenic Mode</span>
+      </button>
+      <button class="sheet-btn" id="hud-menu-edit">
+        <span class="ico-emoji">✂️</span>
+        <span>Edit Mode</span>
+      </button>
     </div>
   </aside>
 
@@ -459,6 +516,19 @@
     <button id="open-expansion" type="button"></button>
     <button id="open-recipe-book" type="button"></button>
     <button id="open-museum" type="button"></button>
+    <button id="open-mailbox" type="button"></button>
+    <button id="open-surprise" type="button"></button>
+    <button id="open-sanctuary" type="button"></button>
+    <button id="open-piggy" type="button"></button>
+    <button id="open-settings" type="button"></button>
+    <button id="toggle-edit-mode" type="button"></button>
+  </div>
+
+  <!-- Edit Mode banner shown when active -->
+  <div id="edit-banner" class="edit-banner" hidden>
+    <span class="edit-banner-icon" aria-hidden="true">✂️</span>
+    <span class="edit-banner-text">Edit Mode — tap or swipe over decor to remove</span>
+    <button id="edit-banner-exit" class="edit-banner-exit">Done</button>
   </div>
 
   <!-- Generic Modal -->

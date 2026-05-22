@@ -75,6 +75,14 @@ export function openHelp(): void {
         <li>🏆 <b>Achievements</b> reward long-term milestones.</li>
         <li>🐦 <b>Crow attacks</b> — tap crows to scare them before they eat crops.</li>
         <li>🐶 <b>Pet dog</b> at Lv 4 — finds you bonus coins.</li>
+        <li>📬 <b>Mailbox</b> — Alfred drops letters & gift cards daily (up to 7/day).</li>
+        <li>📦 <b>Surprise Boxes</b> — random reward boxes appear over time (common/rare/epic).</li>
+        <li>🐷 <b>Piggy Bank</b> — saves a bonus diamond every time you spend coins or deliver goods.</li>
+        <li>📰 <b>Daily Deal</b> — a discounted bundle for diamonds on the Gazette's first page.</li>
+        <li>📖 <b>Sanctuary Book</b> — at Lv 6, record sightings of wild visitors for rewards.</li>
+        <li>🌅 <b>Scenic Mode</b> — hide the HUD to admire your farm (Menu → Scenic Mode; tap to exit).</li>
+        <li>✂️ <b>Edit Mode</b> — Menu → Edit, then tap/swipe to remove decorations (50% refund).</li>
+        <li>⚙️ <b>Accessibility</b> — Settings panel offers reduced motion, larger text, high contrast and family-friendly mode.</li>
       </ul>
       <p style="margin-top:10px;font-style:italic;color:#666">Tip: production chains
       (wheat→bread, apple→juice, wool→cloth) earn far more than raw sales.</p>

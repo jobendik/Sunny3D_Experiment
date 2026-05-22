@@ -17,7 +17,10 @@ import { adjacencyBonus } from '../systems/adjacency';
 import { specEffects } from '../systems/specializations';
 import { activeEffects as weatherGridEffects } from '../systems/weather-grid';
 import { collectionBonuses } from '../systems/collection';
-import { speedupQueue, nextQualityFlag, consumeQualityFlag, QUALITY_VALUE } from '../systems/catalysts';
+import {
+  speedupQueue, nextQualityFlag, consumeQualityFlag, QUALITY_VALUE,
+  instantQueue, instantQueueCost, cancelQueueWithDiamonds, CANCEL_QUEUE_COST,
+} from '../systems/catalysts';
 import { track } from '../systems/telemetry';
 import { recordProduction, masteryBadge, masterySpeedBuff, masteryQualityBuff, masteryProgress } from '../systems/building-mastery';
 import { recordEventAction } from '../systems/live-events';
@@ -72,15 +75,17 @@ export function openProductionPanel(b: BuildingInstance): void {
         const left = Math.max(0, job.doneAt - nowSeconds());
         const ready = left <= 0;
         const out = Object.keys(recipes[job.recipeIdx]!.out)[0]!;
-        queueHTML += `<div class="queue-slot">
+        queueHTML += `<div class="queue-slot" data-q-idx="${i}">
           <img class="ico" src="${sprites.item[out]!.toDataURL()}">
           ${ready ? '<div class="ready-mark">✓</div>' : `<div class="timer">${Math.ceil(left)}s</div>`}
+          ${!ready && i > 0 ? `<button class="queue-cancel" title="Cancel for ${CANCEL_QUEUE_COST}💎" data-cancel-idx="${i}">×</button>` : ''}
         </div>`;
       } else {
         queueHTML += '<div class="queue-slot empty"></div>';
       }
     }
     queueHTML += '</div>';
+    const iqCost = instantQueueCost(b.id);
 
     body.innerHTML = `
       <div class="recipe-list">${recipesHTML}</div>
@@ -115,6 +120,7 @@ export function openProductionPanel(b: BuildingInstance): void {
         <button class="btn primary" id="collect-ready">Collect Ready</button>
         <button class="btn" id="speed-boost">⚡ Speed Boost (${state.inv.speedup ?? 0})</button>
         <button class="btn" id="quality-ink">★ Quality Ink (${state.inv.qualityink ?? 0})</button>
+        ${iqCost > 0 ? `<button class="btn diamond-btn" id="instant-queue" title="Finish entire queue with diamonds">💎 ${iqCost} Finish All</button>` : ''}
       </div>
     `;
     body.querySelectorAll<HTMLButtonElement>('.recipe button[data-idx]').forEach(btn => {
@@ -193,6 +199,23 @@ export function openProductionPanel(b: BuildingInstance): void {
     });
     document.getElementById('quality-ink')!.addEventListener('click', () => {
       if (nextQualityFlag(b.id)) render();
+    });
+    const iqBtn = document.getElementById('instant-queue');
+    if (iqBtn) {
+      iqBtn.addEventListener('click', () => {
+        if (instantQueue(b.id)) render();
+      });
+    }
+    // Diamond cancel buttons on individual queue slots
+    body.querySelectorAll<HTMLButtonElement>('.queue-cancel').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const idx = parseInt(btn.dataset.cancelIdx!, 10);
+        const job = queue[idx];
+        if (!job) return;
+        const r = recipes[job.recipeIdx]!;
+        if (cancelQueueWithDiamonds(b.id, idx, r.in)) render();
+      });
     });
   }
   render();

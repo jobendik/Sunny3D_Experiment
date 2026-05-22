@@ -16,6 +16,7 @@ import { sfx } from '../audio/sfx';
 import { updateHUD } from '../ui/hud';
 import { spawnHUDBurst } from './flyers';
 import { recordVillageEngagement } from './village';
+import { piggyOnBigDelivery } from './piggy-bank';
 import type { BoatRoot, BoatCrate, MaterialKey } from '../types';
 
 const BOAT_NAMES = [
@@ -181,6 +182,7 @@ function departBoat(fullCompletion: boolean): void {
   if (fullCompletion) {
     toast(`⛵ "${b.boatName}" departed FULL! +${totalCoins}💰 +${totalXp} XP + 1 ${ITEMS[b.bonusMaterial ?? '']?.name ?? 'bonus material'}`, 'gold');
     recordVillageEngagement('boat_full');
+    piggyOnBigDelivery();
   } else if (totalCoins > 0) {
     toast(`⛵ "${b.boatName}" departed. +${totalCoins}💰 +${totalXp} XP`, 'gold');
   } else {
@@ -192,6 +194,30 @@ function departBoat(fullCompletion: boolean): void {
   b.arrivesAt = nowSeconds() + ARRIVAL_DELAY_S;
   b.departsAt = 0;
   updateHUD();
+}
+
+/** Spend diamonds to instantly summon the next boat (Hay Day-style friction shortcut). */
+export const BOAT_INSTANT_COST = 6;
+export function instantSummonBoat(): boolean {
+  initBoat();
+  const b = state.boat;
+  if (!b || !b.unlocked) return false;
+  if (b.state !== 'departed' && b.state !== 'arriving') {
+    toast('A boat is already at the dock.');
+    return false;
+  }
+  if (state.gems < BOAT_INSTANT_COST) {
+    sfx.cantAfford();
+    toast(`Need ${BOAT_INSTANT_COST} 💎`);
+    return false;
+  }
+  state.gems -= BOAT_INSTANT_COST;
+  b.arrivesAt = nowSeconds() - 1;
+  tickBoat();
+  sfx.bell();
+  updateHUD();
+  track('boat_instant_summon', { cost: BOAT_INSTANT_COST });
+  return true;
 }
 
 export function boatStatusLabel(): string {

@@ -26,6 +26,8 @@ import { openBuildingPanel } from './ui/building-panel';
 import { setTool } from './ui/tools';
 import { toast } from './ui/toasts';
 import { closeModal } from './ui/modal';
+import { isEditMode, eraseDecorAt } from './systems/edit-mode';
+import { observeActive } from './systems/sanctuary';
 import { updateHoverTooltip, showTooltipAt, hideTooltip } from './ui/tooltip';
 import { rotateView, resetView } from './three/camera-rig';
 import type { ToolKind } from './types';
@@ -84,6 +86,8 @@ export function tickCameraInput(dt: number): void {
 }
 
 export function haptic(ms: number = 8): void {
+  // Respect the per-session haptic preference from settings.
+  if (state.settings && state.settings.hapticOn === false) return;
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     try { navigator.vibrate(ms); } catch { /* ignore */ }
   }
@@ -114,6 +118,17 @@ function onPointerMove(e: PointerLike): void {
     const dy = e.clientY - dragStart.y;
     if (Math.abs(dx) > dragThreshold || Math.abs(dy) > dragThreshold) didDrag = true;
     if (didDrag) {
+      // Edit Mode: drag erases decor instead of panning. Hay Day's
+      // "swipe to erase" mode.
+      if (isEditMode()) {
+        const w = screenToWorld(e.clientX, e.clientY);
+        const t = tileAt(w.x, w.y);
+        if (t) eraseDecorAt(t.gx, t.gy);
+        dragStart.prevX = e.clientX;
+        dragStart.prevY = e.clientY;
+        cancelLongPress();
+        return;
+      }
       // Anchor pan: the world point that was under the previous
       // mouse position should still be under the current mouse.
       // Recomputing the delta each step keeps the pan rock-steady
@@ -154,6 +169,16 @@ function onWheel(e: WheelEvent): void {
 }
 
 function handleTap(sx: number, sy: number): void {
+  // Scenic Mode: tap anywhere closes it (Hay Day grammar — Scenic
+  // Mode is dismissed by a tap anywhere on the world).
+  if (state.settings?.scenicMode) {
+    state.settings.scenicMode = false;
+    document.body.classList.remove('scenic-mode');
+    spawnRipple(sx, sy);
+    haptic(8);
+    return;
+  }
+
   // Universal tap ripple — pure visual feedback that the tap was received
   spawnRipple(sx, sy);
   const w = screenToWorld(sx, sy);
@@ -170,7 +195,27 @@ function handleTap(sx: number, sy: number): void {
     }
   }
 
+  // Sanctuary: a wildlife visitor near the tap is observed.
+  if (t && state.sanctuary?.active) {
+    const v = state.sanctuary.active;
+    const dx = v.gx - t.gx;
+    const dy = v.gy - t.gy;
+    if (dx * dx + dy * dy <= 4) {
+      observeActive();
+      haptic(20);
+      return;
+    }
+  }
+
   if (!t) return;
+
+  // Edit Mode: erase decoration at tap.
+  if (isEditMode()) {
+    if (eraseDecorAt(t.gx, t.gy)) {
+      haptic(15);
+    }
+    return;
+  }
 
   // Chest tap takes precedence
   const chest = chestAt(t.gx, t.gy);
