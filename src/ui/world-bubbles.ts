@@ -43,6 +43,10 @@ import {
 import {
   MAILBOX_X, MAILBOX_Z, MAILBOX_BUBBLE_Y,
 } from '../three/decor/mailbox';
+import {
+  STAND_X, STAND_Z, STAND_BUBBLE_Y, STAND_SLOT_BUBBLE_Y,
+  getStandSlotWorldPosition,
+} from '../three/decor/roadside-stand';
 import { ITEMS } from '../data/items';
 import { unreadCount as mailboxUnreadCount } from '../systems/mailbox';
 
@@ -434,6 +438,47 @@ export function computeBubbleTargets(): BubbleTarget[] {
         pulse: !canFill,
         tap: () => document.getElementById('open-boat')?.click(),
       });
+    }
+  }
+
+  // -------- Roadside Stand (Phase 1.4) --------
+  // Hub bubble (cart icon) on top of the thatched stand, plus a
+  // per-slot bubble for each slot that's listed (shows the item)
+  // or sold (pulses a coin icon — tap to claim).
+  if (state.marketStall?.unlocked) {
+    const slots = state.marketStall.slots;
+    const anySold = slots.some(s => s.status === 'sold');
+    out.push({
+      key: 'hub:stand',
+      wx: STAND_X, wy: STAND_BUBBLE_Y, wz: STAND_Z,
+      icon: anySold ? '💰' : '🛒',
+      kind: anySold ? 'ready' : 'hub',
+      pulse: anySold,
+      tap: () => document.getElementById('open-stall')?.click(),
+    });
+    for (let i = 0; i < Math.min(slots.length, 3); i++) {
+      const s = slots[i]!;
+      const pos = getStandSlotWorldPosition(i);
+      if (!pos) continue;
+      if (s.status === 'sold') {
+        out.push({
+          key: `stand-slot:${i}:sold`,
+          wx: pos.x, wy: STAND_SLOT_BUBBLE_Y, wz: pos.z,
+          icon: '💰',
+          kind: 'ready',
+          pulse: true,
+          tap: () => document.getElementById('open-stall')?.click(),
+        });
+      } else if (s.status === 'listed') {
+        const itemIcon = ITEMS[s.itemKey]?.icon ?? '📦';
+        out.push({
+          key: `stand-slot:${i}:listed`,
+          wx: pos.x, wy: STAND_SLOT_BUBBLE_Y, wz: pos.z,
+          icon: itemIcon,
+          kind: 'feed',
+          tap: () => document.getElementById('open-stall')?.click(),
+        });
+      }
     }
   }
 

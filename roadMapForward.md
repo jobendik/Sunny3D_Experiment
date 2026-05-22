@@ -638,7 +638,7 @@ Track every meaningful task. Tick the box when committed AND pushed AND the type
 - [x] 1.1 — 3D Truck Order Board mesh + bubble hub
 - [x] 1.2 — 3D Boat at Dock (docked / sailing / returning states)
 - [x] 1.3 — 3D Mailbox with flag animation
-- [ ] 1.4 — 3D Roadside Shop Stand
+- [x] 1.4 — 3D Roadside Shop Stand
 - [ ] 1.5 — 3D Newspaper Stand
 - [ ] 1.6 — 3D Neighbourhood Request Board (birdhouse)
 - [ ] 1.7 — 3D Ranger Tower (replace fishingdock-piggyback)
@@ -727,6 +727,7 @@ Append a one-line entry per session here. Keep newest at top. Don't delete entri
 YYYY-MM-DD  Phase X.Y started / completed — commit <sha> — note
 ```
 
+- 2026-05-22  Phase 1.4 complete — Thatched roadside stand at (5.5, 0, 19) just outside the W home edge, facing east. Counter, chalkboard with white scribbles, layered-cone thatched roof, 3 goods crates, apple bin. Goods puffs visible only when the corresponding stall slot status === 'listed'. World bubbles: 🛒 hub (becomes 💰 when any slot is sold), per-slot item icon when listed, pulsing 💰 when sold. Files: src/three/decor/roadside-stand.ts (new), three/index.ts, world-bubbles.ts. Typecheck + build green.
 - 2026-05-22  Phase 1.3 complete — Rural mailbox on a post at (9.5, 0, 25.4), west of the order truck, facing east. Curved-top red box, gold flag on a pivot that smoothly rotates up when unreadCount() > 0 (with a tiny spring oscillation). Flowers + dirt mound at the base. World bubble 📬 only appears when there's unread mail. Files: src/three/decor/mailbox.ts (new), three/index.ts, world-bubbles.ts. Typecheck + build green.
 - 2026-05-22  Phase 1.2 complete — Boat dock platform + boat hull mesh at the NW lake shoreline. Dock always visible; boat visible only when state.boat.state==='docked', bobs gently with sail flutter + flag wiggle. World bubbles: hub ⛵ above the boat, plus one per-crate bubble showing item emoji (or pulsing "!" when player lacks inventory). All bubbles open the boat panel. Files: src/three/decor/boat-at-dock.ts (new), src/three/index.ts (wiring), src/ui/world-bubbles.ts (hub + crate bubbles). Typecheck + build green.
 - 2026-05-22  Phase 1.1 complete — Order Truck 3D mesh at (12.5, 0, 25.5), facing north. Chalkboard-textured sign reads "ORDERS · tap to open". World-bubble hub anchored at y=2.4, badge shows fulfillable+claimable count, tap → side panel. Files: src/three/decor/order-truck.ts (new), src/three/index.ts (install+update wiring), src/ui/world-bubbles.ts (hub bubble). Typecheck + build green.
