@@ -27,14 +27,16 @@ import { nowSeconds } from '../utils';
 import { ANIMALS } from '../data/animals';
 import { feedPen } from '../systems/pens';
 import { activeVisitors } from '../systems/visitors-v2';
+import { activeChatter } from '../systems/chatter';
 import { gateForButton, gateStatus } from '../systems/feature-visibility';
 import { openProductionPanel } from './production-panel';
 import { openPenPanel } from './pen-panel';
+import { openStoragePanel } from './storage-panel';
 
 const POOL_SIZE = 28;
 const tmpVec = new Vector3();
 
-export type BubbleKind = 'feed' | 'ready' | 'full' | 'emote' | 'love' | 'visitor' | 'hub';
+export type BubbleKind = 'feed' | 'ready' | 'full' | 'emote' | 'love' | 'visitor' | 'hub' | 'chatter';
 
 export interface BubbleTarget {
   key: string;
@@ -365,7 +367,7 @@ export function computeBubbleTargets(): BubbleTarget[] {
       wx: cx, wy: 4.0, wz: cz,
       icon: '⚒️',
       kind: 'hub',
-      tap: () => document.getElementById('open-inventory')?.click(),
+      tap: () => openStoragePanel(),
     });
   }
   // Fishing Dock → Ranger-Tower-style hub for Expeditions when unlocked.
@@ -401,6 +403,23 @@ export function computeBubbleTargets(): BubbleTarget[] {
         tap: () => document.getElementById('open-club')?.click(),
       });
     }
+  }
+
+  // -------- Ambient villager chatter --------
+  // Periodic "narrative" speech bubbles emitted from chatter.ts. We
+  // strip the leading emoji into the bubble icon so the talk bubble
+  // can display a compact glyph instead of full-text content (the
+  // rest of the line goes into the title attribute so curious
+  // players hovering get the full quip).
+  for (const c of activeChatter()) {
+    const trimmed = c.text.trim();
+    const firstChar = [...trimmed][0] ?? '💬';
+    out.push({
+      key: `chat:${c.id}`,
+      wx: c.wx, wy: 2.6, wz: c.wz,
+      icon: firstChar,
+      kind: 'chatter',
+    });
   }
 
   return out;

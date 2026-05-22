@@ -16,6 +16,7 @@ import { updateCrows } from './systems/crows';
 import { updateDog } from './systems/dog';
 import { updateAmbient } from './systems/ambient';
 import { updatePenFeed } from './systems/pens';
+import { tickLifecycle } from './systems/lifecycle';
 import { maybeUnlockOrders } from './systems/orders';
 import { saveGame } from './save';
 import { dailyTick } from './systems/daily';
@@ -151,6 +152,8 @@ export function update(dt: number): void {
   if (state.crows.length > 0) updateCrows(dt);
   updateDog(dt);
   updatePenFeed(dt);
+  // Lifecycle ticker (cheap; promotes babies → adults on a 1Hz budget).
+  tickLifecycle();
 
   // New systems
   state._soilTick = (state._soilTick ?? 0) + dt;
