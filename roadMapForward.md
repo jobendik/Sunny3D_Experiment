@@ -635,7 +635,7 @@ Keep the **legacy tabs as a sub-menu inside Buildings** ("Seeds & Crops" — sub
 Track every meaningful task. Tick the box when committed AND pushed AND the typecheck + build pass.
 
 ### Phase 1 — Diegetic 3D World Objects
-- [ ] 1.1 — 3D Truck Order Board mesh + bubble hub
+- [x] 1.1 — 3D Truck Order Board mesh + bubble hub
 - [ ] 1.2 — 3D Boat at Dock (docked / sailing / returning states)
 - [ ] 1.3 — 3D Mailbox with flag animation
 - [ ] 1.4 — 3D Roadside Shop Stand
@@ -727,6 +727,7 @@ Append a one-line entry per session here. Keep newest at top. Don't delete entri
 YYYY-MM-DD  Phase X.Y started / completed — commit <sha> — note
 ```
 
+- 2026-05-22  Phase 1.1 complete — Order Truck 3D mesh at (12.5, 0, 25.5), facing north. Chalkboard-textured sign reads "ORDERS · tap to open". World-bubble hub anchored at y=2.4, badge shows fulfillable+claimable count, tap → side panel. Files: src/three/decor/order-truck.ts (new), src/three/index.ts (install+update wiring), src/ui/world-bubbles.ts (hub bubble). Typecheck + build green.
 - 2026-05-22  Roadmap forward doc authored. Audit complete; 75% of Hay Day/FV3 grammar already implemented. Phase 1 is the largest gap. No code yet.
 
 ---

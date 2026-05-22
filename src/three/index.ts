@@ -31,6 +31,7 @@ import { updateDecor } from './entities/decor-manager';
 import { updateCrows } from './entities/crows-manager';
 import { updateDog } from './entities/dog-manager';
 import { installBackgroundTrees } from './decor/background-trees';
+import { installOrderTruck, updateOrderTruck } from './decor/order-truck';
 import { installSky, updateSky } from './sky/sky-dome';
 import { installWeather, updateWeather } from './fx/weather-particles';
 import { updateTreasureChests } from './fx/treasure-chests';
@@ -53,6 +54,7 @@ export function init3d(): void {
   initTerrain();
   installOuterWorld();
   installBackgroundTrees();
+  installOrderTruck();
   installGrassBlades();
   installSky();
   installWeather();
@@ -91,6 +93,7 @@ export function render3d(dt: number): void {
   updateTrees(timeS);
   updateAnimals(timeS);
   updateDecor(timeS);
+  updateOrderTruck(timeS);
   updateCrows(timeS);
   updateDog(timeS);
   updateSky();

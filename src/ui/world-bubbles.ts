@@ -32,6 +32,10 @@ import { gateForButton, gateStatus } from '../systems/feature-visibility';
 import { openProductionPanel } from './production-panel';
 import { openPenPanel } from './pen-panel';
 import { openStoragePanel } from './storage-panel';
+import { openSidePanel } from './mobile-shell';
+import {
+  ORDER_TRUCK_X, ORDER_TRUCK_Z, ORDER_TRUCK_BUBBLE_Y,
+} from '../three/decor/order-truck';
 
 const POOL_SIZE = 28;
 const tmpVec = new Vector3();
@@ -390,6 +394,32 @@ export function computeBubbleTargets(): BubbleTarget[] {
     });
     break;
   }
+  // -------- Order Truck hub (Phase 1.1) --------
+  // Pinned above the wooden cart parked at the south entrance.
+  // Badge counts orders the player can fulfill right now +
+  // claimable quest rewards. Tapping opens the Quests/Orders side
+  // panel (same surface as the QEB "Orders" entry).
+  {
+    const fulfillable = state.orders.filter(o => {
+      for (const k in o.items) {
+        const need = o.items[k]!;
+        const have = state.inv[k] ?? 0;
+        if (have < need) return false;
+      }
+      return true;
+    }).length;
+    const claimable = state.quests.filter(q => q.complete).length;
+    const total = fulfillable + claimable;
+    out.push({
+      key: 'hub:orders',
+      wx: ORDER_TRUCK_X, wy: ORDER_TRUCK_BUBBLE_Y, wz: ORDER_TRUCK_Z,
+      icon: total > 0 ? (total > 9 ? '9+' : `${total}`) : '📋',
+      kind: total > 0 ? 'ready' : 'hub',
+      pulse: total > 0,
+      tap: () => openSidePanel(),
+    });
+  }
+
   // Co-Op signpost near the home centre when the Club is unlocked.
   {
     const clubGate = gateForButton('open-club');
