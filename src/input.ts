@@ -428,6 +428,12 @@ export function attachInput(): void {
       // Try mobile shells first
       const sheet = document.getElementById('more-sheet');
       const side = document.getElementById('side-panel');
+      const drawer = document.getElementById('hud-menu-drawer');
+      if (drawer && drawer.classList.contains('open')) {
+        drawer.classList.remove('open');
+        document.getElementById('hud-menu-scrim')!.classList.remove('open');
+        return;
+      }
       if (sheet && sheet.classList.contains('open')) {
         sheet.classList.remove('open');
         document.getElementById('more-scrim')!.classList.remove('open');

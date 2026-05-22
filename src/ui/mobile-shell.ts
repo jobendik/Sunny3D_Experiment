@@ -12,6 +12,7 @@ import { setBgImage } from './modal';
 import { sfx } from '../audio/sfx';
 import { haptic } from '../input';
 import { applyFeatureVisibility, gateForButton, gateStatus, teaserMessageFor } from '../systems/feature-visibility';
+import { canSpin } from '../systems/wheel';
 import { toast } from './toasts';
 
 // ---------------- MORE SHEET ----------------
@@ -32,6 +33,23 @@ export function closeMoreSheet(): void {
   sheet.classList.remove('open');
   scrim.classList.remove('open');
   sheet.setAttribute('aria-hidden', 'true');
+}
+
+// ---------------- HUD MENU DRAWER (hamburger) ----------------
+export function openHudDrawer(): void {
+  const drawer = document.getElementById('hud-menu-drawer')!;
+  const scrim = document.getElementById('hud-menu-scrim')!;
+  drawer.classList.add('open');
+  scrim.classList.add('open');
+  drawer.setAttribute('aria-hidden', 'false');
+  haptic(8);
+}
+export function closeHudDrawer(): void {
+  const drawer = document.getElementById('hud-menu-drawer')!;
+  const scrim = document.getElementById('hud-menu-scrim')!;
+  drawer.classList.remove('open');
+  scrim.classList.remove('open');
+  drawer.setAttribute('aria-hidden', 'true');
 }
 
 // ---------------- SIDE PANEL (Quests/Orders) ----------------
@@ -99,6 +117,14 @@ export function updateQuestsFabBadge(): void {
     if (unread) pip.removeAttribute('hidden');
     else pip.setAttribute('hidden', '');
   }
+  // Offer-bubble pip: lit when there's a free daily reward to claim
+  // (Daily Wheel hasn't been spun today). This mirrors Hay Day's
+  // gift bubble that hints "there's a freebie waiting".
+  const offerPip = document.getElementById('offer-bubble-pip');
+  if (offerPip) {
+    if (canSpin()) offerPip.removeAttribute('hidden');
+    else offerPip.setAttribute('hidden', '');
+  }
 }
 
 // ---------------- RE-CENTER CAMERA ----------------
@@ -126,9 +152,15 @@ export function bindMobileShell(): void {
   if (moreBtn) moreBtn.addEventListener('click', openMoreSheet);
   if (scrim) scrim.addEventListener('click', closeMoreSheet);
 
-  // Each .sheet-btn closes the sheet then triggers the real button.
-  // Teaser-state buttons short-circuit to a friendly toast instead of
-  // opening a panel the player can't use yet.
+  // Hamburger menu (top-left)
+  const menuBtn = document.getElementById('hud-menu-btn');
+  if (menuBtn) menuBtn.addEventListener('click', openHudDrawer);
+  const drawerScrim = document.getElementById('hud-menu-scrim');
+  if (drawerScrim) drawerScrim.addEventListener('click', closeHudDrawer);
+
+  // Every .sheet-btn closes whichever sheet/drawer it belongs to, then
+  // forwards to the real hidden trigger button. Teaser-state buttons
+  // short-circuit to a friendly toast instead of opening a panel.
   document.querySelectorAll<HTMLElement>('.sheet-btn[data-more]').forEach(b => {
     b.addEventListener('click', () => {
       const targetId = b.dataset.more!;
@@ -140,7 +172,7 @@ export function bindMobileShell(): void {
         return;
       }
       closeMoreSheet();
-      // Small delay so the sheet animation feels natural
+      closeHudDrawer();
       setTimeout(() => {
         const real = document.getElementById(targetId);
         if (real) real.click();
@@ -148,7 +180,7 @@ export function bindMobileShell(): void {
     });
   });
 
-  // Re-center
+  // Re-center (More sheet)
   const reBtn = document.getElementById('recenter-btn');
   if (reBtn) {
     reBtn.addEventListener('click', () => {
@@ -156,8 +188,16 @@ export function bindMobileShell(): void {
       recenterCamera();
     });
   }
+  // Re-center (Hamburger drawer)
+  const reBtnD = document.getElementById('hud-menu-recenter');
+  if (reBtnD) {
+    reBtnD.addEventListener('click', () => {
+      closeHudDrawer();
+      recenterCamera();
+    });
+  }
 
-  // Music toggle inside sheet → triggers the real one
+  // Music toggle inside sheets → triggers the real one
   const musicSheet = document.getElementById('music-toggle-sheet');
   if (musicSheet) {
     musicSheet.addEventListener('click', () => {
@@ -167,14 +207,54 @@ export function bindMobileShell(): void {
       icon.textContent = state.musicOn ? '🎵' : '🔇';
     });
   }
+  const musicDrawer = document.getElementById('hud-menu-music');
+  if (musicDrawer) {
+    musicDrawer.addEventListener('click', () => {
+      const real = document.getElementById('music-toggle');
+      if (real) real.click();
+      const icon = document.getElementById('hud-menu-music-icon')!;
+      icon.textContent = state.musicOn ? '🎵' : '🔇';
+    });
+  }
 
-  // Quests FAB
+  // Quests / Social FAB (bottom-right corner)
   const fab = document.getElementById('open-quests-fab');
   if (fab) fab.addEventListener('click', openSidePanel);
   const sideScrim = document.getElementById('side-panel-scrim');
   if (sideScrim) sideScrim.addEventListener('click', closeSidePanel);
   const sideClose = document.getElementById('side-panel-close');
   if (sideClose) sideClose.addEventListener('click', closeSidePanel);
+
+  // Offer / gift bubble (top-right) — routes to the Daily Wheel as a quick
+  // gift surface. Mirrors Hay Day's gift bubble that opens deals/offers.
+  const offerBtn = document.getElementById('offer-bubble');
+  if (offerBtn) {
+    offerBtn.addEventListener('click', () => {
+      const wheel = document.getElementById('open-wheel');
+      if (wheel) wheel.click();
+      else {
+        const daily = document.getElementById('open-daily');
+        if (daily) daily.click();
+      }
+    });
+  }
+  // Gem-pill leads to the shop (premium tab) as the simplest "spend gems"
+  // affordance. Real games use this to open a gem store.
+  const gemBtn = document.getElementById('gem-badge');
+  if (gemBtn) {
+    gemBtn.addEventListener('click', () => {
+      toast('Diamonds — earned from Level-ups, Daily Wheel and Achievements.');
+      sfx.click();
+    });
+  }
+  // Coin-pill: same intent — quick info / route to shop's sell tab.
+  const coinBtn = document.getElementById('coin-badge');
+  if (coinBtn) {
+    coinBtn.addEventListener('click', () => {
+      const shop = document.getElementById('open-shop');
+      if (shop) shop.click();
+    });
+  }
 
   // Placing banner cancel
   const placeCancel = document.getElementById('placing-cancel');
@@ -186,15 +266,23 @@ export function bindMobileShell(): void {
     });
   }
 
-  // Attach the same sprite backgrounds for sheet icons
+  // Attach the same sprite backgrounds for sheet/drawer icons.
   setBgImage('ico-inv-m',    sprites.item.inv!);
   setBgImage('ico-decor-m',  sprites.item.decor!);
   setBgImage('ico-trophy-m', sprites.item.trophy!);
   setBgImage('ico-news-m',   sprites.item.news!);
   setBgImage('ico-save-m',   sprites.item.save!);
   setBgImage('ico-help-m',   sprites.item.help!);
+  setBgImage('ico-inv-d',    sprites.item.inv!);
+  setBgImage('ico-decor-d',  sprites.item.decor!);
+  setBgImage('ico-trophy-d', sprites.item.trophy!);
+  setBgImage('ico-news-d',   sprites.item.news!);
+  setBgImage('ico-save-d',   sprites.item.save!);
+  setBgImage('ico-help-d',   sprites.item.help!);
 
-  // Initial music icon in sheet
+  // Initial music icon in sheet/drawer
   const ic = document.getElementById('music-toggle-sheet-icon');
   if (ic) ic.textContent = state.musicOn ? '🎵' : '🔇';
+  const icD = document.getElementById('hud-menu-music-icon');
+  if (icD) icD.textContent = state.musicOn ? '🎵' : '🔇';
 }

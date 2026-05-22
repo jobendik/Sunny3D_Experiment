@@ -26,6 +26,7 @@ declare global {
 function makeDbg() {
   return {
     coins(n = 5000) { state.coins += n; toast(`+${n}💰 (dbg)`); },
+    gems(n = 50) { state.gems += n; toast(`+${n}💎 (dbg)`); },
     xp(n = 500) { addXP(n); toast(`+${n} XP (dbg)`); },
     item(key: string, n = 5) { addItem(key, n); toast(`+${n}× ${key}`); },
     mat(n = 5) {

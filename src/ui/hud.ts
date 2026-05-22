@@ -2,8 +2,12 @@ import { state } from '../state';
 import { clamp, xpForLevel } from '../utils';
 import { nextBigUnlock } from '../systems/unlocks';
 
+const numFmt = new Intl.NumberFormat('en-US');
+
 export function updateHUD(): void {
-  document.getElementById('coin-amount')!.textContent = String(state.coins);
+  document.getElementById('coin-amount')!.textContent = numFmt.format(state.coins);
+  const gemEl = document.getElementById('gem-amount');
+  if (gemEl) gemEl.textContent = numFmt.format(state.gems);
   document.getElementById('level-num')!.textContent = String(state.level);
   document.getElementById('day-num')!.textContent = `Day ${state.day}`;
   const need = xpForLevel(state.level);

@@ -54,6 +54,11 @@ export function addXP(amt: number): void {
     state.coins += reward;
     state.stats.earned += reward;
     toast(`+${reward} coins reward`, 'gold');
+    // Every level grants 1 diamond; every 5th level grants 3 — the
+    // Hay Day-style premium-currency drip that keeps the gem counter alive.
+    const gemReward = state.level % 5 === 0 ? 3 : 1;
+    state.gems += gemReward;
+    toast(`+${gemReward} 💎`, 'xp');
     spawnParticles(SW() / 2, SH() / 2, '#ffd040', 60, true);
     spawnHUDBurst('coin', 10);
     spawnConfetti(60);
