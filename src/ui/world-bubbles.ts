@@ -36,6 +36,11 @@ import { openSidePanel } from './mobile-shell';
 import {
   ORDER_TRUCK_X, ORDER_TRUCK_Z, ORDER_TRUCK_BUBBLE_Y,
 } from '../three/decor/order-truck';
+import {
+  BOAT_X, BOAT_Z, BOAT_BUBBLE_Y, BOAT_CRATE_BUBBLE_Y,
+  getCrateWorldPosition,
+} from '../three/decor/boat-at-dock';
+import { ITEMS } from '../data/items';
 
 const POOL_SIZE = 28;
 const tmpVec = new Vector3();
@@ -394,6 +399,40 @@ export function computeBubbleTargets(): BubbleTarget[] {
     });
     break;
   }
+  // -------- Boat at Dock (Phase 1.2) --------
+  // Hub bubble when the boat is docked. Plus a per-crate "need" bubble
+  // for every unfilled crate, mirroring Hay Day's crate icons. The
+  // per-crate icon shows the requested item's emoji; we mark crates the
+  // player can't currently fill with a pulsing "!" instead.
+  if (state.boat?.unlocked && state.boat.state === 'docked') {
+    out.push({
+      key: 'hub:boat',
+      wx: BOAT_X, wy: BOAT_BUBBLE_Y, wz: BOAT_Z,
+      icon: '⛵',
+      kind: 'hub',
+      tap: () => document.getElementById('open-boat')?.click(),
+    });
+    const crates = state.boat.crates;
+    for (let i = 0; i < Math.min(crates.length, 3); i++) {
+      const c = crates[i]!;
+      if (c.filled >= c.needed) continue;
+      const pos = getCrateWorldPosition(i);
+      if (!pos) continue;
+      const have = state.inv[c.itemKey] ?? 0;
+      const room = c.needed - c.filled;
+      const canFill = have >= room;
+      const itemIcon = ITEMS[c.itemKey]?.icon ?? '📦';
+      out.push({
+        key: `boat-crate:${i}`,
+        wx: pos.x, wy: BOAT_CRATE_BUBBLE_Y, wz: pos.z,
+        icon: canFill ? itemIcon : '!',
+        kind: canFill ? 'feed' : 'full',
+        pulse: !canFill,
+        tap: () => document.getElementById('open-boat')?.click(),
+      });
+    }
+  }
+
   // -------- Order Truck hub (Phase 1.1) --------
   // Pinned above the wooden cart parked at the south entrance.
   // Badge counts orders the player can fulfill right now +
