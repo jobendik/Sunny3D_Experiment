@@ -1114,10 +1114,10 @@ button {
    ===================================================================== */
 .side-panel {
   position: absolute;
-  right: calc(12px + var(--safe-right));
-  top: calc(78px + var(--safe-top));
-  width: 264px;
-  max-height: calc(100vh - 220px - var(--safe-top) - var(--safe-bottom));
+  right: calc(96px + var(--safe-right));
+  top: calc(120px + var(--safe-top));
+  width: 280px;
+  max-height: calc(100vh - 260px - var(--safe-top) - var(--safe-bottom));
   overflow-y: auto;
   background:
     var(--tex-paper),
@@ -1128,6 +1128,18 @@ button {
   padding: 12px;
   box-shadow: var(--lift-3);
   z-index: 15;
+  pointer-events: auto;
+  /* FV3 grammar: the Order Board lives behind a Quick Event Bar
+     entry, not as a persistent right-side fixture. Hidden by default,
+     revealed when the player taps "Orders" in the QEB. */
+  opacity: 0;
+  transform: translateX(20px);
+  pointer-events: none;
+  transition: opacity .22s var(--ease-out), transform .22s var(--ease-out);
+}
+.side-panel.open {
+  opacity: 1;
+  transform: translateX(0);
   pointer-events: auto;
 }
 .side-panel::before {
@@ -5974,3 +5986,542 @@ body.family-friendly .mailbox-letter-body {
   .surprise-box-art { width: 140px; height: 140px; }
   .surprise-box-icon { font-size: 72px; }
 }
+
+/* =====================================================================
+   FARMVILLE-3 HUD GRAMMAR  (v3 cozy mastery)
+   ---------------------------------------------------------------------
+   • Top-left   : Profile circle with XP ring + level pill
+   • Top-right  : Currency stack (Gems on top, Coins below)
+   • Left edge  : Quick Event Bar (vertical, collapsible)
+   • Right edge : Book button (Collections gateway)
+   • BR corner  : Build hammer FAB
+   • BL corner  : Shop FAB
+   • Bottom     : Tool dock (Hand / Plow / Seed / More)
+   • Overlay    : Screen-Space world-anchored bubble layer
+   ===================================================================== */
+
+/* ---------- PROFILE BLOCK (top-left) ---------- */
+.profile-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background:
+    linear-gradient(180deg,
+      rgba(255, 251, 232, 0.96) 0%,
+      rgba(252, 233, 192, 0.94) 100%);
+  border: 2px solid var(--paper-edge-dk);
+  border-radius: var(--r-pill);
+  padding: 4px 18px 4px 4px;
+  font-family: var(--font-display);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: var(--lift-2);
+  transition: transform .12s var(--ease-out), filter .12s var(--ease-out);
+}
+.profile-block:hover { filter: brightness(1.04); }
+.profile-block:active { transform: translateY(2px); box-shadow: var(--press); }
+
+.profile-ring {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  flex-shrink: 0;
+}
+.profile-ring-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  pointer-events: none;
+}
+.profile-ring-track {
+  fill: none;
+  stroke: rgba(140, 100, 50, 0.22);
+  stroke-width: 5;
+}
+.profile-ring-fill {
+  fill: none;
+  stroke: url(#xpGrad);
+  stroke: var(--sage-500);  /* fallback */
+  stroke-width: 5;
+  stroke-linecap: round;
+  transition: stroke-dashoffset .35s var(--ease-out);
+  filter: drop-shadow(0 0 6px rgba(94, 163, 60, 0.35));
+}
+.profile-avatar {
+  position: absolute;
+  inset: 7px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 25%,
+      #fffce6 0%, #ffe9b3 40%, #f0c97a 100%);
+  border: 2px solid var(--honey-700);
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  line-height: 1;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(60, 30, 8, 0.25) inset;
+}
+.profile-avatar-glyph {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
+}
+.profile-level-pill {
+  position: absolute;
+  right: -6px;
+  bottom: -4px;
+  min-width: 26px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--r-pill);
+  background: var(--grad-btn-primary);
+  border: 2px solid var(--sage-700);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13px;
+  display: grid;
+  place-items: center;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.45) inset,
+    0 2px 0 var(--sage-700),
+    0 4px 8px rgba(40, 70, 20, 0.4);
+}
+.profile-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 140px;
+  pointer-events: none;
+}
+.profile-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+/* The profile block contains the existing .xp-bar-wrap structure;
+   we just compress it visually so it sits cleanly under the name. */
+.profile-meta .xp-bar-wrap {
+  margin: 0;
+  width: 140px;
+}
+
+/* The hamburger + day chip stack underneath the profile pill. */
+.hud-chips {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 6px;
+}
+
+/* ---------- TOP-RIGHT CURRENCY STACK ---------- */
+.hud-corner-tr {
+  /* Stack vertically (gems on top, coins below) per FV3. */
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.currency-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+/* ---------- QUICK EVENT BAR (left edge, collapsible) ---------- */
+.quick-event-bar {
+  position: fixed;
+  left: calc(10px + var(--safe-left));
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 12;
+  display: flex;
+  align-items: stretch;
+  pointer-events: auto;
+  transition: transform .32s var(--ease-out);
+}
+.quick-event-bar.collapsed .qeb-rail {
+  transform: translateX(calc(-100% - 14px));
+  opacity: 0;
+  pointer-events: none;
+}
+.quick-event-bar.collapsed .qeb-toggle-arrow {
+  transform: rotate(180deg);
+}
+.qeb-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 8px;
+  background:
+    var(--tex-paper),
+    linear-gradient(180deg,
+      rgba(255, 251, 232, 0.96) 0%,
+      rgba(252, 233, 192, 0.94) 100%);
+  background-blend-mode: multiply, normal;
+  border: 2px solid var(--paper-edge-dk);
+  border-radius: var(--r-lg);
+  box-shadow: var(--lift-3);
+  transition: transform .32s var(--ease-out), opacity .32s var(--ease-out);
+  max-height: 70vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+.qeb-rail::-webkit-scrollbar { display: none; }
+
+.qeb-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  width: 56px;
+  padding: 6px 4px 5px;
+  background: linear-gradient(180deg, #fffaee 0%, #fce5b6 100%);
+  border: 2px solid var(--paper-edge-dk);
+  border-radius: var(--r-md);
+  color: var(--ink-soft);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 10px;
+  cursor: pointer;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 2px 0 rgba(110, 80, 30, 0.5),
+    0 4px 8px rgba(60, 30, 8, 0.18);
+  transition: transform .12s var(--ease-out), filter .12s var(--ease-out);
+}
+.qeb-item:hover { filter: brightness(1.06); }
+.qeb-item:active { transform: translateY(2px); box-shadow: var(--press); }
+.qeb-item-ico {
+  font-size: 22px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.15));
+}
+.qeb-item-label {
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+.qeb-item-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: var(--grad-btn-danger);
+  border: 2px solid #fff;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 10px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+.qeb-item--pulse {
+  animation: qeb-pulse 1.6s var(--ease-out) infinite;
+}
+@keyframes qeb-pulse {
+  0%, 100% { box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 2px 0 rgba(110, 80, 30, 0.5),
+    0 4px 8px rgba(60, 30, 8, 0.18),
+    0 0 0 0 rgba(244, 185, 66, 0.55); }
+  50% { box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 2px 0 rgba(110, 80, 30, 0.5),
+    0 4px 8px rgba(60, 30, 8, 0.18),
+    0 0 0 8px rgba(244, 185, 66, 0); }
+}
+
+.qeb-toggle {
+  align-self: center;
+  width: 22px;
+  height: 50px;
+  margin-left: -2px;
+  border: 2px solid var(--sky-700);
+  border-left: none;
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+  background: linear-gradient(180deg, #cdebff 0%, #7ed1ff 100%);
+  color: #0a3a52;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow:
+    0 1px 0 rgba(220, 245, 255, 0.55) inset,
+    0 3px 0 var(--sky-700),
+    0 6px 12px rgba(15, 50, 80, 0.35);
+  transition: transform .12s var(--ease-out);
+}
+.qeb-toggle:active { transform: translateY(2px); box-shadow: var(--press); }
+.qeb-toggle-arrow {
+  display: inline-block;
+  transition: transform .25s var(--ease-out);
+}
+
+/* ---------- RIGHT EDGE: BOOK BUTTON ---------- */
+.right-edge {
+  position: fixed;
+  right: calc(10px + var(--safe-right));
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: auto;
+}
+.book-btn {
+  position: relative;
+  width: 64px;
+  height: 76px;
+  border: 2px solid var(--wood-2);
+  border-radius: 10px 14px 14px 10px;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(0, 0, 0, 0.15) 0%, transparent 30%),
+    linear-gradient(180deg, #c54a3a 0%, #a83426 60%, #761a13 100%);
+  color: #fff8e1;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 4px 0 #5e110a,
+    0 10px 18px rgba(60, 10, 10, 0.5);
+  transition: transform .12s var(--ease-out), filter .12s var(--ease-out);
+}
+.book-btn::after {
+  /* Page ridges along the right edge */
+  content: '';
+  position: absolute;
+  right: 4px;
+  top: 8px;
+  bottom: 8px;
+  width: 6px;
+  border-radius: 1px;
+  background:
+    repeating-linear-gradient(0deg,
+      #fff5d7 0px, #fff5d7 2px,
+      #e6cf9a 2px, #e6cf9a 3px);
+  border: 1px solid #876235;
+  pointer-events: none;
+}
+.book-btn-spine {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  border-radius: 8px 0 0 8px;
+  background:
+    linear-gradient(180deg, #f5b94a 0%, #c8861d 50%, #94601a 100%);
+  border-right: 1px solid #5e3206;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.25) inset;
+}
+.book-btn-glyph {
+  font-size: 28px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+}
+.book-btn-label {
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+.book-btn:hover { filter: brightness(1.06); }
+.book-btn:active { transform: translateY(2px); box-shadow: var(--press); }
+.book-btn-pip {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--cherry-500);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  animation: qeb-pulse 1.6s var(--ease-out) infinite;
+}
+
+/* ---------- BUILD HAMMER FAB (bottom-right corner) ---------- */
+.corner-build {
+  right: calc(14px + var(--safe-right));
+  background:
+    radial-gradient(ellipse at 50% 18%, #ffe6a2 0%, transparent 55%),
+    linear-gradient(180deg, #fbd86a 0%, #f4b942 45%, #c8861d 100%);
+  border-color: var(--honey-700);
+  color: #4a2f08;
+  text-shadow: 0 1px 0 rgba(255, 240, 170, 0.6);
+  box-shadow:
+    0 1px 0 rgba(255, 250, 200, 0.7) inset,
+    0 4px 0 #7a5810,
+    0 10px 24px rgba(80, 50, 6, 0.5);
+}
+.corner-build:active { box-shadow: 0 1px 0 #7a5810, 0 1px 4px rgba(0, 0, 0, 0.2) inset; }
+.corner-build .corner-fab-ico-emoji { font-size: 32px; }
+
+/* ---------- WORLD-ANCHORED BUBBLE LAYER (Screen Space Overlay) ---------- */
+.bubble-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 7;          /* above 3D canvas, below modals/HUD anchors */
+  overflow: hidden;
+}
+.world-bubble {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.28));
+  transition: opacity .22s var(--ease-out), transform .12s linear;
+  will-change: transform;
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+.world-bubble::before {
+  /* Cartoon talk-bubble plate (rounded square + downward tail) */
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50% 50% 50% 0;
+  background:
+    radial-gradient(ellipse at 30% 25%,
+      #fffdf2 0%, #fff3d4 50%, #fce5b6 100%);
+  border: 2px solid var(--paper-edge-dk);
+  transform: rotate(-12deg);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 -2px 0 rgba(110, 80, 30, 0.18) inset;
+}
+.world-bubble-ico {
+  position: relative;
+  z-index: 1;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--ink);
+  transform: rotate(0deg);
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.18));
+}
+.world-bubble--in {
+  animation: bubble-pop .25s var(--ease-bounce);
+}
+.world-bubble--out {
+  opacity: 0 !important;
+  transform-origin: 50% 100%;
+}
+@keyframes bubble-pop {
+  0% { transform: translate3d(var(--bx, 0px), var(--by, 0px), 0)
+                 translate(-50%, -100%) scale(0.4); opacity: 0; }
+  60% { transform: translate3d(var(--bx, 0px), var(--by, 0px), 0)
+                  translate(-50%, -100%) scale(1.12); opacity: 1; }
+  100% { transform: translate3d(var(--bx, 0px), var(--by, 0px), 0)
+                   translate(-50%, -100%) scale(1); opacity: 1; }
+}
+
+/* Variant tints */
+.world-bubble--feed::before {
+  background:
+    radial-gradient(ellipse at 30% 25%,
+      #fffce0 0%, #ffe07b 50%, #f4b942 100%);
+  border-color: var(--honey-700);
+}
+.world-bubble--ready::before {
+  background:
+    radial-gradient(ellipse at 30% 25%,
+      #f4ffe2 0%, #b6e890 50%, #5ea33c 100%);
+  border-color: var(--sage-700);
+}
+.world-bubble--ready .world-bubble-ico {
+  color: #1d4a0e;
+}
+.world-bubble--full::before {
+  background:
+    radial-gradient(ellipse at 30% 25%,
+      #ffe2e2 0%, #ef6a7c 50%, #b3293c 100%);
+  border-color: var(--cherry-700);
+}
+.world-bubble--full .world-bubble-ico {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+.world-bubble--pulse::before {
+  animation: bubble-glow 1.4s var(--ease-out) infinite;
+}
+@keyframes bubble-glow {
+  0%, 100% { box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 0 0 0 rgba(244, 185, 66, 0); }
+  50% { box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 0 0 10px rgba(244, 185, 66, 0); }
+}
+
+/* ---------- BOOK SHEET (mirrors more-sheet structure) ---------- */
+.book-sheet .bottom-sheet-title::before {
+  content: '';
+}
+.bottom-sheet-section {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 14px 4px 6px;
+  padding-left: 6px;
+  border-left: 3px solid var(--honey-500);
+}
+.bottom-sheet-section:first-of-type { margin-top: 4px; }
+
+/* ---------- Hide the legacy bubble cluster + Friends FAB selectors
+              (the HTML no longer ships these — defensive) ---------- */
+.offer-bubble, .mailbox-bubble, .surprise-bubble, .piggy-bubble,
+.corner-social {
+  display: none !important;
+}
+
+/* ---------- Compact tweaks for small screens ---------- */
+@media (max-width: 720px) {
+  .profile-block { padding: 4px 12px 4px 4px; }
+  .profile-ring { width: 52px; height: 52px; }
+  .profile-avatar { font-size: 24px; }
+  .profile-meta { min-width: 110px; }
+  .profile-meta .xp-bar-wrap { width: 110px; }
+  .qeb-item { width: 48px; padding: 5px 3px 4px; }
+  .qeb-item-ico { font-size: 19px; }
+  .qeb-item-label { font-size: 9px; }
+  .book-btn { width: 56px; height: 66px; }
+  .book-btn-glyph { font-size: 22px; }
+  .book-btn-label { font-size: 10px; }
+}
+@media (max-width: 480px) {
+  .profile-meta { display: none; }
+  .profile-block { padding: 4px; border-radius: var(--r-pill); }
+}
+

@@ -140,6 +140,11 @@ import { openSurpriseBoxPanel } from './ui/surprise-box-panel';
 import { openSanctuaryPanel } from './ui/sanctuary-panel';
 import { openPiggyPanel } from './ui/piggy-panel';
 import { openSettingsPanel } from './ui/settings-panel';
+// FV3 grammar: screen-space speech bubble overlay (object-pooled,
+// camera-projected). See src/ui/world-bubbles.ts.
+import {
+  installWorldBubbles, tickWorldBubbles, refreshWorldBubbleTargets,
+} from './ui/world-bubbles';
 
 // Note: starting farm layout (lake, paths, soil hints, pre-plowed
 // patch) is now built by `generateWorld()` in three/terrain/world-gen.ts
@@ -210,6 +215,7 @@ function bindToolbarHandlers(): void {
 let lastTime = performance.now();
 let badgeT = 0;
 let railT = 0;
+let bubbleT = 0;
 function frame(now: number): void {
   const dt = Math.min(0.1, (now - lastTime) / 1000);
   lastTime = now;
@@ -218,6 +224,16 @@ function frame(now: number): void {
   render3d(dt);
   updateHUD();
   updatePlacingBanner();
+  // World-anchored bubble layer is re-projected each frame so it
+  // stays glued to its 3D entities while panning. The target list
+  // itself only changes a few times a second, so we recompute it
+  // at ~6 Hz.
+  bubbleT += dt;
+  if (bubbleT > 0.16) {
+    bubbleT = 0;
+    refreshWorldBubbleTargets();
+  }
+  tickWorldBubbles();
   badgeT += dt;
   if (badgeT > 0.5) {
     badgeT = 0;
@@ -327,6 +343,7 @@ function init(): void {
   initPiggyBank();
   initDailyDeal();
   initSanctuary();
+  installWorldBubbles();
   maybeEnableDebug();
   // Rebase market stall offline sales.
   if (loaded && state.lastSessionEndedAt) {

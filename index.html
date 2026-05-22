@@ -37,45 +37,68 @@
         <span class="splash-cta-label">Start Playing</span>
         <span class="splash-cta-sub" id="splash-cta-sub">Tap or press any key</span>
       </button>
-      <div class="splash-credits">v2 · cozy mastery</div>
+      <div class="splash-credits">v3 · FarmVille 3 grammar</div>
     </div>
   </div>
 
-  <!-- =============================================================
-       TOP HUD — Hay Day grammar:
-         LEFT  : hamburger menu + level/XP + ambient info (weather/day/season)
-         RIGHT : coins, gems (premium currency), gift/offers bubble
-       ============================================================= -->
+  <!-- ============================================================
+       SCREEN-SPACE OVERLAY for world-anchored speech bubbles.
+       Lives above the 3D canvas, below the HUD; pointer-events
+       are managed per-bubble. See src/ui/world-bubbles.ts.
+       ============================================================ -->
+  <div id="bubble-layer" class="bubble-layer" aria-hidden="true"></div>
+
+  <!-- ============================================================
+       TOP-LEFT HUD ANCHOR — FV3 grammar:
+         • Profile circle with integrated XP ring + level badge
+         • Hamburger menu tucked underneath as a small chip
+         • Ambient day/season chip
+       Center is intentionally left empty so the 3D world breathes.
+       ============================================================ -->
   <div class="hud-top">
     <div class="hud-corner hud-corner-tl">
-      <button class="icon-btn hud-menu-btn" id="hud-menu-btn" title="Menu" aria-label="Open menu">
-        <span class="hud-menu-bars" aria-hidden="true">
-          <span></span><span></span><span></span>
-        </span>
-      </button>
-      <div class="level-group" aria-label="Level and experience">
-        <div class="badge level-badge" id="level-badge">
-          <span class="lv-prefix">Lv </span><span id="level-num">1</span>
-        </div>
-        <div class="xp-bar-wrap">
-          <div class="xp-bar">
-            <div class="xp-fill" id="xp-fill">
-              <span class="xp-sheen" aria-hidden="true"></span>
-            </div>
-            <div class="xp-bar-label" id="xp-label">0 / 10 XP</div>
+      <button class="profile-block" id="profile-block" type="button"
+              aria-label="Profile, level and experience">
+        <div class="profile-ring" id="profile-ring" aria-hidden="true">
+          <svg class="profile-ring-svg" viewBox="0 0 60 60" focusable="false">
+            <circle class="profile-ring-track" cx="30" cy="30" r="26"/>
+            <circle class="profile-ring-fill" id="profile-ring-fill"
+                    cx="30" cy="30" r="26"
+                    pathLength="100" stroke-dasharray="100"
+                    stroke-dashoffset="100"/>
+          </svg>
+          <div class="profile-avatar" id="profile-avatar" aria-hidden="true">
+            <span class="profile-avatar-glyph">👩‍🌾</span>
+          </div>
+          <div class="profile-level-pill" id="level-badge" title="Level">
+            <span id="level-num">1</span>
           </div>
         </div>
+        <div class="profile-meta">
+          <div class="profile-name">Farmer</div>
+          <div class="xp-bar-wrap">
+            <div class="xp-bar">
+              <div class="xp-fill" id="xp-fill">
+                <span class="xp-sheen" aria-hidden="true"></span>
+              </div>
+              <div class="xp-bar-label" id="xp-label">0 / 10 XP</div>
+            </div>
+          </div>
+        </div>
+      </button>
+      <div class="hud-chips">
+        <button class="icon-btn hud-menu-btn" id="hud-menu-btn"
+                title="Menu" aria-label="Open menu">
+          <span class="hud-menu-bars" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </span>
+        </button>
+        <div class="badge day-badge" id="day-badge" title="Day"><span id="day-num">Day 1</span></div>
       </div>
     </div>
 
     <div class="hud-corner hud-corner-tr">
       <div class="currency-stack" aria-label="Currencies">
-        <button class="currency-pill coin-pill" id="coin-badge" type="button" title="Coins" aria-label="Coins">
-          <span class="icon" id="coin-ico"></span>
-          <span class="currency-value" id="coin-amount">100</span>
-          <span class="currency-plus" aria-hidden="true">+</span>
-          <span class="badge-glint" aria-hidden="true"></span>
-        </button>
         <button class="currency-pill gem-pill" id="gem-badge" type="button" title="Diamonds" aria-label="Diamonds">
           <span class="gem-ico" aria-hidden="true">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -94,31 +117,89 @@
           <span class="currency-value" id="gem-amount">5</span>
           <span class="currency-plus" aria-hidden="true">+</span>
         </button>
+        <button class="currency-pill coin-pill" id="coin-badge" type="button" title="Coins" aria-label="Coins">
+          <span class="icon" id="coin-ico"></span>
+          <span class="currency-value" id="coin-amount">100</span>
+          <span class="currency-plus" aria-hidden="true">+</span>
+          <span class="badge-glint" aria-hidden="true"></span>
+        </button>
       </div>
-      <button class="offer-bubble" id="offer-bubble" type="button" title="Daily gift" aria-label="Daily gift">
-        <span class="offer-bubble-ico" aria-hidden="true">🎁</span>
-        <span class="offer-bubble-pip" id="offer-bubble-pip" hidden></span>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       LEFT EDGE — QUICK EVENT BAR (FV3 hallmark).
+       Collapsible vertical drawer of live-ops surfaces:
+       Daily Wheel · Season Pass · Live Events · Festival Cart ·
+       Boat · Train · Balloon · Mailbox · Surprise · Piggy.
+       Tap the blue arrow to collapse and reclaim screen real-estate.
+       ============================================================ -->
+  <aside class="quick-event-bar" id="quick-event-bar" aria-label="Live events">
+    <div class="qeb-rail" id="qeb-rail"></div>
+    <button class="qeb-toggle" id="qeb-toggle" type="button"
+            aria-label="Collapse event bar" aria-expanded="true">
+      <span class="qeb-toggle-arrow" aria-hidden="true">◀</span>
+    </button>
+  </aside>
+
+  <!-- ============================================================
+       RIGHT EDGE — Book button (Collections gateway) and the
+       primary Build/Store Hammer FAB underneath it.
+       ============================================================ -->
+  <aside class="right-edge" aria-label="Collections and build">
+    <button class="book-btn" id="book-btn" type="button"
+            title="Collections" aria-label="Open Collections">
+      <span class="book-btn-spine" aria-hidden="true"></span>
+      <span class="book-btn-glyph" aria-hidden="true">📖</span>
+      <span class="book-btn-label">Book</span>
+      <span class="book-btn-pip" id="book-btn-pip" hidden></span>
+    </button>
+  </aside>
+
+  <button class="corner-fab corner-build" id="open-buildings-fab" type="button"
+          title="Build" aria-label="Build">
+    <span class="corner-fab-ico corner-fab-ico-emoji" aria-hidden="true">🔨</span>
+    <span class="corner-fab-label">Build</span>
+  </button>
+
+  <button class="corner-fab corner-shop" id="open-shop" type="button"
+          title="Shop" aria-label="Shop">
+    <span class="corner-fab-ico" id="ico-shop"></span>
+    <span class="corner-fab-label">Shop</span>
+  </button>
+
+  <!-- ============================================================
+       BOTTOM-CENTER tool dock — Core Action paradigm (FV3 tier 1).
+       Tools that the player taps the most: Hand, Plow, Seed, More.
+       Build/Shop live in dedicated corner FABs above.
+       ============================================================ -->
+  <div class="hud-bottom">
+    <div class="tool-dock" id="tool-dock">
+      <button class="tool-pill tool-btn" data-tool="hand" title="Hand (interact)" aria-label="Hand">
+        <span class="ico" id="ico-hand"></span>
+        <span class="tool-pill-label">Hand</span>
       </button>
-      <button class="offer-bubble mailbox-bubble" id="mailbox-bubble" type="button" title="Mailbox" aria-label="Mailbox">
-        <span class="offer-bubble-ico" aria-hidden="true">📬</span>
-        <span class="mailbox-bubble-count" id="mailbox-bubble-count" hidden>0</span>
+      <button class="tool-pill tool-btn" data-tool="plow" title="Plow soil" aria-label="Plow">
+        <span class="ico" id="ico-plow"></span>
+        <span class="tool-pill-label">Plow</span>
       </button>
-      <button class="offer-bubble surprise-bubble" id="surprise-bubble" type="button" title="Surprise box" aria-label="Surprise box" hidden>
-        <span class="offer-bubble-ico surprise-bubble-ico" aria-hidden="true">📦</span>
+      <button class="tool-pill tool-btn" data-tool="seed" title="Plant seeds" aria-label="Plant seeds">
+        <span class="ico" id="ico-seed"></span>
+        <span class="tool-pill-label" id="seed-btn-label">Seeds<small>Wheat</small></span>
       </button>
-      <button class="offer-bubble piggy-bubble" id="piggy-bubble" type="button" title="Piggy Bank" aria-label="Piggy Bank" hidden>
-        <span class="offer-bubble-ico" aria-hidden="true">🐷</span>
-        <span class="piggy-bubble-count" id="piggy-bubble-count">0</span>
+      <button class="tool-pill tool-pill-more" id="open-more" title="More" aria-label="More options">
+        <span class="ico ico-more">⋯</span>
+        <span class="tool-pill-label">More</span>
       </button>
     </div>
   </div>
 
-  <!-- Side panel: Quests + Orders -->
+  <!-- Side panel: Quests + Orders (Order Board, FV3 Primary action) -->
   <div class="side-panel" id="side-panel">
     <button class="side-panel-close" id="side-panel-close" aria-label="Close">×</button>
     <h3 class="side-panel-title">⭐ Quests</h3>
     <div id="quests-list"></div>
-    <h3 class="side-panel-title">📋 Customers Today</h3>
+    <h3 class="side-panel-title">📋 Order Board</h3>
     <div id="orders-list"></div>
   </div>
   <div class="side-panel-scrim" id="side-panel-scrim"></div>
@@ -162,97 +243,61 @@
     <button id="placing-cancel" class="placing-cancel">Cancel</button>
   </div>
 
-  <!-- =============================================================
-       BOTTOM HUD — Hay Day grammar:
-         LEFT-CORNER  : Shop (cash-register icon, dedicated)
-         CENTER       : Tool dock (Hand / Plow / Seed / Build / More)
-         RIGHT-CORNER : Social (orders + friends, dedicated)
-       ============================================================= -->
-  <button class="corner-fab corner-shop" id="open-shop" type="button"
-          title="Shop" aria-label="Shop">
-    <span class="corner-fab-ico" id="ico-shop"></span>
-    <span class="corner-fab-label">Shop</span>
-  </button>
-
-  <button class="corner-fab corner-social" id="open-quests-fab" type="button"
-          title="Customers and friends" aria-label="Customers and friends">
-    <span class="corner-fab-ico corner-fab-ico-emoji" aria-hidden="true">📋</span>
-    <span class="corner-fab-label">Friends</span>
-    <span class="corner-fab-badge" id="quests-fab-badge" hidden>0</span>
-  </button>
-
-  <div class="hud-bottom">
-    <div class="tool-dock" id="tool-dock">
-      <button class="tool-pill tool-btn" data-tool="hand" title="Hand (interact)" aria-label="Hand">
-        <span class="ico" id="ico-hand"></span>
-        <span class="tool-pill-label">Hand</span>
+  <!-- ============================================================
+       BOOK SHEET — the Collections gateway (FV3 Secondary tier).
+       Tabs: Codex · Friends · Awards · Sanctuary · Recipes · Museum.
+       ============================================================ -->
+  <div class="sheet-scrim" id="book-scrim"></div>
+  <div class="bottom-sheet book-sheet" id="book-sheet" aria-hidden="true">
+    <div class="bottom-sheet-handle"></div>
+    <div class="bottom-sheet-title">📖 Book of Collections</div>
+    <div class="bottom-sheet-grid" id="book-grid">
+      <button class="sheet-btn" data-more="open-collection">
+        <span class="ico-emoji">📖</span>
+        <span>Codex</span>
       </button>
-      <button class="tool-pill tool-btn" data-tool="plow" title="Plow soil" aria-label="Plow">
-        <span class="ico" id="ico-plow"></span>
-        <span class="tool-pill-label">Plow</span>
+      <button class="sheet-btn" data-more="open-sanctuary">
+        <span class="ico-emoji">🐾</span>
+        <span>Sanctuary</span>
       </button>
-      <button class="tool-pill tool-btn" data-tool="seed" title="Plant seeds" aria-label="Plant seeds">
-        <span class="ico" id="ico-seed"></span>
-        <span class="tool-pill-label" id="seed-btn-label">Seeds<small>Wheat</small></span>
+      <button class="sheet-btn" data-more="open-friendship">
+        <span class="ico-emoji">🤝</span>
+        <span>Friends</span>
       </button>
-      <button class="tool-pill" id="open-buildings" title="Buildings" aria-label="Build">
-        <span class="ico" id="ico-build"></span>
-        <span class="tool-pill-label">Build</span>
+      <button class="sheet-btn" data-more="open-village">
+        <span class="ico-emoji">🏘️</span>
+        <span>Village</span>
       </button>
-      <button class="tool-pill tool-pill-more" id="open-more" title="More" aria-label="More options">
-        <span class="ico ico-more">⋯</span>
-        <span class="tool-pill-label">More</span>
+      <button class="sheet-btn" data-more="open-club">
+        <span class="ico-emoji">🏆</span>
+        <span>Club</span>
+      </button>
+      <button class="sheet-btn" data-more="open-achievements">
+        <span class="ico" id="ico-trophy-b"></span>
+        <span>Awards</span>
+      </button>
+      <button class="sheet-btn" data-more="open-recipe-book">
+        <span class="ico-emoji">📕</span>
+        <span>Recipes</span>
+      </button>
+      <button class="sheet-btn" data-more="open-museum">
+        <span class="ico-emoji">🏛️</span>
+        <span>Museum</span>
+      </button>
+      <button class="sheet-btn" data-more="open-leaderboard">
+        <span class="ico-emoji">🏅</span>
+        <span>Ranks</span>
       </button>
     </div>
   </div>
 
-  <!-- Hidden trigger surface for hud-top buttons that the More menu / hamburger
-       still references. Keeps existing wiring intact. -->
-  <div style="display:none">
-    <button class="btn" id="open-inventory" type="button">
-      <span class="ico" id="ico-inv"></span>
-    </button>
-    <button class="btn" id="open-decor" type="button">
-      <span class="ico" id="ico-decor"></span>
-    </button>
-    <button class="btn" id="open-achievements" type="button">
-      <span class="ico" id="ico-trophy"></span>
-    </button>
-    <button class="btn" id="open-news" type="button">
-      <span class="ico" id="ico-news"></span>
-    </button>
-    <button class="btn" id="open-daily" type="button"></button>
-    <button class="btn" id="open-weather-grid" type="button"></button>
-    <button class="btn" id="open-spec" type="button"></button>
-    <button class="btn" id="open-collection" type="button"></button>
-    <button class="btn" id="save-btn" type="button">
-      <span class="ico" id="ico-save"></span>
-    </button>
-    <button class="btn" id="help-btn" type="button">
-      <span class="ico" id="ico-help"></span>
-    </button>
-    <button class="btn" id="rotate-view-btn" type="button">↻</button>
-    <button class="btn" id="music-toggle" type="button">🎵</button>
-  </div>
-
-  <!-- More menu bottom-sheet (mobile) -->
+  <!-- More menu bottom-sheet (mobile) — Tertiary tier (settings, share, etc.) -->
   <div class="sheet-scrim" id="more-scrim"></div>
   <div class="bottom-sheet" id="more-sheet" aria-hidden="true">
     <div class="bottom-sheet-handle"></div>
     <div class="bottom-sheet-title">More</div>
-    <div class="bottom-sheet-grid" id="more-grid">
-      <button class="sheet-btn" data-more="open-daily">
-        <span class="ico-emoji">🌅</span>
-        <span>Daily</span>
-      </button>
-      <button class="sheet-btn" data-more="open-wheel">
-        <span class="ico-emoji">🎡</span>
-        <span>Wheel</span>
-      </button>
-      <button class="sheet-btn" data-more="open-pass">
-        <span class="ico-emoji">🎖️</span>
-        <span>Pass</span>
-      </button>
+    <div class="bottom-sheet-section">Boost</div>
+    <div class="bottom-sheet-grid">
       <button class="sheet-btn" data-more="open-weather-grid">
         <span class="ico-emoji">🌦️</span>
         <span>Grid</span>
@@ -260,10 +305,6 @@
       <button class="sheet-btn" data-more="open-spec">
         <span class="ico-emoji">🌟</span>
         <span>Path</span>
-      </button>
-      <button class="sheet-btn" data-more="open-collection">
-        <span class="ico-emoji">📖</span>
-        <span>Codex</span>
       </button>
       <button class="sheet-btn" data-more="open-market">
         <span class="ico-emoji">💱</span>
@@ -278,96 +319,25 @@
         <span>Gazette</span>
         <span class="sheet-pip" id="gazette-pip" hidden></span>
       </button>
-      <button class="sheet-btn" data-more="open-boat">
-        <span class="ico-emoji">⛵</span>
-        <span>Boat</span>
-      </button>
-      <button class="sheet-btn" data-more="open-train">
-        <span class="ico-emoji">🚂</span>
-        <span>Train</span>
+      <button class="sheet-btn" data-more="open-expansion">
+        <span class="ico-emoji">🌄</span>
+        <span>Plots</span>
       </button>
       <button class="sheet-btn" data-more="open-landmark">
         <span class="ico-emoji">🏗️</span>
         <span>Builds</span>
       </button>
-      <button class="sheet-btn" data-more="open-friendship">
-        <span class="ico-emoji">🤝</span>
-        <span>Friends</span>
-      </button>
-      <button class="sheet-btn" data-more="open-village">
-        <span class="ico-emoji">🏘️</span>
-        <span>Village</span>
-      </button>
-      <button class="sheet-btn" data-more="open-club">
-        <span class="ico-emoji">🏆</span>
-        <span>Club</span>
-      </button>
-      <button class="sheet-btn" data-more="open-expansion">
-        <span class="ico-emoji">🌄</span>
-        <span>Plots</span>
-      </button>
       <button class="sheet-btn" data-more="open-expeditions">
         <span class="ico-emoji">🗺️</span>
         <span>Maps</span>
-      </button>
-      <button class="sheet-btn" data-more="open-events">
-        <span class="ico-emoji">🎉</span>
-        <span>Events</span>
-      </button>
-      <button class="sheet-btn" data-more="open-balloon">
-        <span class="ico-emoji">🎈</span>
-        <span>Balloon</span>
-      </button>
-      <button class="sheet-btn" data-more="open-cart">
-        <span class="ico-emoji">🎪</span>
-        <span>Cart</span>
-      </button>
-      <button class="sheet-btn" data-more="open-recipe-book">
-        <span class="ico-emoji">📖</span>
-        <span>Recipes</span>
-      </button>
-      <button class="sheet-btn" data-more="open-museum">
-        <span class="ico-emoji">🏛️</span>
-        <span>Museum</span>
-      </button>
-      <button class="sheet-btn" data-more="open-leaderboard">
-        <span class="ico-emoji">🏅</span>
-        <span>Ranks</span>
       </button>
       <button class="sheet-btn" data-more="open-prestige">
         <span class="ico-emoji">✨</span>
         <span>Prestige</span>
       </button>
-      <button class="sheet-btn" data-more="open-snapshot">
-        <span class="ico-emoji">🖼️</span>
-        <span>Share</span>
-      </button>
-      <button class="sheet-btn" data-more="open-mailbox">
-        <span class="ico-emoji">📬</span>
-        <span>Mail</span>
-        <span class="sheet-pip" id="mailbox-pip" hidden></span>
-      </button>
-      <button class="sheet-btn" data-more="open-surprise">
-        <span class="ico-emoji">📦</span>
-        <span>Surprise</span>
-        <span class="sheet-pip" id="surprise-pip" hidden></span>
-      </button>
-      <button class="sheet-btn" data-more="open-sanctuary">
-        <span class="ico-emoji">📖</span>
-        <span>Sanctuary</span>
-      </button>
-      <button class="sheet-btn" data-more="open-piggy">
-        <span class="ico-emoji">🐷</span>
-        <span>Piggy</span>
-      </button>
-      <button class="sheet-btn" data-more="open-settings">
-        <span class="ico-emoji">⚙️</span>
-        <span>Settings</span>
-      </button>
-      <button class="sheet-btn" data-more="toggle-edit-mode">
-        <span class="ico-emoji">✂️</span>
-        <span>Edit</span>
-      </button>
+    </div>
+    <div class="bottom-sheet-section">Tools</div>
+    <div class="bottom-sheet-grid">
       <button class="sheet-btn" data-more="open-inventory">
         <span class="ico" id="ico-inv-m"></span>
         <span>Barn</span>
@@ -376,10 +346,25 @@
         <span class="ico" id="ico-decor-m"></span>
         <span>Decor</span>
       </button>
-      <button class="sheet-btn" data-more="open-achievements">
-        <span class="ico" id="ico-trophy-m"></span>
-        <span>Awards</span>
+      <button class="sheet-btn" data-more="open-snapshot">
+        <span class="ico-emoji">🖼️</span>
+        <span>Photo</span>
       </button>
+      <button class="sheet-btn" data-more="toggle-edit-mode">
+        <span class="ico-emoji">✂️</span>
+        <span>Edit</span>
+      </button>
+      <button class="sheet-btn" id="recenter-btn">
+        <span class="ico-emoji">🎯</span>
+        <span>Re-center</span>
+      </button>
+      <button class="sheet-btn" data-more="rotate-view-btn">
+        <span class="ico-emoji">↻</span>
+        <span>Rotate</span>
+      </button>
+    </div>
+    <div class="bottom-sheet-section">System</div>
+    <div class="bottom-sheet-grid">
       <button class="sheet-btn" data-more="open-news">
         <span class="ico" id="ico-news-m"></span>
         <span>News</span>
@@ -396,16 +381,15 @@
         <span class="ico-emoji" id="music-toggle-sheet-icon">🎵</span>
         <span>Music</span>
       </button>
-      <button class="sheet-btn" id="recenter-btn">
-        <span class="ico-emoji">🎯</span>
-        <span>Re-center</span>
+      <button class="sheet-btn" data-more="open-settings">
+        <span class="ico-emoji">⚙️</span>
+        <span>Settings</span>
       </button>
     </div>
   </div>
 
-  <!-- Hamburger / settings drawer (top-left) — Hay Day "Scenic Mode" hub.
-       Holds preferences (music), camera helpers (rotate, re-center), and
-       quick access to Save/Help/Awards/News/Daily/Codex. -->
+  <!-- Hamburger / settings drawer (top-left). Holds preferences, camera
+       helpers, and quick access to Save/Help/Awards/News/Daily/Codex. -->
   <div class="sheet-scrim" id="hud-menu-scrim"></div>
   <aside class="hud-drawer" id="hud-menu-drawer" aria-hidden="true" aria-label="Menu">
     <div class="hud-drawer-handle"></div>
@@ -419,7 +403,6 @@
         <span id="season-emoji">🌷</span>
         <span class="badge-label" id="season-name">Spring</span>
       </div>
-      <div class="badge day-badge" id="day-badge" title="Day"><span id="day-num">Day 1</span></div>
     </div>
     <div class="hud-drawer-grid">
       <button class="sheet-btn" data-more="rotate-view-btn">
@@ -470,14 +453,6 @@
         <span class="ico-emoji">🖼️</span>
         <span>Photo</span>
       </button>
-      <button class="sheet-btn" data-more="open-mailbox">
-        <span class="ico-emoji">📬</span>
-        <span>Mail</span>
-      </button>
-      <button class="sheet-btn" data-more="open-sanctuary">
-        <span class="ico-emoji">📖</span>
-        <span>Sanctuary</span>
-      </button>
       <button class="sheet-btn" data-more="open-settings">
         <span class="ico-emoji">⚙️</span>
         <span>Settings</span>
@@ -493,8 +468,34 @@
     </div>
   </aside>
 
-  <!-- Hidden trigger buttons (so they can be clicked from More menu) -->
+  <!-- Hidden trigger surface for hud-top buttons that the More menu /
+       Quick Event Bar / Book sheet still references. Keeps existing
+       wiring intact so we don't have to refactor every system module. -->
   <div style="display:none">
+    <button class="btn" id="open-inventory" type="button">
+      <span class="ico" id="ico-inv"></span>
+    </button>
+    <button class="btn" id="open-decor" type="button">
+      <span class="ico" id="ico-decor"></span>
+    </button>
+    <button class="btn" id="open-achievements" type="button">
+      <span class="ico" id="ico-trophy"></span>
+    </button>
+    <button class="btn" id="open-news" type="button">
+      <span class="ico" id="ico-news"></span>
+    </button>
+    <button class="btn" id="open-daily" type="button"></button>
+    <button class="btn" id="open-weather-grid" type="button"></button>
+    <button class="btn" id="open-spec" type="button"></button>
+    <button class="btn" id="open-collection" type="button"></button>
+    <button class="btn" id="save-btn" type="button">
+      <span class="ico" id="ico-save"></span>
+    </button>
+    <button class="btn" id="help-btn" type="button">
+      <span class="ico" id="ico-help"></span>
+    </button>
+    <button class="btn" id="rotate-view-btn" type="button">↻</button>
+    <button class="btn" id="music-toggle" type="button">🎵</button>
     <button id="open-market" type="button"></button>
     <button id="open-leaderboard" type="button"></button>
     <button id="open-prestige" type="button"></button>
@@ -521,7 +522,11 @@
     <button id="open-sanctuary" type="button"></button>
     <button id="open-piggy" type="button"></button>
     <button id="open-settings" type="button"></button>
+    <button id="open-buildings" type="button"></button>
     <button id="toggle-edit-mode" type="button"></button>
+    <button id="open-quests-fab" type="button">
+      <span class="corner-fab-badge" id="quests-fab-badge" hidden>0</span>
+    </button>
   </div>
 
   <!-- Edit Mode banner shown when active -->
