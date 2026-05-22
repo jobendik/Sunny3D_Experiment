@@ -12,6 +12,7 @@
 // =============================================================
 
 import { state } from '../state';
+import { GRID_W, GRID_H } from '../constants';
 import { ITEMS } from '../data/items';
 import { addItem, removeItem } from './inventory';
 import { addXP } from './xp';
@@ -20,7 +21,7 @@ import { choice, randi } from '../utils';
 import { toast } from '../ui/toasts';
 import { sfx } from '../audio/sfx';
 import { addJournalEntry } from './journal';
-import type { ExpansionRoot, PlotState, PlotObstacle, ObstacleKind, MaterialKey } from '../types';
+import type { ExpansionRoot, PlotState, PlotObstacle, ObstacleKind, MaterialKey, RegionId } from '../types';
 
 export interface PlotDef {
   id: string;
@@ -213,10 +214,42 @@ export function clearObstacle(plotId: string, obstacleId: string): boolean {
   return true;
 }
 
+/** Flip the `unlocked` flag on every tile whose region id matches the
+ *  given plot id. The plot ids in PLOTS match the RegionId enum in
+ *  world-data.ts, which lets us do this in one pass. */
+function unlockRegionTiles(regionId: RegionId): void {
+  for (let gy = 0; gy < GRID_H; gy++) {
+    const row = state.grid[gy];
+    if (!row) continue;
+    for (let gx = 0; gx < GRID_W; gx++) {
+      const t = row[gx];
+      if (!t) continue;
+      if (t.region === regionId) t.unlocked = true;
+    }
+  }
+}
+
+/** Apply tile-state side-effects for any plot that's already marked
+ *  unlocked in save data. Called once on game init so the live grid
+ *  matches the saved plot statuses. */
+export function syncRegionUnlocks(): void {
+  const plots = state.expansion?.plots;
+  if (!plots) return;
+  for (const id of Object.keys(plots)) {
+    if (plots[id]!.status === 'unlocked') {
+      unlockRegionTiles(id as RegionId);
+    }
+  }
+}
+
 function completePlot(plotId: string): void {
   const def = PLOTS[plotId]!;
   const p = state.expansion!.plots[plotId]!;
   p.status = 'unlocked';
+  // Flip every tile in this region to unlocked so the player can
+  // start plowing / building there. The visual fog-of-war for the
+  // region also reads from `tile.unlocked` and will retract.
+  unlockRegionTiles(plotId as RegionId);
   // Apply unlock effects.
   switch (plotId) {
     case 'east_meadow':

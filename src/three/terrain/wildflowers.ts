@@ -76,6 +76,9 @@ export function installWildflowers(): void {
     for (let gx = 0; gx < GRID_W; gx++) {
       const t = state.grid[gy]?.[gx];
       if (!t || t.type !== 'grass') continue;
+      // Skip tiles that already have a tile-level obstacle — the
+      // obstacle mesh owns this tile visually.
+      if (t.obstacle) continue;
       const r = smoothHash(gx, gy, 41);
       if (r > 0.32) continue;        // ~32% of grass tiles get flowers
       const clusterSize = 1 + Math.floor(smoothHash(gx, gy, 7) * 4);

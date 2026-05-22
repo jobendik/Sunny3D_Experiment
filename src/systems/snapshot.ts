@@ -7,6 +7,7 @@ import { state } from '../state';
 import { makeCanvas } from '../canvas';
 import { sprites } from '../sprites';
 import { ACHIEVEMENTS } from '../data/achievements';
+import { HOME_X0, HOME_Y0 } from '../constants';
 
 export interface SnapshotData {
   url: string;
@@ -64,12 +65,16 @@ export function buildSnapshot(): SnapshotData {
   g.save();
   g.translate(px, py);
   g.scale(0.45, 0.45);
-  // miniature 12x12 patch from state.grid
-  const cols = Math.min(12, state.grid[0]?.length ?? 0);
-  const rows = Math.min(12, state.grid.length);
+  // miniature 12x12 patch from state.grid — sample the upper-left of
+  // the home zone so the snapshot always shows the player's farm, not
+  // the forest corner.
+  const cols = 12;
+  const rows = 12;
+  const offsetX = HOME_X0;
+  const offsetY = HOME_Y0;
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
-      const t = state.grid[y]?.[x];
+      const t = state.grid[y + offsetY]?.[x + offsetX];
       if (!t) continue;
       let img = sprites.grass;
       if (t.type === 'water') img = sprites.water;

@@ -5,7 +5,7 @@
 
 import { state } from '../state';
 import { SW, SH } from '../canvas';
-import { TILE, GRID_W, GRID_H } from '../constants';
+import { TILE, HOME_CENTER_X, HOME_CENTER_Y, HOME_W, HOME_H } from '../constants';
 import { clamp } from '../utils';
 
 interface CamTween {
@@ -26,13 +26,14 @@ function easeOutCubic(t: number): number {
 // vantage to the farm centre, ending with a satisfying soft-landing
 // zoom. The off-axis start gives the player a half-second of
 // "ahh, look at this place" before the playable framing settles in.
-/** Begin a cinematic camera ride to the farm centre. */
+/** Begin a cinematic camera ride to the home zone. */
 export function startCameraIntro(): void {
-  const cx = (GRID_W * TILE) / 2;
-  const cy = (GRID_H * TILE) / 2;
+  const cx = HOME_CENTER_X * TILE;
+  const cy = HOME_CENTER_Y * TILE;
+  const framePx = (Math.max(HOME_W, HOME_H) + 4) * TILE;
   const targetScale = clamp(
-    Math.min(SW() / (GRID_W * TILE), SH() / (GRID_H * TILE)) * 0.95,
-    0.5, 1.6,
+    Math.min(SW() / framePx, SH() / framePx) * 0.95,
+    0.5, 1.8,
   );
   // Start farther back and offset to the south so the entrance path
   // is visible — gives a real "you're approaching your farm" feel.

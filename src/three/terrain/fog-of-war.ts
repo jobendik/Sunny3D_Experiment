@@ -79,7 +79,7 @@ function pickRegion(x: number, z: number): CloudPatch['region'] {
   const dz = z - cz;
   const ax = Math.abs(dx);
   const az = Math.abs(dz);
-  if (ax < 4 && az < 4) return 'ambient';
+  if (ax < 6 && az < 6) return 'ambient';
   if (ax > az * 2) return dx > 0 ? 'east' : 'west';
   if (az > ax * 2) return dz > 0 ? 'south' : 'north';
   if (dx > 0 && dz > 0) return 'se';
@@ -92,15 +92,17 @@ function placePatches(group: Group): void {
   const cx = GRID_W / 2;
   const cz = GRID_H / 2;
   texture = makeFogTexture();
-  // Three concentric rings of patches: closest = thin/wispy so the
-  // outer world peeks through, middle = denser, far ring = thick
-  // mist that hides the deep forest until the player expands.
+  // Concentric rings of patches sitting *beyond* the playable 32×32
+  // world. The inner-most ring kisses the world edge so locked
+  // expansion zones near the border still feel "misty"; the further
+  // rings get denser and thicker as they recede into the outer
+  // landscape.
   const rings = [
-    { radius: 11.5, count: 22, scale: 5.0, alpha: 0.55 },
-    { radius: 15, count: 28, scale: 6.0, alpha: 0.82 },
-    { radius: 19, count: 30, scale: 7.0, alpha: 0.92 },
-    { radius: 25, count: 28, scale: 8.0, alpha: 0.85 },
-    { radius: 31, count: 22, scale: 9.0, alpha: 0.7 },
+    { radius: 19, count: 26, scale: 5.0, alpha: 0.45 },
+    { radius: 24, count: 30, scale: 6.0, alpha: 0.72 },
+    { radius: 30, count: 32, scale: 7.0, alpha: 0.90 },
+    { radius: 38, count: 30, scale: 8.0, alpha: 0.85 },
+    { radius: 46, count: 24, scale: 9.0, alpha: 0.7 },
   ];
   let patchIdx = 0;
   for (const ring of rings) {
@@ -199,9 +201,9 @@ export function updateFogOfWar(timeS: number, light: LightingSnapshot): void {
     const dx = p.mesh.position.x - cx;
     const dz = p.mesh.position.z - cz;
     const r = Math.hypot(dx, dz);
-    if (r > 32) {
-      p.mesh.position.x = cx + (dx / r) * 12;
-      p.mesh.position.z = cz + (dz / r) * 12;
+    if (r > 48) {
+      p.mesh.position.x = cx + (dx / r) * 18;
+      p.mesh.position.z = cz + (dz / r) * 18;
     }
     p.mesh.position.y = p.baseY + Math.sin(timeS * 0.3 + p.phase) * 0.18;
     p.mesh.rotation.z += 0.02 * (1 / 60);

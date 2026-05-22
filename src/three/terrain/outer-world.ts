@@ -33,10 +33,11 @@ import { getSceneRoot } from '../scene-root';
 import { mat } from '../procgen/materials';
 import { sphere, cyl } from '../procgen/geometries';
 
-// 60×60 outer ring centered on the playable grid (extends ~21 tiles
-// past each edge). Step = 1 unit so we re-use the tile-grid scale.
-const OUTER_RANGE = 30;
-const OUTER_STEP = 1.5;
+// Outer ring centered on the playable 32×32 grid. The playable world
+// is now half-extents 16; we extend the decorative ring another ~30
+// units beyond it so the player feels they are in a wider landscape.
+const OUTER_RANGE = 42;
+const OUTER_STEP = 1.6;
 // Density of hex prism instances per row/col.
 const OUTER_ROWS = Math.floor((OUTER_RANGE * 2) / OUTER_STEP);
 
@@ -60,6 +61,8 @@ function rolling(x: number, z: number): number {
 
 function isInsidePlayArea(worldX: number, worldZ: number): boolean {
   // Skip the playable grid (the tile-grid mesh already covers it).
+  // Leave a 1-unit gap so the outer ring nestles up against the
+  // playable border without overlapping the edge tiles.
   return worldX > -0.5 && worldX < GRID_W + 0.5 && worldZ > -0.5 && worldZ < GRID_H + 0.5;
 }
 
@@ -73,7 +76,7 @@ function biomeColor(worldX: number, worldZ: number, height: number): Color {
   );
   if (height < -0.2) return new Color('#3a82c8');                // pond
   if (height < -0.05) return new Color('#b8d894');               // marsh
-  if (distFromCenter > 22) return new Color('#62956a');          // deep forest floor
+  if (distFromCenter > 32) return new Color('#62956a');          // deep forest floor
   // Meadow palette tuned to match the inner tile palette so the
   // playable grid blends into the outer ring instead of standing
   // out as a different-colored island.
@@ -136,9 +139,10 @@ function buildOuterDecor(): Group {
   const cz = GRID_H / 2;
   const seedRand = (i: number, salt: number): number => smoothHash(i * 7.31, salt * 2.39, salt);
 
-  // Forest clumps
-  for (let i = 0; i < 220; i++) {
-    const r = 12 + seedRand(i, 1) * 22;
+  // Forest clumps — push the inner radius out past the new 32×32
+  // playable world so they don't overlap any expansion region.
+  for (let i = 0; i < 280; i++) {
+    const r = 19 + seedRand(i, 1) * 26;
     const theta = seedRand(i, 2) * Math.PI * 2;
     const x = cx + Math.cos(theta) * r;
     const z = cz + Math.sin(theta) * r;
@@ -154,8 +158,8 @@ function buildOuterDecor(): Group {
   }
 
   // Rocks
-  for (let i = 0; i < 60; i++) {
-    const r = 14 + seedRand(i, 11) * 20;
+  for (let i = 0; i < 80; i++) {
+    const r = 20 + seedRand(i, 11) * 24;
     const theta = seedRand(i, 12) * Math.PI * 2;
     const x = cx + Math.cos(theta) * r;
     const z = cz + Math.sin(theta) * r;
@@ -166,10 +170,11 @@ function buildOuterDecor(): Group {
   }
 
   // Distant mountains — a low ring of tall cones way out so the
-  // horizon never just stops at flat grass.
-  for (let i = 0; i < 32; i++) {
-    const r = 32 + seedRand(i, 21) * 6;
-    const theta = (i / 32) * Math.PI * 2 + seedRand(i, 22) * 0.1;
+  // horizon never just stops at flat grass. Pushed out to keep the
+  // ridge well behind the playable + expansion area.
+  for (let i = 0; i < 36; i++) {
+    const r = 42 + seedRand(i, 21) * 8;
+    const theta = (i / 36) * Math.PI * 2 + seedRand(i, 22) * 0.1;
     const x = cx + Math.cos(theta) * r;
     const z = cz + Math.sin(theta) * r;
     g.add(makeMountain(x, z, seedRand(i, 23)));
@@ -250,8 +255,9 @@ function makeMountain(x: number, z: number, r: number): Group {
 
 function buildOuterWater(): Mesh {
   // A single large plane *below* the outer land, recessed enough that
-  // only the marsh/pond hex prisms cut through it.
-  const geom = new CircleGeometry(OUTER_RANGE + 6, 48);
+  // only the marsh/pond hex prisms cut through it. Extended out so
+  // the player can see distant water rim at far zoom levels.
+  const geom = new CircleGeometry(OUTER_RANGE + 12, 48);
   geom.rotateX(-Math.PI / 2);
   outerWaterMat = new MeshStandardMaterial({
     color: new Color('#4a92d0'),
