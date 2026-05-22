@@ -35,6 +35,7 @@ import { installOrderTruck, updateOrderTruck } from './decor/order-truck';
 import { installBoatAtDock, updateBoatAtDock } from './decor/boat-at-dock';
 import { installMailbox, updateMailbox } from './decor/mailbox';
 import { installRoadsideStand, updateRoadsideStand } from './decor/roadside-stand';
+import { installNewspaperStand } from './decor/newspaper-stand';
 import { installSky, updateSky } from './sky/sky-dome';
 import { installWeather, updateWeather } from './fx/weather-particles';
 import { updateTreasureChests } from './fx/treasure-chests';
@@ -61,6 +62,7 @@ export function init3d(): void {
   installBoatAtDock();
   installMailbox();
   installRoadsideStand();
+  installNewspaperStand();
   installGrassBlades();
   installSky();
   installWeather();

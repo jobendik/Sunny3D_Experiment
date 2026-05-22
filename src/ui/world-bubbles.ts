@@ -47,6 +47,9 @@ import {
   STAND_X, STAND_Z, STAND_BUBBLE_Y, STAND_SLOT_BUBBLE_Y,
   getStandSlotWorldPosition,
 } from '../three/decor/roadside-stand';
+import {
+  NEWS_X, NEWS_Z, NEWS_BUBBLE_Y,
+} from '../three/decor/newspaper-stand';
 import { ITEMS } from '../data/items';
 import { unreadCount as mailboxUnreadCount } from '../systems/mailbox';
 
@@ -479,6 +482,28 @@ export function computeBubbleTargets(): BubbleTarget[] {
           tap: () => document.getElementById('open-stall')?.click(),
         });
       }
+    }
+  }
+
+  // -------- Newspaper Stand (Phase 1.5) --------
+  // Pulses when there's something fresh: a new day's edition or an
+  // open gazette help request the player can fulfill.
+  {
+    const g = state.gazette;
+    if (g) {
+      const newEdition = g.lastReadDay !== state.day;
+      const helpFulfillable = g.helpRequests.some(
+        hr => !hr.done && (state.inv[hr.itemKey] ?? 0) >= hr.qty,
+      );
+      const pulse = newEdition || helpFulfillable;
+      out.push({
+        key: 'hub:news',
+        wx: NEWS_X, wy: NEWS_BUBBLE_Y, wz: NEWS_Z,
+        icon: '📰',
+        kind: pulse ? 'ready' : 'hub',
+        pulse,
+        tap: () => document.getElementById('open-gazette')?.click(),
+      });
     }
   }
 
