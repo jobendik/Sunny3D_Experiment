@@ -480,6 +480,13 @@ export interface PassRoot {
   points: number;
   tier: number;
   claimed: number[];
+  /** Premium-tier ledgers — only populated once the matching track
+   *  is unlocked via Order-Board cycles (CrazyGames-safe: no
+   *  real-money tier). */
+  claimedElite?: number[];
+  claimedPlatinum?: number[];
+  /** Order-Board cycles completed in the current pass window. */
+  cyclesThisPass?: number;
 }
 
 export interface VisitorRoot {

@@ -3,6 +3,12 @@
 //  reach each tier. Free track always available; missing tiers
 //  are recovered with talent / coin nudges. Critical for D2-D14
 //  retention because each unclaimed tier is a visible loss.
+//
+//  Multi-tier (FV3-grammar) — Free, Elite, Platinum tracks.
+//  ALL THREE TRACKS ARE EARNED THROUGH GAMEPLAY (CrazyGames
+//  prohibits real-money monetization). Elite unlocks after the
+//  player completes 3 Order-Board cycles in this pass; Platinum
+//  unlocks after 8 cycles. Premium tiers cannot be purchased.
 // =============================================================
 
 import { state } from '../state';
@@ -13,6 +19,8 @@ import { toast } from '../ui/toasts';
 import { track } from './telemetry';
 import { updateHUD } from '../ui/hud';
 import { localDayIndex } from './daily';
+
+export type PassTrack = 'free' | 'elite' | 'platinum';
 
 export interface PassTier {
   tier: number;
@@ -27,7 +35,18 @@ export interface SeasonPassState {
   points: number;
   tier: number;
   claimed: number[];
+  /** Premium-tier claim ledger, keyed by track. */
+  claimedElite?: number[];
+  claimedPlatinum?: number[];
+  /** Order-Board cycles completed during this pass (drives unlocks). */
+  cyclesThisPass?: number;
 }
+
+/** Cycle thresholds at which the elite + platinum tracks earn their
+ *  gameplay unlock. Tweakable; chosen so a moderately engaged player
+ *  unlocks Elite mid-pass and Platinum near the end. */
+export const ELITE_CYCLES_REQUIRED = 3;
+export const PLATINUM_CYCLES_REQUIRED = 8;
 
 export const PASS_LENGTH_DAYS = 28;
 export const POINTS_PER_TIER = 90; // ~ a full day of play per tier
@@ -69,6 +88,30 @@ const REWARDS: Array<Omit<PassTier, 'tier'>> = [
 
 export const PASS_TIERS: PassTier[] = REWARDS.map((r, i) => ({ ...r, tier: i + 1 }));
 
+/** Elite track — earned via 3 Order-Board cycles. Rewards lean toward
+ *  growth-accelerators (XP, materials, boosts). */
+const ELITE_REWARDS: Array<Omit<PassTier, 'tier'>> = REWARDS.map((r, i) => ({
+  pointsRequired: r.pointsRequired,
+  rewardLabel: i % 2 === 0 ? `+50 XP · +1 Fert` : `+1 Speed · +1 Ink`,
+  reward: i % 2 === 0
+    ? (): void => { addXP(50); addItem('fertilizer', 1); toast('Elite Pass: +50 XP, +1 fertilizer', 'gold'); }
+    : (): void => { addItem('speedup', 1); addItem('qualityink', 1); toast('Elite Pass: +1 speed, +1 ink', 'gold'); },
+}));
+export const PASS_TIERS_ELITE: PassTier[] = ELITE_REWARDS.map((r, i) => ({ ...r, tier: i + 1 }));
+
+/** Platinum track — earned via 8 Order-Board cycles. Rare materials,
+ *  bigger coin lumps and signature "Scout Favor" event tokens. */
+const PLATINUM_REWARDS: Array<Omit<PassTier, 'tier'>> = REWARDS.map((r, i) => ({
+  pointsRequired: r.pointsRequired,
+  rewardLabel: i % 3 === 0 ? `+800💰 · +1 Priority` : i % 3 === 1 ? `+100 XP · +2 Ink` : `+3 Speed · +2 Fert`,
+  reward: i % 3 === 0
+    ? (): void => { state.coins += 800; state.stats.earned += 800; addItem('priority', 1); toast('Platinum Pass: +800💰, +1 Priority', 'gold'); }
+    : i % 3 === 1
+    ? (): void => { addXP(100); addItem('qualityink', 2); toast('Platinum Pass: +100 XP, +2 ink', 'gold'); }
+    : (): void => { addItem('speedup', 3); addItem('fertilizer', 2); toast('Platinum Pass: +3 speed, +2 fertilizer', 'gold'); },
+}));
+export const PASS_TIERS_PLATINUM: PassTier[] = PLATINUM_REWARDS.map((r, i) => ({ ...r, tier: i + 1 }));
+
 export function initPass(): void {
   if (!state.pass) {
     state.pass = {
@@ -77,9 +120,43 @@ export function initPass(): void {
       points: 0,
       tier: 0,
       claimed: [],
+      claimedElite: [],
+      claimedPlatinum: [],
+      cyclesThisPass: 0,
     };
   }
+  // Backfill the new fields on old saves.
+  if (!state.pass.claimedElite) state.pass.claimedElite = [];
+  if (!state.pass.claimedPlatinum) state.pass.claimedPlatinum = [];
+  if (state.pass.cyclesThisPass === undefined) state.pass.cyclesThisPass = 0;
   rolloverIfExpired();
+}
+
+export function isEliteUnlocked(): boolean {
+  initPass();
+  return (state.pass!.cyclesThisPass ?? 0) >= ELITE_CYCLES_REQUIRED;
+}
+
+export function isPlatinumUnlocked(): boolean {
+  initPass();
+  return (state.pass!.cyclesThisPass ?? 0) >= PLATINUM_CYCLES_REQUIRED;
+}
+
+/** Called by the order-meter when a cycle completes. Auto-announces
+ *  premium-track unlocks on the rising edge. */
+export function recordOrderCycle(): void {
+  initPass();
+  const p = state.pass!;
+  const before = p.cyclesThisPass ?? 0;
+  p.cyclesThisPass = before + 1;
+  if (before < ELITE_CYCLES_REQUIRED && p.cyclesThisPass >= ELITE_CYCLES_REQUIRED) {
+    toast('🏅 Elite Pass track unlocked!', 'gold');
+    sfx.achievement();
+  }
+  if (before < PLATINUM_CYCLES_REQUIRED && p.cyclesThisPass >= PLATINUM_CYCLES_REQUIRED) {
+    toast('💎 Platinum Pass track unlocked!', 'gold');
+    sfx.achievement();
+  }
 }
 
 export function rolloverIfExpired(): void {
@@ -92,6 +169,9 @@ export function rolloverIfExpired(): void {
       points: 0,
       tier: 0,
       claimed: [],
+      claimedElite: [],
+      claimedPlatinum: [],
+      cyclesThisPass: 0,
     };
     track('pass_rolled');
   }
@@ -119,16 +199,25 @@ function recomputeTier(): void {
   p.tier = 0;
 }
 
-export function claimPassTier(tier: number): boolean {
+export function claimPassTier(tier: number, passTrack: PassTrack = 'free'): boolean {
+  initPass();
   const p = state.pass!;
   if (tier > p.tier) return false;
-  if (p.claimed.includes(tier)) return false;
-  const def = PASS_TIERS[tier - 1];
+  if (passTrack === 'elite' && !isEliteUnlocked()) return false;
+  if (passTrack === 'platinum' && !isPlatinumUnlocked()) return false;
+  const ledger = passTrack === 'free' ? p.claimed
+    : passTrack === 'elite' ? (p.claimedElite ??= [])
+    : (p.claimedPlatinum ??= []);
+  if (ledger.includes(tier)) return false;
+  const list = passTrack === 'free' ? PASS_TIERS
+    : passTrack === 'elite' ? PASS_TIERS_ELITE
+    : PASS_TIERS_PLATINUM;
+  const def = list[tier - 1];
   if (!def) return false;
   def.reward();
-  p.claimed.push(tier);
+  ledger.push(tier);
   sfx.bell(); sfx.coin();
-  track('pass_tier_claimed', { tier });
+  track('pass_tier_claimed', { tier, track: passTrack });
   updateHUD();
   return true;
 }
