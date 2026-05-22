@@ -22,6 +22,11 @@ import { specEffects } from '../systems/specializations';
 import { breedSpeedMod, breedYieldChance } from '../systems/breeds';
 import { recordEventAction } from '../systems/live-events';
 import { addClubProgress } from '../systems/club';
+import {
+  canBreedPen, tryBreed, sellAnimal, recordProduce,
+  BREED_COIN_COST, BREED_FEED_COST, BABY_GROW_S,
+} from '../systems/lifecycle';
+import { nowSeconds as nowS } from '../utils';
 import type { BuildingInstance } from '../types';
 
 export function openPenPanel(b: BuildingInstance): void {
@@ -45,21 +50,39 @@ export function openPenPanel(b: BuildingInstance): void {
     for (let i = 0; i < def.capacity!; i++) {
       const a = animals[i];
       if (a) {
+        const stage = a.stage ?? 'adult';
+        const isBaby = stage === 'baby';
+        const isMature = stage === 'mature';
         const elapsed = nowSeconds() - a.lastProduced;
-        const ready = elapsed >= effectiveTime;
+        const ready = !isBaby && elapsed >= effectiveTime;
         const pct = Math.min(100, (elapsed / effectiveTime) * 100);
+        const babyAge = a.bornAt !== undefined ? nowS() - a.bornAt : BABY_GROW_S;
+        const babyPct = Math.min(100, (babyAge / BABY_GROW_S) * 100);
+        const ageLabel = isBaby ? '👶 Baby' : isMature ? '❤️ Mature' : '🐾 Adult';
         slots.push(`
-          <div class="shop-item">
-            <img class="ico" src="${sprites.animal[def.animal!]![0]!.toDataURL()}">
+          <div class="shop-item lifecycle-${stage}">
+            <img class="ico" src="${sprites.animal[def.animal!]![0]!.toDataURL()}"
+                 style="${isBaby ? 'transform:scale(0.7);opacity:0.85' : ''}">
             <div class="name">${aniDef.name}${isHungry ? ' 😟' : ''}</div>
-            <div style="width:100%;height:8px;background:#efe2c0;border-radius:4px;overflow:hidden">
-              <div style="width:${pct}%;height:100%;background:${ready ? '#6abf4b' : '#7ac0ef'}"></div>
-            </div>
-            <button ${ready && !isHungry ? '' : 'disabled'} data-act="collect" data-idx="${i}">${
-              isHungry ? 'Too hungry!' :
-              ready ? 'Collect ' + ITEMS[aniDef.produces]!.name :
-              'Growing... ' + Math.ceil(effectiveTime - elapsed) + 's'
-            }</button>
+            <div class="lifecycle-stage">${ageLabel}</div>
+            ${isBaby ? `
+              <div style="width:100%;height:8px;background:#efe2c0;border-radius:4px;overflow:hidden">
+                <div style="width:${babyPct}%;height:100%;background:#f4b942"></div>
+              </div>
+              <div class="lifecycle-hint">Growing... ${Math.max(0, Math.ceil(BABY_GROW_S - babyAge))}s</div>
+            ` : `
+              <div style="width:100%;height:8px;background:#efe2c0;border-radius:4px;overflow:hidden">
+                <div style="width:${pct}%;height:100%;background:${ready ? '#6abf4b' : '#7ac0ef'}"></div>
+              </div>
+              <button ${ready && !isHungry ? '' : 'disabled'} data-act="collect" data-idx="${i}">${
+                isHungry ? 'Too hungry!' :
+                ready ? 'Collect ' + ITEMS[aniDef.produces]!.name :
+                'Growing... ' + Math.ceil(effectiveTime - elapsed) + 's'
+              }</button>
+              <button class="ghost-btn" data-act="sell" data-idx="${i}" title="Sell to clear the slot">
+                Sell · +${Math.floor(aniDef.price * 0.5)}💰
+              </button>
+            `}
           </div>
         `);
       } else {
@@ -93,6 +116,14 @@ export function openPenPanel(b: BuildingInstance): void {
         <span style="font-size:11px;color:#888">have: ${state.inv.feed ?? 0}</span>
       </div>
       ${isHungry ? '<div style="color:#d24a4a;font-size:12px;margin-bottom:6px;text-align:center">⚠️ Animals are too hungry to produce. Feed them!</div>' : ''}
+      ${canBreedPen(b.id) ? `
+        <div class="breed-row">
+          <span class="breed-row-label">❤️ Two mature animals ready to breed</span>
+          <button class="btn primary" data-act="breed">
+            Breed · ${BREED_COIN_COST}💰 + ${BREED_FEED_COST}🌾
+          </button>
+        </div>
+      ` : ''}
       <div class="shop-grid">${slots.join('')}</div>
     `;
     body.querySelectorAll<HTMLButtonElement>('button[data-act]').forEach(btn => {
@@ -125,6 +156,11 @@ export function openPenPanel(b: BuildingInstance): void {
             ty: rand(def.h * TILE - 40) + 20,
             frameT: rand(2),
             frame: 0,
+            // Bought animals come in as full adults — only bred animals
+            // start as babies (see systems/lifecycle.ts).
+            bornAt: nowSeconds() - 120,
+            stage: 'adult',
+            produceCount: 0,
           });
           sfx.coin();
           toast(`Got a ${aniDef.name}!`);
@@ -147,6 +183,9 @@ export function openPenPanel(b: BuildingInstance): void {
           recordEventAction('animal_produce', aniDef.produces, yieldAmt);
           addClubProgress('animal_produce', yieldAmt);
           a.lastProduced = nowSeconds();
+          // FV3 lifecycle: each collect bumps the produce count and
+          // promotes adult → mature once the threshold lands.
+          recordProduce(b.id, idx);
           sfx.harvest();
           floatText(
             b.x * TILE + def.w * TILE / 2,
@@ -160,6 +199,20 @@ export function openPenPanel(b: BuildingInstance): void {
           addWeeklyPoints(8, t.focus === 'pen' ? 'pen' : 'craft');
           checkAchievements();
           render();
+        } else if (act === 'breed') {
+          const r = tryBreed(b.id);
+          if (!r.ok) {
+            toast(r.reason ?? 'Cannot breed right now.', 'error');
+            sfx.error();
+          }
+          updateHUD();
+          render();
+        } else if (act === 'sell') {
+          const idx = parseInt(btn.dataset.idx!, 10);
+          if (sellAnimal(b.id, idx)) {
+            updateHUD();
+            render();
+          }
         }
       });
     });

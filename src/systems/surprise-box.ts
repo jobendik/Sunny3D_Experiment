@@ -139,6 +139,25 @@ function buildRewardPool(rarity: 'common' | 'rare' | 'epic'): SurpriseReward[] {
         toast(`📦 EPIC Surprise! +2 ${ITEMS[m]?.name ?? m}`, 'gold');
       },
     });
+    // FV3 gacha grammar — exotic animal token. Tokens accumulate in
+    // inventory and can be redeemed later via the Sanctuary / Codex.
+    pool.push({
+      label: '🐾 Exotic Animal Token',
+      emoji: '🐾',
+      apply: () => {
+        addItem('exotictoken', 1);
+        toast('📦 EPIC Surprise! Exotic animal token!', 'gold');
+      },
+    });
+    // 1 Scout Favor — premium-pass tier currency, gameplay-earned.
+    pool.push({
+      label: '🧭 Scout Favor',
+      emoji: '🧭',
+      apply: () => {
+        addItem('scoutfavor', 1);
+        toast('📦 EPIC Surprise! Scout Favor token!', 'gold');
+      },
+    });
   }
 
   return pool;

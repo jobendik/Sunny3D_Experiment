@@ -178,6 +178,14 @@ export interface PenAnimal {
   ty: number;
   frameT: number;
   frame: number;
+  // FV3 lifecycle. Legacy saves omit these; the lifecycle ticker
+  // backfills them as 'adult' so the existing herd is untouched.
+  bornAt?: number;                      // timestamp of spawn
+  stage?: 'baby' | 'adult' | 'mature';
+  produceCount?: number;                 // increments on each successful collect
+  /** True while the player has marked this animal for sale (clears
+   *  a housing slot once the current production cycle completes). */
+  pendingSell?: boolean;
 }
 
 export interface ProductionJob {
@@ -480,6 +488,13 @@ export interface PassRoot {
   points: number;
   tier: number;
   claimed: number[];
+  /** Premium-tier ledgers — only populated once the matching track
+   *  is unlocked via Order-Board cycles (CrazyGames-safe: no
+   *  real-money tier). */
+  claimedElite?: number[];
+  claimedPlatinum?: number[];
+  /** Order-Board cycles completed in the current pass window. */
+  cyclesThisPass?: number;
 }
 
 export interface VisitorRoot {

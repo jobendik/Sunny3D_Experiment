@@ -207,6 +207,19 @@
   <!-- Objective rail: next best action -->
   <div id="objective-rail" class="objective-rail"></div>
 
+  <!-- ============================================================
+       ORDER BOARD MACRO-PROGRESS METER  (FV3 hallmark)
+       Fills as orders ship; reward box spawns when full.
+       ============================================================ -->
+  <div id="order-meter" class="order-meter" aria-label="Order Board progress">
+    <span class="order-meter-ico" aria-hidden="true">📋</span>
+    <div class="order-meter-bar">
+      <div class="order-meter-fill" id="order-meter-fill"></div>
+      <span class="order-meter-pip" id="order-meter-pip" aria-hidden="true">🎁</span>
+    </div>
+    <span class="order-meter-label" id="order-meter-label">0 / 6</span>
+  </div>
+
   <!-- Event banner -->
   <div id="event-banner" class="event-banner"></div>
 

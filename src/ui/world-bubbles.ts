@@ -18,7 +18,7 @@
 
 import { Vector3 } from 'three';
 import { state } from '../state';
-import { TILE } from '../constants';
+import { HOME_CENTER_X, HOME_CENTER_Y } from '../constants';
 import { BUILDINGS } from '../data/buildings';
 import { getCamera } from '../three/camera-rig';
 import { cropStage } from '../systems/crops';
@@ -26,13 +26,17 @@ import { siloUsage, barnUsage } from '../systems/storage';
 import { nowSeconds } from '../utils';
 import { ANIMALS } from '../data/animals';
 import { feedPen } from '../systems/pens';
+import { activeVisitors } from '../systems/visitors-v2';
+import { activeChatter } from '../systems/chatter';
+import { gateForButton, gateStatus } from '../systems/feature-visibility';
 import { openProductionPanel } from './production-panel';
 import { openPenPanel } from './pen-panel';
+import { openStoragePanel } from './storage-panel';
 
 const POOL_SIZE = 28;
 const tmpVec = new Vector3();
 
-export type BubbleKind = 'feed' | 'ready' | 'full' | 'emote' | 'love';
+export type BubbleKind = 'feed' | 'ready' | 'full' | 'emote' | 'love' | 'visitor' | 'hub' | 'chatter';
 
 export interface BubbleTarget {
   key: string;
@@ -287,8 +291,135 @@ export function computeBubbleTargets(): BubbleTarget[] {
         icon: '!',
         kind: 'full',
         pulse: true,
+        tap: () => document.getElementById('open-inventory')?.click(),
       });
     }
+  }
+
+  // -------- NPC visitor talk bubbles --------
+  // Visitors don't carry a 3D position — we anchor them in a small
+  // arc near the home centre so multiple visitors fan out instead of
+  // stacking on top of each other.
+  const visitors = activeVisitors();
+  if (visitors.length > 0) {
+    const radius = 4.5;
+    visitors.slice(0, 4).forEach((v, i) => {
+      const ang = -Math.PI / 2 + (i - (visitors.length - 1) / 2) * 0.8;
+      const cx = HOME_CENTER_X + Math.cos(ang) * radius;
+      const cz = HOME_CENTER_Y + Math.sin(ang) * radius;
+      out.push({
+        key: `visitor:${v.id}`,
+        wx: cx, wy: 1.8, wz: cz,
+        icon: v.emoji,
+        kind: 'visitor',
+        pulse: !v.served,
+        tap: () => document.querySelector<HTMLElement>('button[data-qeb="orders"]')?.click(),
+      });
+    });
+  }
+
+  // -------- Animal "love" / mature lifecycle bubble --------
+  // Lightweight: any animal whose lastProduced is older than a long
+  // produce interval AND whose feed is healthy gets a small heart
+  // bubble. Tap routes to the pen so the player can collect / breed.
+  for (const b of state.buildings) {
+    const def = BUILDINGS[b.type];
+    if (!def || def.kind !== 'pen') continue;
+    const list = state.penAnimals[b.id];
+    if (!list || list.length === 0) continue;
+    const feed = state.penFeed[b.id] ?? 100;
+    if (feed < 40) continue;            // hungry animals don't show love
+    const aniDef = def.animal ? ANIMALS[def.animal] : null;
+    if (!aniDef) continue;
+    // Show when the entire pen has produced at least N times and is
+    // not currently in the ready window (otherwise the ✓ bubble wins).
+    let matureCount = 0;
+    for (const a of list) {
+      // "Mature" proxy: produced recently enough to be alive >2 cycles
+      const elapsed = now - a.lastProduced;
+      if (elapsed >= aniDef.produceTime * 0.4 && elapsed < aniDef.produceTime) {
+        matureCount++;
+      }
+    }
+    if (matureCount >= Math.max(2, list.length - 1)) {
+      const cx = b.x + def.w / 2;
+      const cz = b.y + def.h / 2;
+      out.push({
+        key: `love:${b.id}`,
+        wx: cx, wy: 2.4, wz: cz,
+        icon: '❤️',
+        kind: 'love',
+        tap: () => openPenPanel(b),
+      });
+    }
+  }
+
+  // -------- 3D-anchored interaction hubs --------
+  // Greatbarn → tap to upgrade storage (FV3 "tap the world, not a menu").
+  for (const b of state.buildings) {
+    if (b.type !== 'greatbarn') continue;
+    const def = BUILDINGS[b.type];
+    if (!def) continue;
+    const cx = b.x + def.w / 2;
+    const cz = b.y + def.h / 2;
+    out.push({
+      key: `hub:storage:${b.id}`,
+      wx: cx, wy: 4.0, wz: cz,
+      icon: '⚒️',
+      kind: 'hub',
+      tap: () => openStoragePanel(),
+    });
+  }
+  // Fishing Dock → Ranger-Tower-style hub for Expeditions when unlocked.
+  for (const b of state.buildings) {
+    if (b.type !== 'fishingdock') continue;
+    const expGate = gateForButton('open-expeditions');
+    if (!expGate) break;
+    const status = gateStatus(expGate);
+    if (status !== 'unlocked' && status !== 'attention') break;
+    const def = BUILDINGS[b.type];
+    if (!def) break;
+    const cx = b.x + def.w / 2;
+    const cz = b.y + def.h / 2;
+    out.push({
+      key: `hub:expeditions:${b.id}`,
+      wx: cx, wy: 2.6, wz: cz,
+      icon: '🗺️',
+      kind: 'hub',
+      tap: () => document.getElementById('open-expeditions')?.click(),
+    });
+    break;
+  }
+  // Co-Op signpost near the home centre when the Club is unlocked.
+  {
+    const clubGate = gateForButton('open-club');
+    const status = clubGate ? gateStatus(clubGate) : 'hidden';
+    if (status === 'unlocked' || status === 'attention') {
+      out.push({
+        key: 'hub:club',
+        wx: HOME_CENTER_X - 5, wy: 2.0, wz: HOME_CENTER_Y - 3,
+        icon: '🤝',
+        kind: 'hub',
+        tap: () => document.getElementById('open-club')?.click(),
+      });
+    }
+  }
+
+  // -------- Ambient villager chatter --------
+  // Periodic "narrative" speech bubbles emitted from chatter.ts. We
+  // strip the leading emoji into the bubble icon so the talk bubble
+  // can display a compact glyph instead of full-text content (the
+  // rest of the line goes into the title attribute so curious
+  // players hovering get the full quip).
+  for (const c of activeChatter()) {
+    const trimmed = c.text.trim();
+    const firstChar = [...trimmed][0] ?? '💬';
+    out.push({
+      key: `chat:${c.id}`,
+      wx: c.wx, wy: 2.6, wz: c.wz,
+      icon: firstChar,
+      kind: 'chatter',
+    });
   }
 
   return out;
