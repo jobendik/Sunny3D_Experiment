@@ -641,7 +641,7 @@ Track every meaningful task. Tick the box when committed AND pushed AND the type
 - [x] 1.4 — 3D Roadside Shop Stand
 - [x] 1.5 — 3D Newspaper Stand
 - [x] 1.6 — 3D Neighbourhood Request Board (birdhouse)
-- [ ] 1.7 — 3D Ranger Tower (replace fishingdock-piggyback)
+- [x] 1.7 — 3D Ranger Tower (replace fishingdock-piggyback)
 - [x] 1.8 — 3D Co-Op Signpost
 - [ ] 1.9 — 3D Daily Wheel fairground prop
 - [ ] 1.10 — 3D Sanctuary Easel
@@ -727,6 +727,7 @@ Append a one-line entry per session here. Keep newest at top. Don't delete entri
 YYYY-MM-DD  Phase X.Y started / completed — commit <sha> — note
 ```
 
+- 2026-05-22  Phase 1.7 complete — Ranger Tower at NW corner (5.5, 0, 5.5), facing SE. Log-cabin-on-stilts with 4 cyl legs + diagonal braces, slatted-log walls (5 rows), gable cone roof, ladder on the south face, sky-blue observation flag on top. Expeditions hub bubble 🗺️ now anchors to the tower y=3.4 instead of piggybacking the fishingdock. Files: src/three/decor/ranger-tower.ts (new), three/index.ts, world-bubbles.ts. Typecheck + build green.
 - 2026-05-22  Phase 1.6 + 1.8 complete — Request Board birdhouse at (11, 13) with 3 pinned coloured request cards + bird hole + perch + finial. Co-Op Signpost at (12, 13) with 3 arrows pointing in different directions (sage/cherry/sky) and a fluttering red flag. Removed the old proxy world bubble (which was floating in mid-air at HOME_CENTER_X-5) and re-anchored the 🤝 (request) and 🏆 (club) bubbles to the actual meshes. Files: src/three/decor/request-board.ts (new), coop-signpost.ts (new), three/index.ts, world-bubbles.ts. Typecheck + build green.
 - 2026-05-22  Phase 1.5 complete — A-frame newspaper stand at (17.5, 0, 25.3), east of the south entrance. Tilted "DAILY ACRE" sign + 4 rolled papers in a tray. World bubble 📰 pulses when there's a new edition unread OR a help request the player can fulfill. Tap → opens gazette. Files: src/three/decor/newspaper-stand.ts (new), three/index.ts, world-bubbles.ts. Typecheck + build green.
 - 2026-05-22  Phase 1.4 complete — Thatched roadside stand at (5.5, 0, 19) just outside the W home edge, facing east. Counter, chalkboard with white scribbles, layered-cone thatched roof, 3 goods crates, apple bin. Goods puffs visible only when the corresponding stall slot status === 'listed'. World bubbles: 🛒 hub (becomes 💰 when any slot is sold), per-slot item icon when listed, pulsing 💰 when sold. Files: src/three/decor/roadside-stand.ts (new), three/index.ts, world-bubbles.ts. Typecheck + build green.

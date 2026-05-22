@@ -56,6 +56,9 @@ import {
 import {
   SIGNPOST_X, SIGNPOST_Z, SIGNPOST_BUBBLE_Y,
 } from '../three/decor/coop-signpost';
+import {
+  RANGER_X, RANGER_Z, RANGER_BUBBLE_Y,
+} from '../three/decor/ranger-tower';
 import { ITEMS } from '../data/items';
 import { unreadCount as mailboxUnreadCount } from '../systems/mailbox';
 
@@ -396,25 +399,21 @@ export function computeBubbleTargets(): BubbleTarget[] {
       tap: () => openStoragePanel(),
     });
   }
-  // Fishing Dock → Ranger-Tower-style hub for Expeditions when unlocked.
-  for (const b of state.buildings) {
-    if (b.type !== 'fishingdock') continue;
+  // -------- Ranger Tower → Expeditions hub (Phase 1.7) --------
+  // Anchors above the dedicated tower mesh in the NW corner. Replaces
+  // the old fishing-dock piggyback proxy.
+  {
     const expGate = gateForButton('open-expeditions');
-    if (!expGate) break;
-    const status = gateStatus(expGate);
-    if (status !== 'unlocked' && status !== 'attention') break;
-    const def = BUILDINGS[b.type];
-    if (!def) break;
-    const cx = b.x + def.w / 2;
-    const cz = b.y + def.h / 2;
-    out.push({
-      key: `hub:expeditions:${b.id}`,
-      wx: cx, wy: 2.6, wz: cz,
-      icon: '🗺️',
-      kind: 'hub',
-      tap: () => document.getElementById('open-expeditions')?.click(),
-    });
-    break;
+    const status = expGate ? gateStatus(expGate) : 'hidden';
+    if (status === 'unlocked' || status === 'attention') {
+      out.push({
+        key: 'hub:expeditions',
+        wx: RANGER_X, wy: RANGER_BUBBLE_Y, wz: RANGER_Z,
+        icon: '🗺️',
+        kind: 'hub',
+        tap: () => document.getElementById('open-expeditions')?.click(),
+      });
+    }
   }
   // -------- Boat at Dock (Phase 1.2) --------
   // Hub bubble when the boat is docked. Plus a per-crate "need" bubble
