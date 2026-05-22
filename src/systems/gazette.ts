@@ -17,6 +17,7 @@ import { rand, randi, choice } from '../utils';
 import { toast } from '../ui/toasts';
 import { sfx } from '../audio/sfx';
 import { updateHUD } from '../ui/hud';
+import { refreshDailyDeal } from './daily-deal';
 import type { NeighborSaleOffer, HelpRequestOffer, MaterialKey } from '../types';
 
 const MATERIAL_REWARDS: MaterialKey[] = ['plank', 'nail', 'screw', 'panel', 'bolt', 'rope', 'stake', 'mallet'];
@@ -37,6 +38,8 @@ export function initGazette(): void {
 
 export function refreshGazette(): void {
   initGazette();
+  // Roll over the daily deal as well — it's on the gazette's front page.
+  refreshDailyDeal();
   const g = state.gazette!;
   g.day = state.day;
   g.articles = [];

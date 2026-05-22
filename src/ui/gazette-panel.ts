@@ -8,10 +8,13 @@ import { VILLAGERS } from '../data/characters';
 import { sprites } from '../sprites';
 import { openModal } from './modal';
 import { initGazette, refreshGazette, buyNeighborSale, fulfillHelpRequest, markGazetteRead } from '../systems/gazette';
+import { initDailyDeal, buyDailyDeal, dailyDealAvailable, dailyDealDiscount } from '../systems/daily-deal';
+import { advertiseStallListing, getStallAd, AD_DIAMOND_COST } from '../systems/stall-ad';
 import { updateHUD } from './hud';
 
 export function openGazette(): void {
   initGazette();
+  initDailyDeal();
   markGazetteRead();
   if (state.gazette!.day !== state.day) refreshGazette();
   openModal('📰 Sunny Gazette', null);
@@ -23,6 +26,51 @@ export function openGazette(): void {
 function render(body: HTMLElement): void {
   const g = state.gazette!;
   let html = `<h2 class="gazette-title">Day ${state.day} · Sunny Acres</h2>`;
+
+  // === DAILY DEAL (front-page premium offer) ===
+  const dd = state.dailyDeal!;
+  const it = ITEMS[dd.itemKey];
+  const discount = dailyDealDiscount();
+  const canBuy = dailyDealAvailable() && state.gems >= dd.diamondCost;
+  html += `
+    <div class="gazette-daily-deal">
+      <div class="gazette-deal-badge">DAILY DEAL · -${discount}%</div>
+      <div class="gazette-deal-content">
+        <img class="gazette-deal-icon" src="${sprites.item[dd.itemKey]?.toDataURL() ?? ''}" alt="">
+        <div class="gazette-deal-text">
+          <div class="gazette-deal-name">${dd.qty}× ${it?.name ?? dd.itemKey}</div>
+          <div class="gazette-deal-price">
+            <s>${dd.baseCost} 💎</s> <b>${dd.diamondCost} 💎</b>
+          </div>
+        </div>
+        <button class="btn ${canBuy ? 'diamond-btn' : ''}" id="gazette-deal-buy" ${dailyDealAvailable() ? '' : 'disabled'}>
+          ${dd.bought ? '✓ Bought' : state.gems < dd.diamondCost ? 'Need 💎' : `Buy for ${dd.diamondCost}💎`}
+        </button>
+      </div>
+    </div>
+  `;
+
+  // === Stall Advertisement (paid newspaper boost for Roadside Shop) ===
+  const ad = getStallAd();
+  if (state.marketStall?.unlocked) {
+    html += `
+      <div class="gazette-stall-ad">
+        <div class="gazette-stall-ad-head">📣 Advertise your Roadside Shop</div>
+        ${ad
+          ? `<div class="gazette-ad-active">
+              Your listings are <b>advertised</b> until day ${ad.expiresDay}!
+              <small>Customers buy faster while ads run.</small>
+            </div>`
+          : `<div class="gazette-ad-pitch">
+              <p>Boost stall sale speed for the next 2 days. ${AD_DIAMOND_COST}💎.</p>
+              <button class="btn diamond-btn" id="gazette-ad-buy" ${state.gems < AD_DIAMOND_COST ? 'disabled' : ''}>
+                Advertise for ${AD_DIAMOND_COST}💎
+              </button>
+            </div>`
+        }
+      </div>
+    `;
+  }
 
   // Articles
   for (const a of g.articles) {
@@ -120,4 +168,16 @@ function render(body: HTMLElement): void {
       }
     }),
   );
+  const dealBtn = document.getElementById('gazette-deal-buy');
+  if (dealBtn) {
+    dealBtn.addEventListener('click', () => {
+      if (buyDailyDeal()) render(body);
+    });
+  }
+  const adBtn = document.getElementById('gazette-ad-buy');
+  if (adBtn) {
+    adBtn.addEventListener('click', () => {
+      if (advertiseStallListing()) render(body);
+    });
+  }
 }

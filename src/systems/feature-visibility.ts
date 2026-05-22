@@ -268,6 +268,37 @@ export const FEATURE_GATES: FeatureGate[] = [
   },
   { id: 'share', label: 'Share', icon: '🖼️', category: 'advanced',
     unlockLevel: 8, openButtonId: 'open-snapshot' },
+
+  // ---- Hay Day-grammar additions (v7) ----
+  { id: 'mailbox', label: 'Mail', icon: '📬', category: 'daily',
+    unlockLevel: 1, openButtonId: 'open-mailbox',
+    hasAttention: () => {
+      const m = state.mailbox;
+      if (!m) return false;
+      return m.letters.some(l => !l.read);
+    },
+  },
+  { id: 'surprise', label: 'Surprise', icon: '📦', category: 'daily',
+    unlockLevel: 2, revealAt: 1, openButtonId: 'open-surprise',
+    hasAttention: () => state.surpriseBox?.pending === true,
+  },
+  { id: 'piggy', label: 'Piggy', icon: '🐷', category: 'daily',
+    unlockLevel: 3, revealAt: 1, openButtonId: 'open-piggy',
+    hasAttention: () => {
+      const pb = state.piggyBank;
+      if (!pb) return false;
+      return pb.gems > 0 && (pb.gems / Math.max(1, pb.cap)) >= 0.3 && !pb.broken;
+    },
+  },
+  { id: 'sanctuary', label: 'Sanctuary', icon: '📖', category: 'progression',
+    unlockLevel: 6, revealAt: 2, openButtonId: 'open-sanctuary',
+    isUnlocked: () => !!state.sanctuary?.unlocked || state.level >= 6,
+    hasAttention: () => !!state.sanctuary?.active,
+  },
+  { id: 'settings', label: 'Settings', icon: '⚙️', category: 'core',
+    unlockLevel: 1, openButtonId: 'open-settings' },
+  { id: 'edit-mode', label: 'Edit', icon: '✂️', category: 'core',
+    unlockLevel: 2, openButtonId: 'toggle-edit-mode' },
 ];
 
 /** Map by openButtonId for fast lookup. */

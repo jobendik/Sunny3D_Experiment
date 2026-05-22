@@ -18,6 +18,7 @@ import type { MarketStallSlot } from '../types';
 import { spawnHUDBurst } from './flyers';
 import { sfx } from '../audio/sfx';
 import { updateHUD } from '../ui/hud';
+import { stallAdMultiplier } from './stall-ad';
 
 // Buyers — extends villager names with travelling customers.
 const TRAVELING_BUYERS: ReadonlyArray<string> = [
@@ -98,9 +99,11 @@ function saleProbabilityPerMinute(slot: MarketStallSlot): number {
   const hotFactor = hot && hot.itemKey === slot.itemKey ? 1.4 : 1.0;
   // Smaller quantities sell faster than huge piles.
   const qtyFactor = Math.max(0.45, 1.0 - (slot.qty - 1) * 0.05);
+  // Newspaper ad multiplier (Hay Day's "Daily Dirt" boost).
+  const adFactor = stallAdMultiplier();
   // Base: ~22% chance per minute when fair price
   const base = 0.22;
-  return Math.min(0.92, base * priceFactor * repFactor * hotFactor * qtyFactor);
+  return Math.min(0.95, base * priceFactor * repFactor * hotFactor * qtyFactor * adFactor);
 }
 
 export function listItemForSale(itemKey: string, qty: number, pricePerUnit: number): boolean {

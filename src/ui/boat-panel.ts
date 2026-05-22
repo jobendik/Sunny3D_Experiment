@@ -6,7 +6,7 @@ import { state } from '../state';
 import { ITEMS } from '../data/items';
 import { sprites } from '../sprites';
 import { openModal } from './modal';
-import { initBoat, fillBoatCrate, fillBoatCrateMax, boatStatusLabel } from '../systems/boat';
+import { initBoat, fillBoatCrate, fillBoatCrateMax, boatStatusLabel, instantSummonBoat, BOAT_INSTANT_COST } from '../systems/boat';
 
 export function openBoatPanel(): void {
   initBoat();
@@ -52,6 +52,11 @@ function render(body: HTMLElement): void {
         ${b.state === 'departed' || b.state === 'arriving'
           ? 'The boat will arrive soon — your dock fills with crates when it does.'
           : 'No boat at the dock right now.'}
+        <div style="margin-top:14px">
+          <button class="btn diamond-btn" id="boat-instant" ${state.gems < BOAT_INSTANT_COST ? 'disabled' : ''}>
+            💎 ${BOAT_INSTANT_COST} — Summon the boat now
+          </button>
+        </div>
       </div>`}
     ${b.bonusMaterial && docked ? `
       <div class="boat-bonus">
@@ -72,6 +77,12 @@ function render(body: HTMLElement): void {
       render(body);
     }),
   );
+  const instantBtn = document.getElementById('boat-instant');
+  if (instantBtn) {
+    instantBtn.addEventListener('click', () => {
+      if (instantSummonBoat()) render(body);
+    });
+  }
 }
 
 function renderCrates(): string {
@@ -83,8 +94,12 @@ function renderCrates(): string {
     const have = state.inv[c.itemKey] ?? 0;
     const done = c.filled >= c.needed;
     const pct = Math.round((c.filled / c.needed) * 100);
+    // Hay Day-style help indicator: ! when the player can't currently
+    // fill this crate (no items in barn).
+    const needHelp = !done && have < (c.needed - c.filled);
     html += `
       <div class="boat-crate ${done ? 'done' : ''}">
+        ${needHelp ? '<span class="boat-help-mark" title="Need more items — friends could help">!</span>' : ''}
         <div class="boat-crate-head">
           <img class="ico" src="${sprites.item[c.itemKey]?.toDataURL() ?? ''}">
           <div class="boat-crate-name">${it?.name ?? c.itemKey}</div>

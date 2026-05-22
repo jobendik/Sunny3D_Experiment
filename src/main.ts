@@ -126,6 +126,20 @@ import { openLiveEventsPanel } from './ui/live-events-panel';
 import { openExpansionPanel } from './ui/expansion-panel';
 import { openRecipeBook } from './ui/recipe-book-panel';
 import { openMuseum } from './ui/museum-panel';
+// Hay Day-grammar additions (v7)
+import { initMailbox, mailboxTick, unreadCount } from './systems/mailbox';
+import { initSurpriseBox, tickSurpriseBox, hasPendingBox } from './systems/surprise-box';
+import { initPiggyBank, piggyPct } from './systems/piggy-bank';
+import { initDailyDeal } from './systems/daily-deal';
+import { initSanctuary, tickSanctuary } from './systems/sanctuary';
+import { initSettings } from './systems/settings';
+import { toggleEditMode, isEditMode, setEditMode } from './systems/edit-mode';
+import { setScenicMode } from './systems/settings';
+import { openMailboxPanel } from './ui/mailbox-panel';
+import { openSurpriseBoxPanel } from './ui/surprise-box-panel';
+import { openSanctuaryPanel } from './ui/sanctuary-panel';
+import { openPiggyPanel } from './ui/piggy-panel';
+import { openSettingsPanel } from './ui/settings-panel';
 
 // Note: starting farm layout (lake, paths, soil hints, pre-plowed
 // patch) is now built by `generateWorld()` in three/terrain/world-gen.ts
@@ -165,6 +179,13 @@ function bindToolbarHandlers(): void {
   document.getElementById('open-expansion')?.addEventListener('click', openExpansionPanel);
   document.getElementById('open-recipe-book')?.addEventListener('click', openRecipeBook);
   document.getElementById('open-museum')?.addEventListener('click', openMuseum);
+  // Hay Day-grammar additions
+  document.getElementById('open-mailbox')?.addEventListener('click', openMailboxPanel);
+  document.getElementById('open-surprise')?.addEventListener('click', openSurpriseBoxPanel);
+  document.getElementById('open-sanctuary')?.addEventListener('click', openSanctuaryPanel);
+  document.getElementById('open-piggy')?.addEventListener('click', openPiggyPanel);
+  document.getElementById('open-settings')?.addEventListener('click', openSettingsPanel);
+  document.getElementById('toggle-edit-mode')?.addEventListener('click', () => toggleEditMode());
   document.getElementById('save-btn')!.addEventListener('click', () => {
     saveGame();
     toast('Game saved!');
@@ -299,6 +320,13 @@ function init(): void {
   initToolShed();
   initBuildingUpgrades();
   initDecorSets(); refreshSetsAndAnnounce();
+  // Hay Day-grammar additions
+  initSettings();
+  initMailbox();
+  initSurpriseBox();
+  initPiggyBank();
+  initDailyDeal();
+  initSanctuary();
   maybeEnableDebug();
   // Rebase market stall offline sales.
   if (loaded && state.lastSessionEndedAt) {

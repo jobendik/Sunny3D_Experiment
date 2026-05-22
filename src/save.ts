@@ -13,7 +13,9 @@ import type { GameState, Tile } from './types';
 // v6 introduces the 32×32 world with regions + tile obstacles. v5
 // saves stored an 18×18 grid; the migration generates a fresh 32×32
 // world and embeds the old grid into the centre (see embedLegacyGrid).
-const CURRENT_SAVE_VERSION = 6;
+// v7 adds Hay Day-grammar systems: mailbox, surprise box, piggy bank,
+// daily deal, sanctuary, settings.
+const CURRENT_SAVE_VERSION = 7;
 
 interface SaveData {
   saveVersion?: number;
@@ -95,6 +97,13 @@ interface SaveData {
   toolShed?: GameState['toolShed'];
   buildingUpgrades?: GameState['buildingUpgrades'];
   decorSets?: GameState['decorSets'];
+  // Hay Day-grammar additions (v7)
+  mailbox?: GameState['mailbox'];
+  surpriseBox?: GameState['surpriseBox'];
+  piggyBank?: GameState['piggyBank'];
+  dailyDeal?: GameState['dailyDeal'];
+  sanctuary?: GameState['sanctuary'];
+  settings?: GameState['settings'];
   // Transient migration hints (not stored in localStorage; set by
   // migrateSave() and read by loadGame() to shift entity coords).
   _migrateOffsetX?: number;
@@ -183,6 +192,12 @@ export function saveGame(): void {
     toolShed: state.toolShed,
     buildingUpgrades: state.buildingUpgrades,
     decorSets: state.decorSets,
+    mailbox: state.mailbox,
+    surpriseBox: state.surpriseBox,
+    piggyBank: state.piggyBank,
+    dailyDeal: state.dailyDeal,
+    sanctuary: state.sanctuary,
+    settings: state.settings,
   };
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
@@ -217,6 +232,11 @@ function migrateSave(data: SaveData): SaveData {
       data._migrateOffsetY = offsetY;
     }
     data.saveVersion = 6;
+  }
+  if (data.saveVersion < 7) {
+    // v7: Hay Day-grammar additions — all new fields default via
+    // their init() function on load. No structural migration needed.
+    data.saveVersion = 7;
   }
   return data;
 }
@@ -337,6 +357,12 @@ export function loadGame(): boolean {
     if (data.toolShed) state.toolShed = data.toolShed;
     if (data.buildingUpgrades) state.buildingUpgrades = data.buildingUpgrades;
     if (data.decorSets) state.decorSets = data.decorSets;
+    if (data.mailbox) state.mailbox = data.mailbox;
+    if (data.surpriseBox) state.surpriseBox = data.surpriseBox;
+    if (data.piggyBank) state.piggyBank = data.piggyBank;
+    if (data.dailyDeal) state.dailyDeal = data.dailyDeal;
+    if (data.sanctuary) state.sanctuary = data.sanctuary;
+    if (data.settings) state.settings = data.settings;
     state.saveVersion = data.saveVersion ?? CURRENT_SAVE_VERSION;
 
     const offset = data.saveTime || 0;

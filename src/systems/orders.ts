@@ -21,6 +21,8 @@ import { recordEventAction } from './live-events';
 import { addClubProgress } from './club';
 import { recordVillageEngagement } from './village';
 import { reputationCoinBonus } from './reputation';
+import { maybeDeliverThanks } from './mailbox';
+import { piggyOnDelivery } from './piggy-bank';
 import type { Order } from '../types';
 
 export function generateOrder(): Order {
@@ -112,6 +114,8 @@ export function fulfillOrder(orderId: string): void {
   for (const k in o.items) recordEventAction('order_contains', k, o.items[k]!);
   addClubProgress('order', 1);
   recordVillageEngagement('order');
+  if (o.customerId) maybeDeliverThanks(o.customerId);
+  piggyOnDelivery();
   track('order_fulfilled', { reward });
   checkAchievements();
 }
@@ -140,10 +144,16 @@ export function renderOrders(): void {
     }).join('');
     const can = hasItems(o.items);
     const greet = o.greet ?? choice(v.greet);
+    // Show a help "!" indicator when the order is missing items (helpable
+    // by friends in a future networked version, but visually it tells the
+    // player "stuck on this one"). Hay Day's exclamation-point grammar.
+    const missingCount = Object.keys(o.items).filter(k => (state.inv[k] ?? 0) < o.items[k]!).length;
+    const showHelp = missingCount > 0;
     card.innerHTML = `
       <div class="order-customer">
         <div class="order-portrait" style="background:${v.accent}33;border-color:${v.accent}">
           <span class="order-portrait-emoji">${v.emoji}</span>
+          ${showHelp ? '<span class="order-help-mark" title="Missing items">!</span>' : ''}
         </div>
         <div class="order-customer-text">
           <div class="order-customer-name">${v.name} <small>· ${v.role}</small> <span class="friend-hearts">${friendshipHearts(v.id)}</span></div>

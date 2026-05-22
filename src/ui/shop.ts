@@ -23,6 +23,7 @@ import { track } from '../systems/telemetry';
 import { comboHit } from '../systems/combo';
 import { addPassPoints } from '../systems/season-pass';
 import { spawnHUDBurst } from '../systems/flyers';
+import { piggyOnCoinSpend } from '../systems/piggy-bank';
 
 export function openShop(): void {
   openModal('🛒 Shop', [
@@ -183,6 +184,7 @@ function buyShopItem(key: string, qty: number, unit: number): void {
   const total = unit * qty;
   if (state.coins < total) { sfx.cantAfford(); toast('Not enough coins!', 'error'); return; }
   state.coins -= total;
+  piggyOnCoinSpend(total);
   addItem(key, qty);
   sfx.coin();
   toast(`+${qty} ${ITEMS[key]!.name}`);
