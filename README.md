@@ -1,13 +1,16 @@
 # Sunny Acres — A Farming Adventure
 
-A cozy, browser-only farming/management game with procedurally generated
-sprites, music, and SFX. Plant crops, raise animals, fish, run production
-chains, deliver to a small town, and master the weather itself with the
-signature **Weather Mastery Grid**.
+A cozy, browser-only 3D farming/management game with procedurally generated
+meshes, sprites, music, and SFX. Plant crops, raise animals, fish, run
+production chains, deliver to a small town, and master the weather itself
+with the signature **Weather Mastery Grid**.
 
-Built in TypeScript, rendered with `<canvas>`, with **zero external game
-assets** — every sprite is drawn at boot and every sound is synthesized
-via the Web Audio API.
+Built in TypeScript, rendered with **Three.js** (orthographic-isometric
+camera + bloom + soft contact shadows) and a 2D **screen-space-overlay
+DOM** for HUD and world-anchored speech bubbles. Every 3D mesh and every
+HUD sprite is generated procedurally at boot; every sound is synthesized
+via the Web Audio API. **Zero external game assets, zero CDN, zero
+network calls.**
 
 Live demo: **https://jobendik.github.io/sunnyacres/** (deploys automatically
 on every push to `main`).
@@ -40,6 +43,40 @@ The first 10 minutes deliberately surface only the core loop. New systems
 unlock and appear in the More menu as you level up — see
 [`docs/system-fatigue-audit.md`](docs/system-fatigue-audit.md) for the full
 tier breakdown.
+
+## Diegetic 3D world objects (Hay Day / FarmVille-3 grammar)
+
+The 3D world is the player's primary menu. Every major system has a
+tappable mesh that anchors a screen-space "world bubble" with the
+relevant state:
+
+| Mesh | Location | Routes to |
+|---|---|---|
+| Order Truck | South entrance | Quests + Order Board |
+| Boat at Dock + crates | NW lakeshore | Boat delivery panel |
+| Mailbox (raises flag on unread mail) | South entrance, west | Mailbox |
+| Roadside Stand (per-slot crates) | West edge | Market Stall |
+| Newspaper Stand | South entrance, east | Sunny Gazette |
+| Request Board (birdhouse) | Near home centre | Friendship |
+| Co-op Signpost | Near home centre | Farming Club |
+| Ranger Tower | NW corner | Expeditions |
+| Daily Wheel (spins faster when claimable) | South entrance | Daily Wheel |
+| Sanctuary Easel | East lakeshore | Sanctuary book |
+| Festival Cart (conditional) | South-centre | Festival deliveries |
+| Train Station + engine (slides in on return) | East edge | Train deliveries |
+| Hot-Air Balloon (drifting overhead) | Above the farm | Balloon |
+
+World bubbles are object-pooled, raycast-disabled by default, and
+projected each frame via `camera.project()` so they stay anchored to
+their 3D entity through camera pan / zoom / rotate. See
+`src/ui/world-bubbles.ts`.
+
+The HUD itself follows the FV3 corner-anchored grammar: profile + XP
+top-left, coins + diamonds + an **Offer Pill** top-right, collapsible
+Quick Event Bar on the left edge, Book button + Hammer Build FAB +
+cash-register Shop FAB on the right/bottom edges, tool dock
+bottom-centre. The center is intentionally empty so the world
+breathes.
 
 ## Signature mechanic: Weather Mastery Grid
 
@@ -103,23 +140,40 @@ expeditions, and obstacle clearing) into stronger composite cards.
 - **Single mutable state**: `src/state.ts` exports a `state: GameState`
   singleton. Every system imports it and mutates fields directly.
   See [`src/types.ts`](src/types.ts) for the full schema.
-- **Zero dependencies**: gameplay, sprites, and audio all use vanilla
-  browser APIs (`<canvas>`, Web Audio, `localStorage`,
-  `requestAnimationFrame`). The only `devDependencies` are TypeScript and
-  Vite.
-- **Procedural sprites**: every visible asset is drawn into an offscreen
-  `<canvas>` at boot via `buildSprites()` and cached. No image files.
-- **Save**: serialized to `localStorage` under
-  `sunnyacres-save-v3` with an internal schema version (currently v5).
-  Timers are rebased on load so growth/production/boats/balloons/etc.
-  resume cleanly across reloads and offline sessions.
-- **Progressive disclosure**: `src/systems/feature-visibility.ts` is the
-  single source of truth for which More-menu buttons appear at each
-  level. New players see a small curated set; late-game players see
-  everything.
+- **One runtime dep (Three.js)**: 3D rendering uses Three.js
+  (Lambert materials + cached primitives + a post-FX composer).
+  Gameplay, HUD, sprites, and audio still use vanilla browser APIs
+  (Web Audio, `localStorage`, `requestAnimationFrame`).
+- **Procedural everything**: every 3D mesh in `src/three/buildings/`,
+  `src/three/decor/`, and `src/three/entities/` is built from cached
+  primitives (`procgen/geometries.ts`) and Lambert materials
+  (`procgen/materials.ts`). Every HUD sprite is drawn into an
+  offscreen `<canvas>` at boot via `buildSprites()` and cached.
+  **No image files, no GLB/GLTF, no audio assets.**
+- **World-bubble overlay**: `src/ui/world-bubbles.ts` runs a single
+  object-pooled DOM layer above the 3D canvas. Each frame the
+  visible bubble set is projected via `camera.project()` and
+  positioned with `transform: translate3d(...)`. Behind-camera
+  culling via `NDC.z > 1`. Raycast off by default.
+- **Save**: serialized to `localStorage` under `sunnyacres-save-v4`
+  with an internal schema version (currently v5). Timers are rebased
+  on load so growth/production/boats/balloons/etc. resume cleanly
+  across reloads and offline sessions.
+- **Progressive disclosure**: `src/systems/feature-visibility.ts` is
+  the single source of truth for which More-menu buttons appear at
+  each level. New players see a small curated set; late-game players
+  see everything.
 - **Objective Rail**: `src/systems/objectives.ts` ranks the top 1–4
-  next-best actions across every implemented system, surfaced at the top
-  of the screen so the player always knows what to do next.
+  next-best actions across every implemented system, surfaced at the
+  top of the screen so the player always knows what to do next.
+- **Accessibility**: focus trap (`src/ui/focus-trap.ts`) applied to
+  every modal + bottom sheet + side panel. `.sr-only` companion text
+  on the XP bar. `:focus-visible` honey-tinted ring (yellow under
+  `body.high-contrast`). Reduced-motion mode honours OS preference
+  and a Settings toggle.
+
+For the full Hay Day + FarmVille 3 parity plan and ongoing checklist,
+see [`roadMapForward.md`](roadMapForward.md).
 
 ## Project layout
 
@@ -130,21 +184,40 @@ src/
 ├── types.ts               # cross-cutting TypeScript interfaces
 ├── save.ts                # localStorage serialization + migration
 ├── loop.ts                # update(dt) — ticks all systems
-├── render.ts              # depth-sorted canvas render
-├── style.css              # all global styles
+├── input.ts               # pointer / touch / pinch / long-press
+├── canvas.ts              # screen-size helpers (SW/SH)
+├── constants.ts           # world grid + tile constants
+├── style.css              # all global styles + design tokens
 ├── data/                  # static game data tables (typed)
-├── sprites/               # procedural sprite generation
+├── sprites/               # procedural canvas sprite generation (HUD)
 ├── audio/                 # synthesized sfx + ambient music
-├── systems/               # gameplay logic (70+ files, one per system)
-└── ui/                    # DOM-driven UI panels (one per panel)
+├── systems/               # gameplay logic (95+ files, one per system)
+├── three/                 # Three.js 3D pipeline
+│   ├── index.ts           # init3d() + render3d(dt)
+│   ├── renderer.ts        # WebGL renderer + DPR
+│   ├── scene-root.ts      # scene + grouped layers
+│   ├── camera-rig.ts      # orthographic-iso camera + rotate/reset
+│   ├── lighting.ts        # day/night sun + hemi + bloom drive
+│   ├── post-fx.ts         # bloom + colour grade composer
+│   ├── procgen/           # cached primitive + material helpers
+│   ├── buildings/         # per-building factories (24 today)
+│   ├── decor/             # diegetic world props (order truck, boat,
+│   │                      #   mailbox, ranger tower, …)
+│   ├── entities/          # *-manager.ts files driving meshes
+│   ├── terrain/           # tile grid, lake, paths, outer world
+│   ├── sky/               # sky dome + clouds
+│   └── fx/                # particles, birds, beacons, weather
+└── ui/                    # DOM-driven HUD + panels + world-bubble
+                          #   overlay (one file per surface)
 docs/
 └── system-fatigue-audit.md   # the clarity/pacing pass design doc
+roadMapForward.md             # full Hay Day + FV3 parity roadmap
 ```
 
 ## Save / load
 
 The game autosaves every ~20 seconds and on `beforeunload`. The save key
-is `sunnyacres-save-v3`. Each subsystem's `init*()` function is defensive
+is `sunnyacres-save-v4` (defined in `src/constants.ts`). Each subsystem's `init*()` function is defensive
 against missing fields, so older saves load cleanly even after new
 systems are added. Timer fields (crop growth, production jobs, boat
 docking, expedition energy, contracts, balloons, visitors, …) are all
@@ -154,7 +227,7 @@ correctly.
 If you want to nuke a save during development:
 
 ```js
-localStorage.removeItem('sunnyacres-save-v3')
+localStorage.removeItem('sunnyacres-save-v4')
 ```
 
 ## Debug helpers
