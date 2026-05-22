@@ -21,19 +21,26 @@ import { collectionBonuses } from '../systems/collection';
 import { perkValue } from '../systems/prestige';
 import { track } from '../systems/telemetry';
 import { comboHit } from '../systems/combo';
-import { addPassPoints } from '../systems/season-pass';
+import { addPassPoints, passDaysLeft, isEliteUnlocked, isPlatinumUnlocked, PASS_TIERS } from '../systems/season-pass';
 import { spawnHUDBurst } from '../systems/flyers';
 import { piggyOnCoinSpend } from '../systems/piggy-bank';
+import { initDailyDeal, dailyDealAvailable, dailyDealDiscount, buyDailyDeal } from '../systems/daily-deal';
+import { hasPendingBox } from '../systems/surprise-box';
 
-export function openShop(): void {
+export function openShop(defaultTab?: string): void {
   openModal('🛒 Shop', [
-    { key: 'seeds', label: 'Seeds', render: renderShopSeeds },
-    { key: 'trees', label: 'Trees', render: renderShopTrees },
-    { key: 'sell',  label: 'Sell',  render: renderShopSell },
-    { key: 'feed',  label: 'Buy',   render: renderShopFeed },
+    { key: 'seeds',    label: 'Seeds',    render: renderShopSeeds },
+    { key: 'trees',    label: 'Trees',    render: renderShopTrees },
+    { key: 'sell',     label: 'Sell',     render: renderShopSell },
+    { key: 'feed',     label: 'Buy',      render: renderShopFeed },
     { key: 'supplies', label: 'Supplies', render: renderShopSupplies },
-  ], 'seeds');
+    { key: 'offers',   label: 'Offers',   render: renderShopOffers },
+    { key: 'pass',     label: 'Pass',     render: renderShopPass },
+  ], defaultTab ?? 'seeds');
 }
+
+/** Re-export for HUD's offer-pill — opens the shop with the Offers tab focused. */
+export function openShopOffers(): void { openShop('offers'); }
 
 function renderShopTrees(container: HTMLElement): void {
   container.innerHTML = `<p style="font-size:13px;color:#666;margin:0 0 8px 0">
@@ -190,6 +197,190 @@ function buyShopItem(key: string, qty: number, unit: number): void {
   toast(`+${qty} ${ITEMS[key]!.name}`);
   updateHUD();
   renderShopFeed(document.getElementById('modal-body')!);
+}
+
+// =============================================================
+//  OFFERS TAB — FV3-grammar: Daily Deal · Surprise Box ·
+//  Piggy Bank · Maggie · Gem Packs (no real IAP).
+// =============================================================
+function renderShopOffers(container: HTMLElement): void {
+  initDailyDeal();
+  const d = state.dailyDeal;
+  const dealReady = dailyDealAvailable();
+  const dealDiscount = dealReady ? dailyDealDiscount() : 0;
+  const surprisePending = hasPendingBox();
+  const pb = state.piggyBank;
+  const piggyPct = pb ? Math.min(100, Math.round((pb.gems / Math.max(1, pb.cap)) * 100)) : 0;
+
+  container.innerHTML = `
+    <p style="font-size:12px;color:#666;margin:0 0 12px 0">
+      Limited-time deals and curated bundles. Hay-Day-style — earned, not bought.
+    </p>
+    <div class="offers-grid"></div>
+    <h4 style="margin:18px 0 8px 0;font-family:var(--font-display);">💎 Diamonds — Earn Through Play</h4>
+    <p style="font-size:12px;color:#666;margin:0 0 8px 0">
+      Sunny Acres does not sell diamonds. Earn them by completing achievements,
+      levelling up, spinning the Daily Wheel, and finishing the Season Pass.
+    </p>
+    <div class="gem-packs-grid"></div>
+  `;
+
+  const grid = container.querySelector<HTMLElement>('.offers-grid')!;
+
+  // ----- Daily Deal card -----
+  if (d) {
+    const card = document.createElement('div');
+    card.className = 'offer-card';
+    const it = ITEMS[d.itemKey];
+    card.innerHTML = `
+      <div class="offer-card-tag">DAILY DEAL${dealDiscount > 0 ? ` · -${dealDiscount}%` : ''}</div>
+      <img class="ico" src="${sprites.item[d.itemKey]?.toDataURL() ?? ''}" style="height:54px;width:auto">
+      <div class="offer-card-name">${it?.name ?? d.itemKey} ×${d.qty}</div>
+      <div class="offer-card-price">💎 <b>${d.diamondCost}</b> <s>${d.baseCost}</s></div>
+      <button ${!dealReady || state.gems < d.diamondCost ? 'disabled' : ''}>
+        ${d.bought ? 'Bought today' : (state.gems < d.diamondCost ? 'Need diamonds' : 'Claim')}
+      </button>
+    `;
+    card.querySelector<HTMLButtonElement>('button')!.addEventListener('click', () => {
+      if (buyDailyDeal()) renderShopOffers(container);
+    });
+    grid.appendChild(card);
+  }
+
+  // ----- Surprise Box -----
+  const surpriseCard = document.createElement('div');
+  surpriseCard.className = 'offer-card';
+  surpriseCard.innerHTML = `
+    <div class="offer-card-tag">SURPRISE BOX</div>
+    <div style="font-size:54px;line-height:1">📦</div>
+    <div class="offer-card-name">Mystery Rewards</div>
+    <div class="offer-card-price">${surprisePending ? '🎁 Ready to open!' : 'Earn by playing'}</div>
+    <button>${surprisePending ? 'Open box' : 'View details'}</button>
+  `;
+  surpriseCard.querySelector<HTMLButtonElement>('button')!.addEventListener('click', () => {
+    closeModal();
+    document.getElementById('open-surprise')?.click();
+  });
+  grid.appendChild(surpriseCard);
+
+  // ----- Piggy Bank -----
+  if (pb) {
+    const piggyCard = document.createElement('div');
+    piggyCard.className = 'offer-card';
+    piggyCard.innerHTML = `
+      <div class="offer-card-tag">PIGGY BANK</div>
+      <div style="font-size:54px;line-height:1">🐷</div>
+      <div class="offer-card-name">${pb.gems} 💎 saved</div>
+      <div class="offer-card-meta">${piggyPct}% full · breaks at season end</div>
+      <button>${pb.broken ? 'Broken — restart' : 'View piggy'}</button>
+    `;
+    piggyCard.querySelector<HTMLButtonElement>('button')!.addEventListener('click', () => {
+      closeModal();
+      document.getElementById('open-piggy')?.click();
+    });
+    grid.appendChild(piggyCard);
+  }
+
+  // ----- Maggie's Offers (Phase 6 placeholder) -----
+  const maggieCard = document.createElement('div');
+  maggieCard.className = 'offer-card offer-card--coming';
+  maggieCard.innerHTML = `
+    <div class="offer-card-tag">MAGGIE'S OFFERS</div>
+    <div style="font-size:54px;line-height:1">🧺</div>
+    <div class="offer-card-name">Rotating bundles</div>
+    <div class="offer-card-meta">Coming in a future update</div>
+    <button disabled>Soon</button>
+  `;
+  grid.appendChild(maggieCard);
+
+  // ----- Gem Packs (Phase 2.3) -----
+  const gemGrid = container.querySelector<HTMLElement>('.gem-packs-grid')!;
+  const packs: Array<{ icon: string; name: string; gems: number; how: string }> = [
+    { icon: '🛒', name: 'Cart of Gems',  gems: 10,  how: 'Spin the Daily Wheel' },
+    { icon: '🔒', name: 'Safe of Gems',  gems: 50,  how: 'Claim Achievement milestones' },
+    { icon: '📦', name: 'Chest of Gems', gems: 200, how: 'Reach Platinum Pass tier' },
+    { icon: '🏆', name: 'Vault of Gems', gems: 800, how: 'Win the weekly leaderboard' },
+  ];
+  for (const p of packs) {
+    const card = document.createElement('div');
+    card.className = 'gem-pack-card';
+    card.innerHTML = `
+      <div class="gem-pack-icon">${p.icon}</div>
+      <div class="gem-pack-name">${p.name}</div>
+      <div class="gem-pack-amount">+${p.gems} 💎</div>
+      <div class="gem-pack-how">${p.how}</div>
+      <span class="gem-pack-bonus">EARN</span>
+    `;
+    gemGrid.appendChild(card);
+  }
+}
+
+// =============================================================
+//  PASS TAB — FV3-grammar Free / Elite / Platinum summary card,
+//  plus a "Next bundles" lookahead that names the upcoming themes.
+// =============================================================
+function renderShopPass(container: HTMLElement): void {
+  const p = state.pass;
+  const daysLeft = passDaysLeft();
+  const eliteOn = isEliteUnlocked();
+  const platOn = isPlatinumUnlocked();
+
+  container.innerHTML = `
+    <div class="pass-shop-card">
+      <div class="pass-shop-head">
+        <div class="pass-shop-title">🎖️ 28-Day Harvest Pass</div>
+        <div class="pass-shop-meta">⏳ ${daysLeft} day${daysLeft === 1 ? '' : 's'} left</div>
+      </div>
+      <div class="pass-shop-tracks">
+        <div class="pass-shop-track ${'is-active'}">
+          <div class="pass-shop-track-name">Free</div>
+          <div class="pass-shop-track-status">Always on</div>
+        </div>
+        <div class="pass-shop-track ${eliteOn ? 'is-active' : 'is-locked'}">
+          <div class="pass-shop-track-name">Elite 🏅</div>
+          <div class="pass-shop-track-status">${eliteOn ? 'Earned' : 'Earn via 3 Order-Board cycles'}</div>
+        </div>
+        <div class="pass-shop-track ${platOn ? 'is-active' : 'is-locked'}">
+          <div class="pass-shop-track-name">Platinum 💎</div>
+          <div class="pass-shop-track-status">${platOn ? 'Earned' : 'Earn via 8 Order-Board cycles'}</div>
+        </div>
+      </div>
+      <div class="pass-shop-progress">
+        Current tier <b>${p?.tier ?? 0}</b> / ${PASS_TIERS.length}
+      </div>
+      <button class="pass-shop-open" id="pass-shop-open">Open Pass</button>
+    </div>
+
+    <h4 style="margin:18px 0 8px 0;font-family:var(--font-display);">🌟 Upcoming Bundles</h4>
+    <p style="font-size:12px;color:#666;margin:0 0 8px 0">
+      The next themed passes you can look forward to. All gameplay-earned — no purchase required.
+    </p>
+    <div class="pass-bundles-grid"></div>
+  `;
+
+  document.getElementById('pass-shop-open')!.addEventListener('click', () => {
+    closeModal();
+    document.getElementById('open-pass')?.click();
+  });
+
+  // Lookahead bundles — purely cosmetic preview
+  const bundleGrid = container.querySelector<HTMLElement>('.pass-bundles-grid')!;
+  const lookahead: Array<{ icon: string; name: string; subtitle: string }> = [
+    { icon: '🌸', name: 'Cherry Blossom Pass', subtitle: 'Spring · weeks 5–8' },
+    { icon: '🌞', name: 'Harvest Sun Pass',    subtitle: 'Summer · weeks 9–12' },
+    { icon: '🍂', name: 'Autumn Mill Pass',    subtitle: 'Autumn · weeks 13–16' },
+  ];
+  for (const b of lookahead) {
+    const card = document.createElement('div');
+    card.className = 'pass-bundle-card';
+    card.innerHTML = `
+      <div class="pass-bundle-icon">${b.icon}</div>
+      <div class="pass-bundle-name">${b.name}</div>
+      <div class="pass-bundle-sub">${b.subtitle}</div>
+      <span class="pass-bundle-tag">PREVIEW</span>
+    `;
+    bundleGrid.appendChild(card);
+  }
 }
 
 function renderShopSupplies(container: HTMLElement): void {

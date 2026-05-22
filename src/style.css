@@ -447,6 +447,198 @@ button {
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
+/* ---------------- Offer pill (Phase 2.2) — third slot in
+   currency stack. Visually distinct from coins/gems via a
+   cherry tint and a pulse when there's something fresh.  */
+.offer-pill {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 2px solid #b3293c;
+  background: radial-gradient(circle at 30% 25%, #ffe3c4 0%, #ff9d8f 35%, #e54a5e 70%, #841623 100%);
+  cursor: pointer;
+  font-size: 22px;
+  pointer-events: auto;
+  box-shadow:
+    0 0 0 2px rgba(255, 220, 200, 0.4) inset,
+    0 2px 0 #6c1622,
+    0 4px 10px rgba(180, 30, 50, 0.4);
+  padding: 0;
+  margin-left: 4px;
+}
+.offer-pill::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 55%);
+  pointer-events: none;
+}
+.offer-pill:active { transform: translateY(1px); box-shadow: 0 1px 0 #6c1622, var(--press); }
+.offer-pill-ico { position: relative; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25)); }
+.offer-pill-pip {
+  position: absolute;
+  top: -3px; right: -3px;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--sage-500);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(40, 80, 20, 0.5);
+}
+.offer-pill--pulse {
+  animation: offer-pill-pulse 2.0s ease-in-out infinite;
+}
+@keyframes offer-pill-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.10); }
+}
+
+/* ---------------- Shop OFFERS tab (Phase 2.3) ---------------- */
+.offers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+.offer-card {
+  position: relative;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 6px;
+  padding: 14px 10px 10px 10px;
+  border-radius: var(--r-lg);
+  background: var(--grad-paper);
+  border: 1.5px solid var(--paper-edge);
+  box-shadow: var(--lift-1);
+  text-align: center;
+}
+.offer-card--coming { opacity: 0.65; }
+.offer-card-tag {
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  padding: 3px 8px;
+  border-radius: var(--r-pill);
+  background: var(--cherry-500);
+  color: #fff;
+  text-shadow: none;
+  position: absolute;
+  top: -10px; left: 50%; transform: translateX(-50%);
+  white-space: nowrap;
+}
+.offer-card-name { font-size: 13px; font-weight: 700; }
+.offer-card-price { font-size: 13px; color: var(--ink-soft); }
+.offer-card-price s { color: var(--ink-mute); margin-left: 6px; font-weight: 600; }
+.offer-card-meta { font-size: 11px; color: var(--ink-mute); }
+.offer-card button {
+  margin-top: 6px;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  border: 1.5px solid var(--paper-edge-dk);
+  background: var(--grad-btn-primary);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 13px;
+  cursor: pointer;
+}
+.offer-card button:disabled { background: var(--paper-200); color: var(--ink-mute); cursor: not-allowed; }
+
+/* Gem packs — earn-via-play presentation */
+.gem-packs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.gem-pack-card {
+  position: relative;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 4px;
+  padding: 12px 8px 8px;
+  border-radius: var(--r-lg);
+  background:
+    radial-gradient(circle at 50% 30%, #eaf6ff 0%, #c5e2f0 70%);
+  border: 1.5px solid #1f6a98;
+  box-shadow: var(--lift-1);
+  text-align: center;
+}
+.gem-pack-icon { font-size: 32px; line-height: 1; }
+.gem-pack-name { font-size: 12px; font-weight: 700; color: #0b3c5d; }
+.gem-pack-amount { font-family: var(--font-display); font-size: 16px; color: #1f6a98; }
+.gem-pack-how { font-size: 10px; color: var(--ink-soft); padding: 0 4px; }
+.gem-pack-bonus {
+  position: absolute;
+  top: -8px; right: 8px;
+  font-family: var(--font-display);
+  font-size: 9px;
+  letter-spacing: 0.6px;
+  padding: 2px 7px;
+  border-radius: var(--r-pill);
+  background: var(--sage-500);
+  color: #fff;
+}
+
+/* Shop PASS tab summary card (Phase 2.4) */
+.pass-shop-card {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 14px;
+  border-radius: var(--r-lg);
+  background: var(--grad-paper);
+  border: 1.5px solid var(--paper-edge);
+  box-shadow: var(--lift-1);
+}
+.pass-shop-head { display: flex; justify-content: space-between; align-items: center; }
+.pass-shop-title { font-family: var(--font-display); font-size: 18px; }
+.pass-shop-meta { font-size: 12px; color: var(--ink-mute); }
+.pass-shop-tracks {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+}
+.pass-shop-track {
+  padding: 10px;
+  border-radius: var(--r-md);
+  background: var(--paper-100);
+  border: 1.5px solid var(--paper-edge);
+  text-align: center;
+}
+.pass-shop-track.is-locked { opacity: 0.6; }
+.pass-shop-track-name { font-family: var(--font-display); font-size: 14px; }
+.pass-shop-track-status { font-size: 11px; color: var(--ink-soft); margin-top: 4px; }
+.pass-shop-progress { font-size: 13px; text-align: center; }
+.pass-shop-open {
+  padding: 10px;
+  border-radius: var(--r-pill);
+  border: 1.5px solid var(--paper-edge-dk);
+  background: var(--grad-btn-primary);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 14px;
+  cursor: pointer;
+}
+.pass-bundles-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px;
+}
+.pass-bundle-card {
+  position: relative;
+  padding: 12px;
+  border-radius: var(--r-lg);
+  background: var(--grad-paper);
+  border: 1.5px dashed var(--paper-edge-dk);
+  text-align: center;
+}
+.pass-bundle-icon { font-size: 28px; }
+.pass-bundle-name { font-family: var(--font-display); font-size: 13px; margin-top: 4px; }
+.pass-bundle-sub { font-size: 11px; color: var(--ink-mute); margin-top: 2px; }
+.pass-bundle-tag {
+  position: absolute;
+  top: 8px; right: 8px;
+  font-family: var(--font-display);
+  font-size: 9px;
+  letter-spacing: 0.6px;
+  padding: 2px 6px;
+  border-radius: var(--r-pill);
+  background: var(--plum-500);
+  color: #fff;
+}
+
 /* ---------------- Offer / gift bubble ---------------- */
 .offer-bubble {
   position: relative;

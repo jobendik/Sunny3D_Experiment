@@ -2,6 +2,8 @@ import { state } from '../state';
 import { clamp, xpForLevel } from '../utils';
 import { nextBigUnlock } from '../systems/unlocks';
 import { isEliteUnlocked, isPlatinumUnlocked } from '../systems/season-pass';
+import { dailyDealAvailable } from '../systems/daily-deal';
+import { hasPendingBox } from '../systems/surprise-box';
 
 const numFmt = new Intl.NumberFormat('en-US');
 
@@ -33,6 +35,28 @@ export function updateHUD(): void {
   // chip that signals "this farmer earned the premium track" without
   // any monetization cue (both tracks are gameplay-earned).
   updatePassBadges();
+  updateOfferPill();
+}
+
+/** Phase 2.2 — top-right offer bubble. Shows when there's something to
+ *  claim under the Offers tab (Daily Deal, Surprise Box, etc.). Pulses
+ *  for fresh / time-sensitive offers. Tap routes into the Offers tab. */
+function updateOfferPill(): void {
+  const pill = document.getElementById('offer-pill') as HTMLButtonElement | null;
+  if (!pill) return;
+  const dailyReady = dailyDealAvailable();
+  const surpriseReady = hasPendingBox();
+  const visible = dailyReady || surpriseReady;
+  if (!visible) {
+    pill.setAttribute('hidden', '');
+    pill.classList.remove('offer-pill--pulse');
+    return;
+  }
+  pill.removeAttribute('hidden');
+  // Pulse only when there's something genuinely time-sensitive to claim.
+  pill.classList.toggle('offer-pill--pulse', dailyReady || surpriseReady);
+  const pip = document.getElementById('offer-pill-pip');
+  if (pip) pip.style.display = '';
 }
 
 function updatePassBadges(): void {

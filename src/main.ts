@@ -29,7 +29,7 @@ import { updateHUD } from './ui/hud';
 import { setTool, updateSeedBtnLabel, attachToolButtons } from './ui/tools';
 import { toast } from './ui/toasts';
 import { closeModal } from './ui/modal';
-import { openShop } from './ui/shop';
+import { openShop, openShopOffers } from './ui/shop';
 import { openInventory } from './ui/inventory-panel';
 import { openBuildMenu } from './ui/build-menu';
 import { openDecorMenu } from './ui/decor-menu';
@@ -159,7 +159,8 @@ import { initChatter, tickChatter } from './systems/chatter';
 
 function bindToolbarHandlers(): void {
   document.getElementById('modal-close')!.addEventListener('click', closeModal);
-  document.getElementById('open-shop')!.addEventListener('click', openShop);
+  document.getElementById('open-shop')!.addEventListener('click', () => openShop());
+  document.getElementById('offer-pill')?.addEventListener('click', () => openShopOffers());
   document.getElementById('open-inventory')!.addEventListener('click', openInventory);
   document.getElementById('open-buildings')!.addEventListener('click', openBuildMenu);
   document.getElementById('open-decor')!.addEventListener('click', openDecorMenu);
