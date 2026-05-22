@@ -359,6 +359,17 @@ export function applyFeatureVisibility(): void {
       }
     }
   }
+  // Hide section headers whose entire button grid is fully gated.
+  // Keeps the BOOST/TOOLS/SYSTEM headings from dangling on Lv 1 when
+  // every entry below them is locked.
+  document.querySelectorAll<HTMLElement>('.bottom-sheet-section').forEach(h => {
+    const grid = h.nextElementSibling as HTMLElement | null;
+    if (!grid || !grid.classList.contains('bottom-sheet-grid')) return;
+    const btns = Array.from(grid.querySelectorAll<HTMLElement>('.sheet-btn'));
+    const anyVisible = btns.some(b => !b.classList.contains('gate-hidden'));
+    h.style.display = anyVisible ? '' : 'none';
+    grid.style.display = anyVisible ? '' : 'none';
+  });
 }
 
 /** Show a friendly explanation toast when a teaser/locked button is tapped. */

@@ -14,6 +14,7 @@ import { addWeeklyPoints } from './weekly';
 import { checkAchievements } from './achievements';
 import { track } from './telemetry';
 import { addPassPoints } from './season-pass';
+import { addOrderPoints } from './order-meter';
 import { spawnHUDBurst } from './flyers';
 import { trackDelivery, friendshipLevel, friendshipHearts } from './friendship';
 import { hotItem } from './gazette';
@@ -80,6 +81,8 @@ export function fulfillOrder(orderId: string): void {
   state.stats.earned += reward;
   state.stats.ordersFulfilled += 1;
   addXP(o.xp);
+  // Order Board macro-meter: bigger payouts advance the bar faster.
+  addOrderPoints(reward);
   if (o.customerId) trackDelivery(o.customerId);
   sfx.order(); sfx.coin();
   // Personalised thank-you toast — pulls a line from the customer.

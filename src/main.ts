@@ -145,6 +145,11 @@ import { openSettingsPanel } from './ui/settings-panel';
 import {
   installWorldBubbles, tickWorldBubbles, refreshWorldBubbleTargets,
 } from './ui/world-bubbles';
+import { initOrderMeter } from './systems/order-meter';
+import { bindOrderMeter, renderOrderMeter } from './ui/order-meter-hud';
+import { maybeShowStorageInterrupt } from './ui/storage-interrupt';
+import { initStorageInterrupt } from './systems/storage-interrupt';
+import { bindFeedTray, tickFeedTray } from './ui/feed-tray';
 
 // Note: starting farm layout (lake, paths, soil hints, pre-plowed
 // patch) is now built by `generateWorld()` in three/terrain/world-gen.ts
@@ -238,6 +243,7 @@ function frame(now: number): void {
   if (badgeT > 0.5) {
     badgeT = 0;
     updateQuestsFabBadge();
+    tickFeedTray();
   }
   railT += dt;
   if (railT > 0.75) {
@@ -247,6 +253,8 @@ function frame(now: number): void {
     renderChoiceOverlay();
     tickReadyTitle();
     applyFeatureVisibility();
+    renderOrderMeter();
+    maybeShowStorageInterrupt();
   }
   renderComboHud();
   requestAnimationFrame(frame);
@@ -344,6 +352,10 @@ function init(): void {
   initDailyDeal();
   initSanctuary();
   installWorldBubbles();
+  initOrderMeter();
+  initStorageInterrupt();
+  bindOrderMeter();
+  bindFeedTray();
   maybeEnableDebug();
   // Rebase market stall offline sales.
   if (loaded && state.lastSessionEndedAt) {
