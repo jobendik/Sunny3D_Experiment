@@ -9,7 +9,7 @@
 
 ## Current Status — Snapshot
 
-_Last updated 2026-05-23 after completing Phase 6 offer grammar and Phase 7 animal husbandry depth._
+_Last updated 2026-05-24 after completing Phase 8 live-ops calendar parity._
 
 | Phase | Items | Status |
 |---|---|---|
@@ -20,12 +20,12 @@ _Last updated 2026-05-23 after completing Phase 6 offer grammar and Phase 7 anim
 | 5 — Onboarding polish | 5 / 5 | ✅ shipped locally |
 | 6 — Monetization-grammar completeness | 5 / 5 | ✅ shipped locally |
 | 7 — Animal husbandry depth | 5 / 5 | ✅ shipped locally |
-| 8 — Live-ops calendar (Sky Race / County Fair / Country Camping / Fishing Tournament) | 0 / 5 | ⬜ not started |
+| 8 — Live-ops calendar (Sky Race / County Fair / Country Camping / Fishing Tournament) | 5 / 5 | ✅ shipped locally |
 | 9 — Performance + virtualization | 0 / 5 | ⬜ not started |
 | 10 — Real-world CSR campaigns | 0 / 2 | ⬜ not started |
 | 11 — Final QA pass | 0 / 6 | ⬜ not started |
 
-**Done so far:** 42 / 56 items. **Next actionable unchecked item:** Phase 8.1 — Sky Race weekly event. Phase 4.5 remains deferred to Phase 11 browser-side QA.
+**Done so far:** 47 / 56 items. **Next actionable unchecked item:** Phase 9.1 — Virtualized lists for Inventory + Gazette + Leaderboard. Phase 4.5 remains deferred to Phase 11 browser-side QA.
 
 **Verified facts about the codebase as of this snapshot:**
 - 14 files in `src/three/decor/` (one per Phase-1 prop).
@@ -40,6 +40,8 @@ _Last updated 2026-05-23 after completing Phase 6 offer grammar and Phase 7 anim
 - Onboarding now starts with farm naming, uses Alfred-flavored tutorial copy, celebrates major unlock levels, gives a Level 5 Weather Grid tip, and enriches Welcome Back hooks.
 - Maggie's recurring offers, "This Week Only" shop offers, pass bundle claims, stall daily listing caps, and Surprise Box odds disclosure are implemented.
 - Animal pens now support auto-feed upgrades, full-pen world bubbles, mood bubbles, grow-up celebrations, and bulk sell controls.
+- Phase 8 featured events are implemented as `skyRace`, `countyFair`, `countryCamping`, and `fishingTournament` save roots (save schema v10), coordinated by `src/systems/featured-events.ts`.
+- The Event Board now has a Featured tab, the QEB shows each active featured event, and four world props anchor the calendar: Sky Race flag, County Fair tent, Camping marker, and Fishing Tournament board.
 
 ---
 
@@ -729,11 +731,11 @@ Track every meaningful task. Tick the box when committed AND pushed AND the type
 - [x] 7.5 — Bulk sell flow
 
 ### Phase 8 — Live-Ops Calendar Parity
-- [ ] 8.1 — Sky Race weekly event
-- [ ] 8.2 — County Fair monthly event
-- [ ] 8.3 — Country Camping seasonal arc
-- [ ] 8.4 — Fishing Tournament weekly event
-- [ ] 8.5 — Event Board featured section enhancement
+- [x] 8.1 — Sky Race weekly event
+- [x] 8.2 — County Fair monthly event
+- [x] 8.3 — Country Camping seasonal arc
+- [x] 8.4 — Fishing Tournament weekly event
+- [x] 8.5 — Event Board featured section enhancement
 
 ### Phase 9 — Performance & Polish
 - [ ] 9.1 — Virtualized lists (inventory, gazette, leaderboard)
@@ -764,6 +766,7 @@ Append a one-line entry per session here. Keep newest at top. Don't delete entri
 YYYY-MM-DD  Phase X.Y started / completed — commit <sha> — note
 ```
 
+- 2026-05-24  Phase 8.1-8.5 complete — commit pending — Added save-backed Sky Race, County Fair, Country Camping, and Fishing Tournament systems, Featured Event Board tab, QEB entries, action-hook integration, save schema v10, and four dedicated 3D event props with world bubbles. Typecheck + build green.
 - 2026-05-23  Phase 7.1-7.5 complete — commit pending — Added `state.animalCare` with per-pen auto-feed upgrades, auto-feed consumption in `systems/pens.ts`, full-pen and mood world bubbles, baby grow-up celebrations in lifecycle, and bulk sell controls in `pen-panel.ts`. Typecheck + build green.
 - 2026-05-23  Phase 6.1-6.5 complete — commit pending — Added `src/systems/maggie-offers.ts`, persistent Maggie visits, weekly "This Week Only" shop offers, Roadside Stall daily listing caps, pass bundle claim cards, and Surprise Box odds disclosure. Save version bumped to v9. Typecheck + build green.
 - 2026-05-23  Phase 5.1-5.5 complete — commit pending — Tutorial now starts with farm naming via Alfred, profile name updates in HUD, tutorial steps have Alfred quips, level-up unlocks use `unlocksForLevel()` + `unlock-celebration.ts`, Level 5 opens with a Weather Grid contextual tip, and Welcome Back hooks include filled Club requests plus next major unlock. Build green.

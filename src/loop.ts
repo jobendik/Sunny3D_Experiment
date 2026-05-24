@@ -41,6 +41,7 @@ import { tickRequestBoard } from './systems/request-board';
 import { regenerateEnergy, maybeDailyEnergyBonus } from './systems/expeditions';
 import { tickContest, maybeRolloverContest } from './systems/contest';
 import { tickLiveEvent } from './systems/live-events';
+import { tickFeaturedEvents } from './systems/featured-events';
 import { tickVisitorsV2 } from './systems/visitors-v2';
 import { tickHelpers } from './systems/helpers';
 import { tickContracts } from './systems/contracts';
@@ -276,6 +277,7 @@ export function update(dt: number): void {
   if (state._liveEventTick > 20) {
     state._liveEventTick = 0;
     tickLiveEvent();
+    tickFeaturedEvents();
   }
 
   // Surprise box (Hay Day random reward) — check every 20s.

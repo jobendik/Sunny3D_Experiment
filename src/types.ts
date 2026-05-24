@@ -844,6 +844,94 @@ export interface LiveEventRoot {
   history: string[];     // event ids completed
 }
 
+// ---- Phase 8: Featured live-ops calendar events ----
+
+export type FeaturedEventAction =
+  | 'harvest'
+  | 'produce'
+  | 'order_contains'
+  | 'fish_caught'
+  | 'animal_produce'
+  | 'tree_harvest'
+  | 'card_cast'
+  | 'balloon_served';
+
+export interface FeaturedLeaderboardEntry {
+  id: string;
+  name: string;
+  emoji: string;
+  points: number;
+  isPlayer?: boolean;
+}
+
+export interface SkyRaceTask {
+  id: string;
+  label: string;
+  actionId: FeaturedEventAction;
+  itemKey?: string;
+  target: number;
+  progress: number;
+  points: number;
+  rewardCoins: number;
+  rewardXp: number;
+  rewardItem?: string;
+  rewardQty?: number;
+  claimed: boolean;
+}
+
+export interface SkyRaceRoot {
+  weekIndex: number;
+  points: number;
+  tasks: SkyRaceTask[];
+  rewardsClaimed: number[];
+  leaderboard: FeaturedLeaderboardEntry[];
+}
+
+export type CountyFairCategory = 'crop' | 'animal' | 'bake' | 'fish' | 'fruit';
+export type CountyFairRibbon = 'none' | 'bronze' | 'silver' | 'gold' | 'blue';
+
+export interface CountyFairSubmission {
+  itemKey: string;
+  score: number;
+  ribbon: CountyFairRibbon;
+  submittedDay: number;
+}
+
+export interface CountyFairRoot {
+  monthIndex: number;
+  category: CountyFairCategory;
+  submitted: CountyFairSubmission | null;
+  rewardClaimed: boolean;
+  peerScores: FeaturedLeaderboardEntry[];
+}
+
+export interface CampingChapterState {
+  id: string;
+  title: string;
+  body: string;
+  threshold: number;
+  rewardCoins: number;
+  rewardXp: number;
+  rewardItem?: string;
+  rewardQty?: number;
+}
+
+export interface CountryCampingRoot {
+  seasonIndex: number;
+  points: number;
+  claimedChapters: number[];
+  journal: string[];
+}
+
+export interface FishingTournamentRoot {
+  weekIndex: number;
+  points: number;
+  catches: number;
+  heaviest: number;
+  rewardsClaimed: number[];
+  leaderboard: FeaturedLeaderboardEntry[];
+}
+
 // ---- Phase 15.4: Compost ----
 
 export interface CompostRoot {
@@ -1212,6 +1300,10 @@ export interface GameState {
   expeditions?: ExpeditionsRoot;
   contest?: ContestRoot;
   liveEvent?: LiveEventRoot;
+  skyRace?: SkyRaceRoot;
+  countyFair?: CountyFairRoot;
+  countryCamping?: CountryCampingRoot;
+  fishingTournament?: FishingTournamentRoot;
   compost?: CompostRoot;
   breeds?: AnimalBreedRoot;
   visitorsV2?: VisitorsRootV2;

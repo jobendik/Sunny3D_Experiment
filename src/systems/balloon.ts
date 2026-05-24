@@ -13,6 +13,7 @@ import { choice, randi, nowSeconds, rand } from '../utils';
 import { toast } from '../ui/toasts';
 import { sfx } from '../audio/sfx';
 import { updateHUD } from '../ui/hud';
+import { recordEventAction } from './live-events';
 import type { BalloonRequest, BalloonRoot, MaterialKey } from '../types';
 
 const UNLOCK_LEVEL = 10;
@@ -127,6 +128,7 @@ export function serveBalloon(): boolean {
   if (b.rewardFragments > 0) addItem('fragment', b.rewardFragments);
   sfx.coin();
   track('balloon_served', { reward: b.rewardCoins });
+  recordEventAction('balloon_served', undefined, 1);
   toast(
     `🎈 Sky Chef paid ${b.rewardCoins}💰 + ${b.rewardFragments} fragments${
       b.rewardMaterial ? ` + 1 ${ITEMS[b.rewardMaterial]?.name}` : ''

@@ -24,6 +24,7 @@ import { BUILDINGS } from './../data/buildings';
 import { localDayIndex } from './daily';
 import { requestBoardHasAttention } from './request-board';
 import { friendshipGiftsRemainingToday } from './friendship';
+import { anyFeaturedEventActive, featuredEventsHaveAttention } from './featured-events';
 
 export type FeatureCategory =
   | 'core'        // always visible (shop/build/help/save)
@@ -219,8 +220,10 @@ export const FEATURE_GATES: FeatureGate[] = [
   },
   { id: 'events', label: 'Events', icon: '🎉', category: 'delivery',
     unlockLevel: 8, revealAt: 2, openButtonId: 'open-events',
+    isUnlocked: () => state.level >= 8 && (!!state.liveEvent?.activeId || anyFeaturedEventActive()),
     hasAttention: () => {
       const e = state.liveEvent;
+      if (featuredEventsHaveAttention()) return true;
       if (!e || !e.activeId) return false;
       // Unclaimed tier?
       return e.points > 0; // approximate; full check would need LIVE_EVENTS def

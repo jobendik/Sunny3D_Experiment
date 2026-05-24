@@ -102,6 +102,7 @@ import { initVillage } from './systems/village';
 import { initExpeditions } from './systems/expeditions';
 import { initContest, maybeRolloverContest } from './systems/contest';
 import { initLiveEvent, tickLiveEvent } from './systems/live-events';
+import { initFeaturedEvents, tickFeaturedEvents } from './systems/featured-events';
 import { initCompost } from './systems/compost';
 import { initGreenhouse, unlockGreenhouse } from './systems/greenhouse';
 import { initBreeds } from './systems/breeds';
@@ -337,6 +338,7 @@ function init(): void {
   initExpeditions();
   initContest(); maybeRolloverContest();
   initLiveEvent(); tickLiveEvent();
+  initFeaturedEvents(); tickFeaturedEvents();
   initCompost();
   initGreenhouse();
   // Greenhouse landmark already complete? auto-unlock its feature.

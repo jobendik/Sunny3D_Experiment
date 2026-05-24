@@ -67,6 +67,10 @@ relevant state:
 | Festival Cart (conditional) | South-centre | Festival deliveries |
 | Train Station + engine (slides in on return) | East edge | Train deliveries |
 | Hot-Air Balloon (drifting overhead) | Above the farm | Balloon |
+| Sky Race Flag | South fairground edge | Event Board |
+| County Fair Tent | South-east fairground edge | Event Board |
+| Country Camping Marker | North-west trailhead | Event Board |
+| Fishing Tournament Board | West lakeside path | Event Board |
 
 World bubbles are object-pooled, raycast-disabled by default, and
 projected each frame via `camera.project()` so they stay anchored to
@@ -136,6 +140,7 @@ expeditions, and obstacle clearing) into stronger composite cards.
 
 **Live ops / events**
 - Live Events (weekly themed events with token rewards)
+- Featured calendar events: Sky Race, County Fair, Country Camping, and Fishing Tournament
 - Beauty Contest (weekly farm-decoration scoring)
 - Weather Hazards (preparation challenges)
 - Idle income on return (welcome-back screen with summary)
@@ -295,11 +300,10 @@ Manual smoke test for new builds:
 
 ## Current status
 
-The game is feature-complete for the Phase-1 through Phase-15 roadmap.
-The most recent commit ("Visual + game-feel overhaul") added identity,
-world polish, juice, and onboarding improvements. This pass adds clarity,
-progressive UI disclosure, and a richer Objective Rail without removing
-any systems.
+The game has now completed forward-roadmap Phase 8 live-ops calendar parity:
+Sky Race, County Fair, Country Camping, and Fishing Tournament are save-backed,
+shown in the Quick Event Bar, hosted by the Event Board, and anchored by
+dedicated 3D props. The save schema is v10.
 
 The game is **intentionally code-generated and procedural** — no external
 game assets, no CDN, no analytics, no network calls. It loads in under a

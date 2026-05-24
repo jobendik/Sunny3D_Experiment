@@ -77,10 +77,34 @@ import {
 import {
   BALLOON_X, BALLOON_Z, BALLOON_BUBBLE_Y,
 } from '../three/decor/balloon';
+import {
+  SKY_RACE_FLAG_X, SKY_RACE_FLAG_Z, SKY_RACE_FLAG_BUBBLE_Y,
+} from '../three/decor/sky-race-flag';
+import {
+  COUNTY_FAIR_TENT_X, COUNTY_FAIR_TENT_Z, COUNTY_FAIR_TENT_BUBBLE_Y,
+} from '../three/decor/county-fair-tent';
+import {
+  CAMPING_MARKER_X, CAMPING_MARKER_Z, CAMPING_MARKER_BUBBLE_Y,
+} from '../three/decor/camping-marker';
+import {
+  FISHING_BOARD_X, FISHING_BOARD_Z, FISHING_BOARD_BUBBLE_Y,
+} from '../three/decor/fishing-tournament-board';
 import { ITEMS } from '../data/items';
 import { unreadCount as mailboxUnreadCount } from '../systems/mailbox';
+import {
+  skyRaceActive, skyRaceHasAttention,
+} from '../systems/sky-race';
+import {
+  countyFairActive, countyFairHasAttention,
+} from '../systems/county-fair';
+import {
+  countryCampingActive, countryCampingHasAttention,
+} from '../systems/country-camping';
+import {
+  fishingTournamentActive, fishingTournamentHasAttention,
+} from '../systems/fishing-tournament';
 
-const POOL_SIZE = 36;
+const POOL_SIZE = 44;
 const tmpVec = new Vector3();
 
 export type BubbleKind = 'feed' | 'ready' | 'full' | 'emote' | 'love' | 'visitor' | 'hub' | 'chatter';
@@ -569,6 +593,51 @@ export function computeBubbleTargets(): BubbleTarget[] {
   // -------- Daily Wheel Stand (Phase 1.9) --------
   // The wheel spins in 3D regardless; the bubble appears only when
   // a daily spin is actually available (pulses).
+  if (skyRaceActive()) {
+    const pulse = skyRaceHasAttention();
+    out.push({
+      key: 'hub:sky-race',
+      wx: SKY_RACE_FLAG_X, wy: SKY_RACE_FLAG_BUBBLE_Y, wz: SKY_RACE_FLAG_Z,
+      icon: '\u{1F3C1}',
+      kind: pulse ? 'ready' : 'hub',
+      pulse,
+      tap: () => document.getElementById('open-events')?.click(),
+    });
+  }
+  if (state.level >= 8) {
+    const pulse = countyFairHasAttention();
+    out.push({
+      key: 'hub:county-fair',
+      wx: COUNTY_FAIR_TENT_X, wy: COUNTY_FAIR_TENT_BUBBLE_Y, wz: COUNTY_FAIR_TENT_Z,
+      icon: '\u{1F3A1}',
+      kind: countyFairActive() && pulse ? 'ready' : 'hub',
+      pulse,
+      tap: () => document.getElementById('open-events')?.click(),
+    });
+  }
+  if (countryCampingActive()) {
+    const pulse = countryCampingHasAttention();
+    out.push({
+      key: 'hub:country-camping',
+      wx: CAMPING_MARKER_X, wy: CAMPING_MARKER_BUBBLE_Y, wz: CAMPING_MARKER_Z,
+      icon: '\u{1F3D5}\uFE0F',
+      kind: pulse ? 'ready' : 'hub',
+      pulse,
+      tap: () => document.getElementById('open-events')?.click(),
+    });
+  }
+  if (fishingTournamentActive()) {
+    const pulse = fishingTournamentHasAttention();
+    out.push({
+      key: 'hub:fishing-tournament',
+      wx: FISHING_BOARD_X, wy: FISHING_BOARD_BUBBLE_Y, wz: FISHING_BOARD_Z,
+      icon: '\u{1F3A3}',
+      kind: pulse ? 'ready' : 'hub',
+      pulse,
+      tap: () => document.getElementById('open-events')?.click(),
+    });
+  }
+
   if (canSpinWheel()) {
     out.push({
       key: 'hub:wheel',

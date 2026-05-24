@@ -15,8 +15,9 @@ import type { GameState, Tile } from './types';
 // world and embeds the old grid into the centre (see embedLegacyGrid).
 // v7 adds Hay Day-grammar systems: mailbox, surprise box, piggy bank,
 // daily deal, sanctuary, settings. v8 adds Phase-6 offer grammar
-// state. v9 adds animal-care upgrades.
-const CURRENT_SAVE_VERSION = 9;
+// state. v9 adds animal-care upgrades. v10 adds Phase-8 featured
+// live-ops event roots.
+const CURRENT_SAVE_VERSION = 10;
 
 interface SaveData {
   saveVersion?: number;
@@ -84,6 +85,10 @@ interface SaveData {
   expeditions?: GameState['expeditions'];
   contest?: GameState['contest'];
   liveEvent?: GameState['liveEvent'];
+  skyRace?: GameState['skyRace'];
+  countyFair?: GameState['countyFair'];
+  countryCamping?: GameState['countryCamping'];
+  fishingTournament?: GameState['fishingTournament'];
   compost?: GameState['compost'];
   breeds?: GameState['breeds'];
   visitorsV2?: GameState['visitorsV2'];
@@ -182,6 +187,10 @@ export function saveGame(): void {
     expeditions: state.expeditions,
     contest: state.contest,
     liveEvent: state.liveEvent,
+    skyRace: state.skyRace,
+    countyFair: state.countyFair,
+    countryCamping: state.countryCamping,
+    fishingTournament: state.fishingTournament,
     compost: state.compost,
     breeds: state.breeds,
     visitorsV2: state.visitorsV2,
@@ -252,6 +261,10 @@ function migrateSave(data: SaveData): SaveData {
   if (data.saveVersion < 9) {
     // v9: animal-care roots default through initAnimalCare().
     data.saveVersion = 9;
+  }
+  if (data.saveVersion < 10) {
+    // v10: Phase-8 featured event roots default through initFeaturedEvents().
+    data.saveVersion = 10;
   }
   return data;
 }
@@ -358,6 +371,10 @@ export function loadGame(): boolean {
     if (data.expeditions) state.expeditions = data.expeditions;
     if (data.contest) state.contest = data.contest;
     if (data.liveEvent) state.liveEvent = data.liveEvent;
+    if (data.skyRace) state.skyRace = data.skyRace;
+    if (data.countyFair) state.countyFair = data.countyFair;
+    if (data.countryCamping) state.countryCamping = data.countryCamping;
+    if (data.fishingTournament) state.fishingTournament = data.fishingTournament;
     if (data.compost) state.compost = data.compost;
     if (data.breeds) state.breeds = data.breeds;
     if (data.visitorsV2) state.visitorsV2 = data.visitorsV2;

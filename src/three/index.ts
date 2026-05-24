@@ -44,6 +44,10 @@ import { installSanctuaryEasel, updateSanctuaryEasel } from './decor/sanctuary-e
 import { installFestivalCart, updateFestivalCart } from './decor/festival-cart';
 import { installTrainStation, updateTrainStation } from './decor/train-station';
 import { installBalloon, updateBalloon } from './decor/balloon';
+import { installSkyRaceFlag, updateSkyRaceFlag } from './decor/sky-race-flag';
+import { installCountyFairTent, updateCountyFairTent } from './decor/county-fair-tent';
+import { installCampingMarker, updateCampingMarker } from './decor/camping-marker';
+import { installFishingTournamentBoard, updateFishingTournamentBoard } from './decor/fishing-tournament-board';
 import { installSky, updateSky } from './sky/sky-dome';
 import { installWeather, updateWeather } from './fx/weather-particles';
 import { updateTreasureChests } from './fx/treasure-chests';
@@ -79,6 +83,10 @@ export function init3d(): void {
   installFestivalCart();
   installTrainStation();
   installBalloon();
+  installSkyRaceFlag();
+  installCountyFairTent();
+  installCampingMarker();
+  installFishingTournamentBoard();
   installGrassBlades();
   installSky();
   installWeather();
@@ -128,6 +136,10 @@ export function render3d(dt: number): void {
   updateFestivalCart(timeS);
   updateTrainStation(timeS);
   updateBalloon(timeS);
+  updateSkyRaceFlag(timeS);
+  updateCountyFairTent(timeS);
+  updateCampingMarker(timeS);
+  updateFishingTournamentBoard(timeS);
   updateCrows(timeS);
   updateDog(timeS);
   updateSky();

@@ -14,6 +14,7 @@ import { track } from './telemetry';
 import { randi, nowSeconds } from '../utils';
 import { toast } from '../ui/toasts';
 import { sfx } from '../audio/sfx';
+import { recordFeaturedEventAction } from './featured-events';
 import type { LiveEventRoot, MaterialKey } from '../types';
 
 export interface PointRule {
@@ -177,6 +178,7 @@ export function currentLiveEvent(): LiveEventDef | null {
 
 /** Hook called from various systems to award points if matching. */
 export function recordEventAction(actionId: string, itemKey?: string, qty = 1): void {
+  recordFeaturedEventAction(actionId, itemKey, qty);
   initLiveEvent();
   const def = currentLiveEvent();
   if (!def) return;

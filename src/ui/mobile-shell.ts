@@ -37,6 +37,7 @@ import { setScenicMode } from '../systems/settings';
 import { toggleEditMode, setEditMode } from '../systems/edit-mode';
 import { trapFocus } from './focus-trap';
 import { requestBoardHasAttention } from '../systems/request-board';
+import { featuredEventEntries } from '../systems/featured-events';
 
 // =============================================================
 //  SHEETS / DRAWERS
@@ -266,7 +267,7 @@ function buildQEBEntries(): QEBEntry[] {
   }
 
   // Live Events — only when one is active
-  const liveActive = (state as { liveEvent?: { active?: boolean } }).liveEvent?.active;
+  const liveActive = !!state.liveEvent?.activeId;
   if (liveActive && gateAllows('open-events')) {
     out.push({
       id: 'events', icon: '🎉', label: 'Events',
@@ -276,6 +277,20 @@ function buildQEBEntries(): QEBEntry[] {
   }
 
   // Festival Cart — when active
+  if (gateAllows('open-events')) {
+    for (const ev of featuredEventEntries()) {
+      if (!ev.active) continue;
+      out.push({
+        id: ev.id,
+        icon: ev.icon,
+        label: ev.label,
+        badge: ev.attention ? '!' : undefined,
+        pulse: ev.attention,
+        open: () => clickHidden('open-events'),
+      });
+    }
+  }
+
   if (gateAllows('open-cart')) {
     const cart = state.festivalCart;
     if (cart?.unlocked && cart.endsAt > Date.now() / 1000) {
