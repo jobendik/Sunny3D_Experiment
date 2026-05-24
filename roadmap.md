@@ -3384,18 +3384,35 @@ These are guidance sections rather than discrete features. The codebase reflects
 
 # 25. Future Stretch (post-roadmap)
 
-These remain open for a v3 expansion (not covered in this checklist):
+The polish pass on 2026-05-24 closed two of the three v3-stretch items:
 
-- Real multiplayer backend (the friend-codes module is architecture-only).
-- Realtime push notifications for boat departures, train returns, contracts.
-- True 3D / isometric scene parallax beyond the procedural tile renderer.
+- ✅ **3D / isometric scene parallax** — the project now ships with a full
+  Three.js pipeline (`src/three/`) using procedural meshes, post-FX
+  bloom, day/night lighting, and a sky dome.
+- ✅ **Realtime push notifications for boat departures, train returns,
+  contracts** — `src/systems/notifications.ts` exposes a
+  `notifyEvent(key, …)` rising-edge helper that fires desktop
+  notifications when the tab is hidden. Boat docks, train returns, and
+  contracts within 15 minutes of expiry now ping the player. Opt-in via
+  the Settings panel (browser permission required).
 
-All other items in Phases 0–15 of this roadmap are now implemented.
+Still open:
+
+- ⬜ **Real multiplayer backend** — the friend-codes module
+  (`src/systems/friend-codes.ts`) remains architecture-only. Clubs and
+  the leaderboard use simulated peers. The CrazyGames SDK shim added in
+  the 2026-05-24 pass exposes `crazyGamesGetUser()` and could be the
+  on-ramp for a future real-leaderboard backend.
+
+All other items in Phases 0–15 of this roadmap are implemented.
 
 ---
 
 # 26. Recent Development Log
 
+- 2026-05-24 — First-impression polish pass closing the residual items from `nextJob.md`. Non-destructive prestige (preserves buildings/animals/trees/decor by default; legacy hard reset opt-in via a checkbox). Game-pace selector in Settings (Fast 1× / Cozy 2× / Relaxed 3×) divides into `growthMultiplier()` so casual players preserve the "come back tomorrow" loop. Multi-phase fishing minigame: rare fish (Lv 4+) chain 3 phases with 35% shrinking safe zones, 25% speed ramps, and 8 s per-phase timer; common fish stay single-phase. Web Share API integration on Farm Snapshot. Event-specific rising-edge desktop notifications for boat-arrived, train-returned, contract-expiring (only fires while tab hidden, 10–30 min cooldowns). CG-SDK `getUser()` wiring shows the real CrazyGames username on the leaderboard when the SDK is active. Verified with `npm run typecheck` and `npm run build`.
+- 2026-05-24 — CrazyGames load-optimisation pass. Lazy-load helper at `src/ui/lazy-panels.ts`; ~40 panel modules converted from static to dynamic imports. Vite `manualChunks` splits `three` into a 182 KB vendor chunk. Music module also deferred (loads on first audio gesture). MP3 tracks re-encoded 192 kbps stereo → 96 kbps mono (16.2 MB → 8.1 MB total). Initial JS gzipped: 389 KB → 163 KB (−58%). Opt-in CrazyGames SDK shim at `src/systems/crazygames.ts` (activates with `?cg=1` or a localStorage flag; default stays offline-first). Verified with `npm run typecheck` and `npm run build`; all 4 commits pushed to origin/main.
+- 2026-05-24 — Completed forward-roadmap Phase 10 real-world CSR campaigns. Imperfect Hero Week (~22% of harvested crops flagged, +25% Shop bonus) and the Habitat Restoration tracker (symbolic acres-restored accruing from harvests/orders/sales/fishing/weather casts/landmarks). Awards modal now tabbed (Medals / Habitat / Hero). Save schema bumped to v11. Verified with `npm run typecheck` and `npm run build`.
 - 2026-05-24 — Completed Phase 9.2 timer gating. Added `src/ui/visible-ticker.ts` and moved Order Meter, Boat, Train, Balloon, Production, Daily Timer, and Surprise Box refresh loops behind IntersectionObserver-aware visibility checks. Verified with `npm run typecheck` and `npm run build`.
 - 2026-05-24 — Continued performance work with Phase 9.1 virtualized lists. Added `src/ui/virtual-list.ts`, switched long Inventory/Barn + Silo sections to fixed-row virtualization, added virtualized Gazette neighbor/help lists with delegated actions, and expanded/virtualized simulated Leaderboard rows. Verified with `npm run typecheck` and `npm run build`.
 - 2026-05-24 — Completed forward-roadmap Phase 8 live-ops calendar parity. Added save-backed Sky Race, County Fair, Country Camping, and Fishing Tournament systems; a Featured tab in the Event Board; per-event QEB entries; action-hook integration for balloons, harvests, production, orders, animal goods, weather cards, and fishing; save schema v10; and four dedicated 3D event props with world bubbles. Verified with `npm run typecheck` and `npm run build`.

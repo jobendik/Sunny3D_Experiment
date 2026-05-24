@@ -147,6 +147,26 @@ expeditions, and obstacle clearing) into stronger composite cards.
 - Weather Hazards (preparation challenges)
 - Idle income on return (welcome-back screen with summary)
 
+**Quality-of-life**
+- **Game-pace preset** (Fast / Cozy / Relaxed) in Settings — multiplies crop
+  growth time so casual players can preserve the "come back tomorrow" loop.
+- **Non-destructive prestige** — soft reset keeps every building, animal,
+  tree, and decoration you placed; only progression (coins, XP, level,
+  orders, quests) resets. A legacy "wipe my farm too" opt-in is still
+  available for purists.
+- **Multi-phase fishing minigame** — rare fish (Lv 4+) require chained
+  hooks with shrinking safe zones and a per-phase 8 s timer. Common fish
+  stay single-phase so early players aren't punished.
+- **Web Share + screenshot** — Farm Snapshot panel now exposes a native
+  share button (uses the Web Share API on supported browsers,
+  downloads the PNG otherwise).
+- **Event push notifications** — when you opt in to notifications, the
+  boat docking, train returning, and contracts close to their deadline
+  fire individual desktop notifications while the tab is hidden.
+- **CrazyGames identity** — if the game is hosted on CrazyGames and the
+  SDK is active, the leaderboard's "You" row shows the player's signed-in
+  CG username.
+
 ## Technical architecture
 
 - **Single mutable state**: `src/state.ts` exports a `state: GameState`
@@ -297,30 +317,50 @@ Manual smoke test for new builds:
 - [ ] Lv 5 More menu shows Grid + Path teasers / unlocked.
 - [ ] Lv 10 More menu shows Boat (unlocked), Balloon (unlocked), Train teaser.
 - [ ] Objective Rail surfaces a relevant action every 0.75s; no duplicates.
-- [ ] Existing v5 save loads without console errors.
+- [ ] Existing v11 save loads without console errors.
+- [ ] Settings ▸ Game Pace changes from Fast → Cozy → Relaxed actually slow
+      crop growth (≈2× / 3× wall-clock).
+- [ ] Fishing rare fish (Lv 4+) shows the phase pill and the safe zone
+      shrinks across phases.
+- [ ] Prestige with the "wipe my farm too" checkbox OFF preserves
+      buildings + decorations; with it ON wipes everything.
+- [ ] Farm Snapshot's Share button opens the native share sheet on
+      mobile, falls back to download on desktop browsers without it.
 - [ ] `npm run typecheck` and `npm run build` pass.
 
 ## Current status
 
-The game has now completed forward-roadmap Phase 10 real-world CSR:
-**Imperfect Hero Week** is a recurring weekly campaign that flags
-~22% of harvested crops as "imperfect" and pays a +25% Shop bonus
-when they're sold, and a **Habitat Restoration Partnership** tracker
-accrues symbolic acres from harvests, orders, sales, fishing,
-weather casts, and landmark completions. Both surface through a
-new tabbed Awards panel (Medals · Habitat · Hero) and the Gazette.
-Phases 1–8 (diegetic 3D, shop taxonomy, co-op chat, accessibility,
-onboarding, monetization grammar, animal husbandry, live-ops
-calendar) are all in, and Phase 9 has 9.1 (virtualized Inventory /
-Gazette / Leaderboard) and 9.2 (IntersectionObserver-aware visible
-tickers for countdowns) shipped. The save schema is v11.
+All thirteen forward-roadmap phases plus a polish pass are complete:
 
-The game is **intentionally code-generated and procedural** — no external
-game assets, no CDN, no analytics, no network calls. It loads in under a
-second and runs offline.
+- **Phases 1–8** — diegetic 3D, FV3-grammar shop, co-op chat, accessibility,
+  onboarding, monetisation grammar, animal husbandry, live-ops calendar
+- **Phase 9** — virtualized Inventory / Gazette / Leaderboard (9.1) and
+  IntersectionObserver-gated countdown tickers (9.2)
+- **Phase 10** — real-world CSR: Imperfect Hero Week (+25% Shop bonus on
+  flagged crops) and the Habitat Restoration tracker, surfaced in a
+  tabbed Awards modal
+- **CrazyGames pass** — opt-in SDK shim, lazy panel chunks (initial JS
+  gzipped: **163 KB** vs. 389 KB before), `three` vendor split, music
+  re-encoded to 96 kbps mono (16.2 MB → 8.1 MB)
+- **First-impression polish** — non-destructive prestige (keeps the farm),
+  Settings ▸ Game Pace (Fast/Cozy/Relaxed), multi-phase fishing
+  minigame, Web Share button on the Farm Snapshot, event push
+  notifications for boat/train/contracts when the tab is hidden, real
+  CG-username on the leaderboard when signed in
+
+The save schema is v11.
+
+The game is **intentionally code-generated and procedural** — every 3D
+mesh, every HUD sprite, and every sound is generated at boot. The only
+external assets are the 8 MB of ambient MP3 tracks (lazily loaded after
+the first user gesture). Default behaviour is offline-first: no CDN
+calls, no analytics, no network calls until the player explicitly
+opts in to the CrazyGames SDK or browser notifications.
 
 Real multiplayer (friend codes) is architecturally scaffolded but not
-networked; the leaderboard and clubs use simulated peers.
+networked; the leaderboard and clubs use simulated peers. If the
+CrazyGames SDK is active, the leaderboard substitutes the player's
+real CG username for the "You" row.
 
 ## CrazyGames hosting
 

@@ -9,23 +9,49 @@
 
 ## Current Status — Snapshot
 
-_Last updated 2026-05-23 after completing Phase 10 real-world CSR campaigns._
+_Last updated 2026-05-24 after the CrazyGames optimisation pass and the
+first-impression polish pass (non-destructive prestige, game-pace
+selector, multi-phase fishing, Web Share, event push notifications,
+real CG-SDK leaderboard identity)._
 
 | Phase | Items | Status |
 |---|---|---|
 | 1 — Diegetic 3D world objects | 14 / 14 | ✅ shipped, merged to main (PR #16, #17) |
 | 2 — Shop taxonomy + offer pill + gem packs + bundles | 4 / 4 | ✅ shipped, merged |
-| 3 — Co-op chat + donations + gift caps | 5 / 5 | ✅ shipped locally |
-| 4 — Accessibility | 4 / 5 | 🟧 4.5 (Lighthouse) deferred to Phase 11 |
-| 5 — Onboarding polish | 5 / 5 | ✅ shipped locally |
-| 6 — Monetization-grammar completeness | 5 / 5 | ✅ shipped locally |
-| 7 — Animal husbandry depth | 5 / 5 | ✅ shipped locally |
-| 8 — Live-ops calendar (Sky Race / County Fair / Country Camping / Fishing Tournament) | 5 / 5 | ✅ shipped locally |
-| 9 — Performance + virtualization | 2 / 5 | 🟧 9.1-9.2 shipped locally |
-| 10 — Real-world CSR campaigns | 2 / 2 | ✅ shipped locally |
-| 11 — Final QA pass | 0 / 6 | ⬜ not started |
+| 3 — Co-op chat + donations + gift caps | 5 / 5 | ✅ shipped, merged |
+| 4 — Accessibility | 4 / 5 | 🟧 4.5 (Lighthouse) deferred to Phase 11 browser QA |
+| 5 — Onboarding polish | 5 / 5 | ✅ shipped, merged |
+| 6 — Monetization-grammar completeness | 5 / 5 | ✅ shipped, merged |
+| 7 — Animal husbandry depth | 5 / 5 | ✅ shipped, merged |
+| 8 — Live-ops calendar (Sky Race / County Fair / Country Camping / Fishing Tournament) | 5 / 5 | ✅ shipped, merged |
+| 9 — Performance + virtualization | 2 / 5 | 🟧 9.1-9.2 merged; 9.3/9.4 marked optional, 9.5 needs browser run |
+| 10 — Real-world CSR campaigns | 2 / 2 | ✅ shipped, merged |
+| 11 — Final QA pass | 0 / 6 | ⬜ needs browser run (Lighthouse / VoiceOver / fresh playthrough) |
+| Polish — first-impression pass (off-roadmap) | 6 / 6 | ✅ shipped, merged |
 
-**Done so far:** 51 / 56 items. **Next actionable unchecked item:** Phase 9.3 — Sprite atlas for procedural icons (optional), Phase 9.5 — Bubble layer profiling, or Phase 11 final QA pass. Phase 4.5 remains deferred to Phase 11 browser-side QA.
+**Done so far:** 57 / 62 items including off-roadmap polish. **Remaining work** is all browser-side QA (Phase 4.5 Lighthouse a11y, Phase 9.5 bubble RAF profiling, Phase 11.1–11.6 manual playthrough / mobile sweep / Lighthouse mobile / VoiceOver) plus two items explicitly tagged as optional in the roadmap (9.3 sprite atlas, 9.4 IndexedDB).
+
+**Off-roadmap polish pass (2026-05-24):**
+- `src/systems/prestige.ts` — `doPrestige({ wipeFarm? })` now preserves
+  buildings, animals, trees, and decor by default. Active production
+  queues and standing crops are cleared; everything else stays.
+  Legacy wipe path is opt-in via a checkbox in the prestige panel.
+- `src/systems/settings.ts` — new `paceMultiplier()` driven by a
+  `gamePace: 'fast' | 'cozy' | 'relaxed'` setting; multiplies into
+  `growthMultiplier()` so cozy mode slows crop growth 2×, relaxed 3×.
+  Surfaced as a three-button row in the Settings panel.
+- `src/systems/fishing.ts` — multi-phase catches: rare fish (Lv 4+) chain
+  3 phases, each shrinking the safe zone 35% and increasing speed 25%,
+  with an 8 s per-phase timeout. Common fish stay single-phase.
+- `src/systems/snapshot.ts` — `shareSnapshot()` calls the Web Share API
+  with a PNG `File` when available; falls back to download. Wired to
+  a new Share button in the snapshot panel.
+- `src/systems/notifications.ts` — `notifyEvent(key, …)` rising-edge
+  helper; boat docking, train returns, and contracts close to expiry
+  now fire desktop notifications when the tab is hidden.
+- `src/systems/crazygames.ts` — adds `crazyGamesGetUser()`; the
+  leaderboard panel substitutes the player's real CG username for the
+  "You" row when the SDK is active.
 
 **Verified facts about the codebase as of this snapshot:**
 - 14 files in `src/three/decor/` (one per Phase-1 prop).
@@ -769,6 +795,8 @@ Append a one-line entry per session here. Keep newest at top. Don't delete entri
 YYYY-MM-DD  Phase X.Y started / completed — commit <sha> — note
 ```
 
+- 2026-05-24  First-impression polish pass shipped + pushed — soft-reset prestige (keeps farm by default; legacy wipe opt-in), Settings ▸ Game Pace (Fast/Cozy/Relaxed multiplier on `growthMultiplier()`), multi-phase fishing minigame for rare fish (3 phases, 35% shrinking zones, 8 s per-phase timer), Web Share API integration on Farm Snapshot, rising-edge desktop notifications for boat-arrived/train-returned/contract-expiring while tab is hidden, and CG-SDK `getUser()` wiring so signed-in CrazyGames players see their real username on the leaderboard. Typecheck + build green; commit pushed to origin/main.
+- 2026-05-24  CrazyGames load-optimisation pass shipped + pushed — lazy-loaded ~40 modal panel modules via a new `src/ui/lazy-panels.ts` helper, Vite manualChunks splits `three` into a 182 KB cached vendor chunk, music module deferred until first audio gesture, MP3s re-encoded 192 kbps stereo → 96 kbps mono (16.2 MB → 8.1 MB). Initial JS gzipped dropped 389 KB → 163 KB (−58%). Opt-in CrazyGames SDK shim at `src/systems/crazygames.ts` (loads only with `?cg=1` or localStorage flag). Four commits pushed: Phase 10 CSR, lazy-load + vendor split, CG SDK, MP3 re-encode.
 - 2026-05-23  Phase 10.1-10.2 complete — commit pending — Added `src/systems/imperfect-produce.ts` (weekly Imperfect Hero Week campaign: 22% of harvested crops flagged, +25% Shop sell bonus, daily Gazette badge) and `src/systems/habitat-partner.ts` (symbolic acres-restored tracker accruing from harvests, orders, sales, fishing, weather casts, and landmark completions). The Awards modal becomes tabbed: Medals · Habitat · Hero. Save schema bumped to v11 with safe defaults via init functions. Shop's Sell tab shows an Imperfect Hero banner and per-row 🥕 chip when imperfect units are on hand. Typecheck + build green.
 - 2026-05-24  Phase 9.2 complete — commit pending — Added `src/ui/visible-ticker.ts` and gated timer/countdown refreshes through IntersectionObserver for Order Meter, Boat, Train, Balloon, Production, Daily Timer, and Surprise Box panels. Typecheck + build green.
 - 2026-05-24  Phase 9.1 complete — commit pending — Added `src/ui/virtual-list.ts`, virtualized long Inventory/Barn + Silo sections, Gazette neighbor/help lists with delegated actions, and expanded/virtualized Leaderboard rows. Typecheck + build green.

@@ -1,3 +1,32 @@
+> **STATUS — 2026-05-24:** This brief was the trigger for two waves of
+> work. The structural clarity items (Phases 1–13 — feature visibility,
+> objectives rewrite, unlock progression, system-fatigue audit, README
+> rewrite, save QA, panel QA, balance pass, debug helpers, technical
+> quality) all landed in earlier passes; see `docs/system-fatigue-audit.md`
+> for the audit and `src/systems/feature-visibility.ts`,
+> `src/systems/objectives.ts`, `src/systems/unlocks.ts` for the
+> implementation. The "Prioritised Action Plan for CrazyGames" table at
+> the end of this brief was closed on 2026-05-24:
+>
+> - 🔴 Tutorial spotlight overlay — done in `src/ui/tutorial-overlay.ts`
+> - 🔴 Level-gated UI clutter — done via `src/systems/feature-visibility.ts`
+> - 🔴 Mobile (pinch + long-press) — done in `src/input.ts`
+> - 🟠 CrazyGames share — done via Web Share API in `src/systems/snapshot.ts`
+> - 🟠 Real social via CG SDK getUser — done in `src/systems/crazygames.ts`
+>   and surfaced on the leaderboard panel
+> - 🟠 Non-destructive prestige — done in `src/systems/prestige.ts`
+> - 🟠 Hunger warning + auto-feed — done in `src/systems/pens.ts`
+> - 🟡 Fishing minigame phase escalation — done in `src/systems/fishing.ts`
+> - 🟡 Day-pace slow mode — done via `paceMultiplier()` in `src/systems/settings.ts`
+> - 🟢 Idle animations on animals + crop sway — done in
+>   `src/three/entities/animals-manager.ts` and `crops-manager.ts`
+>
+> The remaining open items are browser-side QA (Lighthouse a11y + perf,
+> manual playthroughs) — see `roadMapForward.md` Phase 11. This brief is
+> kept verbatim below as historical context.
+
+---
+
 You are an expert browser game developer, TypeScript engineer, UX designer, systems designer, onboarding designer, and retention designer.
 
 You are working on my browser farming/management game called “Sunny Acres”.
