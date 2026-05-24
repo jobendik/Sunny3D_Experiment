@@ -6,20 +6,25 @@
 import { state } from '../state';
 import { meterPercent, initOrderMeter } from '../systems/order-meter';
 import { openSidePanel } from './mobile-shell';
+import { trackVisibility } from './visible-ticker';
 
 let lastPct = -1;
 let lastCycle = -1;
 let bound = false;
+let isMeterVisible: (() => boolean) | null = null;
 
 export function bindOrderMeter(): void {
   if (bound) return;
   bound = true;
-  document.getElementById('order-meter')?.addEventListener('click', () => {
+  const root = document.getElementById('order-meter');
+  if (root) isMeterVisible = trackVisibility(root);
+  root?.addEventListener('click', () => {
     openSidePanel();
   });
 }
 
 export function renderOrderMeter(): void {
+  if (isMeterVisible && !isMeterVisible()) return;
   initOrderMeter();
   const m = state.orderMeter!;
   const pct = meterPercent();

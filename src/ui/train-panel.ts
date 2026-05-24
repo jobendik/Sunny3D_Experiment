@@ -11,6 +11,7 @@ import {
   collectTrainReturn, trainCrateSlots, trainStatusLabel, upgradeTrainStation,
 } from '../systems/train';
 import { updateHUD } from './hud';
+import { startVisibleTicker } from './visible-ticker';
 
 export function openTrainPanel(): void {
   initTrain();
@@ -30,13 +31,12 @@ export function openTrainPanel(): void {
   document.getElementById('modal-tabs')!.innerHTML = '';
   const body = document.getElementById('modal-body')!;
   render(body);
-  const interval = window.setInterval(() => {
-    if (!document.getElementById('modal')!.classList.contains('open')) {
-      window.clearInterval(interval);
-      return;
-    }
-    render(body);
-  }, 1000);
+  startVisibleTicker({
+    root: body,
+    intervalMs: 1000,
+    tick: () => render(body),
+    stopWhen: () => !document.getElementById('modal')!.classList.contains('open'),
+  });
 }
 
 function render(body: HTMLElement): void {

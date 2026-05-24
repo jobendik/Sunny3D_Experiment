@@ -11,13 +11,21 @@ import {
   canServeBalloon, serveBalloon,
 } from '../systems/balloon';
 import { formatDuration } from '../systems/timer';
+import { startVisibleTicker } from './visible-ticker';
 
 export function openBalloonPanel(): void {
   initBalloon();
   tickBalloon();
   openModal('🎈 Hot Air Balloon', null);
   document.getElementById('modal-tabs')!.innerHTML = '';
+  const body = document.getElementById('modal-body')!;
   render();
+  startVisibleTicker({
+    root: body,
+    intervalMs: 1000,
+    tick: render,
+    stopWhen: () => !document.getElementById('modal')!.classList.contains('open'),
+  });
 }
 
 function render(): void {

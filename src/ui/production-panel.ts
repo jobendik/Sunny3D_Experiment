@@ -30,6 +30,7 @@ import type { BuildingInstance } from '../types';
 
 import { seasonalRecipesFor } from '../data/seasonal-recipes';
 import { buildingLevel, buildingQueueBonus, buildingSpeedMod, buildingUpgradeCost, upgradeBuildingInstance } from '../systems/building-upgrades';
+import { startVisibleTicker } from './visible-ticker';
 
 export function openProductionPanel(b: BuildingInstance): void {
   const def = BUILDINGS[b.type]!;
@@ -220,15 +221,13 @@ export function openProductionPanel(b: BuildingInstance): void {
   }
   render();
 
-  const interval = window.setInterval(() => {
-    if (!document.getElementById('modal')!.classList.contains('open')) {
-      clearInterval(interval);
-      return;
-    }
-    if (!body.querySelector('.queue')) {
-      clearInterval(interval);
-      return;
-    }
-    render();
-  }, 1000);
+  startVisibleTicker({
+    root: body,
+    intervalMs: 1000,
+    tick: render,
+    stopWhen: () => (
+      !document.getElementById('modal')!.classList.contains('open')
+      || !body.querySelector('.queue')
+    ),
+  });
 }

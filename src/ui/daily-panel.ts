@@ -14,6 +14,9 @@ import {
 } from '../systems/daily';
 import { openModal } from './modal';
 import { CONFIG } from '../config';
+import { startVisibleTicker } from './visible-ticker';
+
+let timerTickerStop: (() => void) | null = null;
 
 export function openDaily(): void {
   initDaily();
@@ -171,6 +174,10 @@ function renderForecast(body: HTMLElement): void {
 }
 
 function renderTimer(body: HTMLElement): void {
+  if (timerTickerStop) {
+    timerTickerStop();
+    timerTickerStop = null;
+  }
   const d = state.daily!;
   const ready = timedClaimReady();
   const msLeft = Math.max(0, d.timedClaim.readyAt - Date.now());
@@ -197,4 +204,13 @@ function renderTimer(body: HTMLElement): void {
   if (tc) tc.addEventListener('click', () => { if (claimTimedReward()) renderTimer(body); });
   const rg = document.getElementById('return-claim');
   if (rg) rg.addEventListener('click', () => { if (claimReturnGift()) renderTimer(body); });
+  timerTickerStop = startVisibleTicker({
+    root: body,
+    intervalMs: 1000,
+    tick: () => renderTimer(body),
+    stopWhen: () => (
+      !document.getElementById('modal')!.classList.contains('open')
+      || !body.querySelector('.timer-section')
+    ),
+  });
 }

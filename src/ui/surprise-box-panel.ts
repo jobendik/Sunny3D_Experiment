@@ -11,14 +11,26 @@ import {
   SURPRISE_NATURAL_RARITY_ODDS, SURPRISE_INSTANT_RARITY_ODDS,
   SURPRISE_REWARD_DISCLOSURE,
 } from '../systems/surprise-box';
+import { startVisibleTicker } from './visible-ticker';
 
 let revealTimer: number | null = null;
+let countdownTickerStop: (() => void) | null = null;
 
 export function openSurpriseBoxPanel(): void {
   initSurpriseBox();
   openModal('📦 Surprise Box', null);
   document.getElementById('modal-tabs')!.innerHTML = '';
-  render(document.getElementById('modal-body')!);
+  const body = document.getElementById('modal-body')!;
+  render(body);
+  if (countdownTickerStop) countdownTickerStop();
+  countdownTickerStop = startVisibleTicker({
+    root: body,
+    intervalMs: 1000,
+    tick: () => {
+      if (!hasPendingBox() && revealTimer === null) render(body);
+    },
+    stopWhen: () => !document.getElementById('modal')!.classList.contains('open'),
+  });
 }
 
 function formatHMS(s: number): string {
@@ -84,7 +96,10 @@ function render(body: HTMLElement): void {
         art.innerHTML = `<div class="surprise-reveal-icon">${reward.emoji}</div><div class="surprise-reveal-label">${reward.label}</div>`;
       }
       if (revealTimer !== null) clearTimeout(revealTimer);
-      revealTimer = window.setTimeout(() => render(body), 2200);
+      revealTimer = window.setTimeout(() => {
+        revealTimer = null;
+        render(body);
+      }, 2200);
     });
   }
   const instantBtn = document.getElementById('surprise-instant');

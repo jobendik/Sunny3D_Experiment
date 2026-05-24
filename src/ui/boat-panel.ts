@@ -7,6 +7,7 @@ import { ITEMS } from '../data/items';
 import { sprites } from '../sprites';
 import { openModal } from './modal';
 import { initBoat, fillBoatCrate, fillBoatCrateMax, boatStatusLabel, instantSummonBoat, BOAT_INSTANT_COST } from '../systems/boat';
+import { startVisibleTicker } from './visible-ticker';
 
 export function openBoatPanel(): void {
   initBoat();
@@ -26,14 +27,12 @@ export function openBoatPanel(): void {
   document.getElementById('modal-tabs')!.innerHTML = '';
   const body = document.getElementById('modal-body')!;
   render(body);
-  // Live refresh while open
-  const interval = window.setInterval(() => {
-    if (!document.getElementById('modal')!.classList.contains('open')) {
-      window.clearInterval(interval);
-      return;
-    }
-    render(body);
-  }, 1000);
+  startVisibleTicker({
+    root: body,
+    intervalMs: 1000,
+    tick: () => render(body),
+    stopWhen: () => !document.getElementById('modal')!.classList.contains('open'),
+  });
 }
 
 function render(body: HTMLElement): void {
