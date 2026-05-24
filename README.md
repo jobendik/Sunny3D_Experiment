@@ -321,3 +321,25 @@ second and runs offline.
 
 Real multiplayer (friend codes) is architecturally scaffolded but not
 networked; the leaderboard and clubs use simulated peers.
+
+## CrazyGames hosting
+
+The game ships with an opt-in CrazyGames SDK shim (`src/systems/crazygames.ts`)
+that stays inert by default — no network calls, no script loads. To activate
+it for a CG-hosted build, either append `?cg=1` to the URL or run once in
+the console:
+
+```js
+localStorage.setItem('sunnyacres-crazygames', '1');
+```
+
+When activated, the SDK loads asynchronously from `sdk.crazygames.com`,
+forwards `loadingStart` / `loadingStop` / `gameplayStart` / `gameplayStop`
+events, and pauses on tab visibility changes. Rewarded-ad and cloud-save
+helpers are wired but currently unused — drop them in at any opt-in
+moment (e.g. an extra wheel spin) without touching the rest of the game.
+
+The initial JS bundle is **163 KB gzipped** (down from 389 KB) thanks to
+lazy UI panel chunks and a separate `three` vendor chunk. Panel modules
+are warmed via `requestIdleCallback` after the splash so first-open is
+indistinguishable from eager loading on a warm cache.

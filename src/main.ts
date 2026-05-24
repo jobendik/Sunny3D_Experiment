@@ -148,6 +148,9 @@ import { initSanctuary, tickSanctuary } from './systems/sanctuary';
 import { initSettings } from './systems/settings';
 import { initImperfectProduce, rolloverImperfectProduce } from './systems/imperfect-produce';
 import { initHabitatPartner } from './systems/habitat-partner';
+import {
+  initCrazyGames, crazyGamesLoadingDone, crazyGamesPause, crazyGamesResume,
+} from './systems/crazygames';
 import { toggleEditMode, isEditMode, setEditMode } from './systems/edit-mode';
 import { setScenicMode } from './systems/settings';
 const lazyMailbox = lazy(() => import('./ui/mailbox-panel'));
@@ -282,6 +285,7 @@ function frame(now: number): void {
 }
 
 function init(): void {
+  initCrazyGames();
   buildSprites();
   initGrid();
   attachInput();
@@ -495,6 +499,13 @@ function init(): void {
   lastTime = performance.now();
   requestAnimationFrame(frame);
   window.addEventListener('beforeunload', saveGame);
+
+  // CrazyGames: signal play is starting + wire visibility pause hints.
+  crazyGamesLoadingDone();
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) crazyGamesPause();
+    else crazyGamesResume();
+  });
 }
 
 init();
