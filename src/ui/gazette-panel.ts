@@ -11,6 +11,12 @@ import { initGazette, refreshGazette, buyNeighborSale, fulfillHelpRequest, markG
 import { initDailyDeal, buyDailyDeal, dailyDealAvailable, dailyDealDiscount } from '../systems/daily-deal';
 import { advertiseStallListing, getStallAd, AD_DIAMOND_COST } from '../systems/stall-ad';
 import { updateHUD } from './hud';
+import { renderVirtualList } from './virtual-list';
+import type { HelpRequestOffer, NeighborSaleOffer } from '../types';
+
+const GAZETTE_VIRTUAL_THRESHOLD = 12;
+const GAZETTE_CARDS_PER_ROW = 2;
+const GAZETTE_ROW_HEIGHT = 146;
 
 export function openGazette(): void {
   initGazette();
@@ -81,7 +87,7 @@ function render(body: HTMLElement): void {
   }
 
   // Neighbor sales
-  if (g.neighborSales.length > 0) {
+  if (g.neighborSales.length > 0 && g.neighborSales.length <= GAZETTE_VIRTUAL_THRESHOLD) {
     html += '<h3 class="gazette-section-title">🛒 Neighbor Sales</h3>';
     html += '<div class="gazette-neighbor-grid">';
     for (const offer of g.neighborSales) {
@@ -112,7 +118,11 @@ function render(body: HTMLElement): void {
   }
 
   // Help requests
-  if (g.helpRequests.length > 0) {
+  if (g.neighborSales.length > GAZETTE_VIRTUAL_THRESHOLD) {
+    html += virtualGazetteSectionHTML('neighbor', 'Neighbor Sales', g.neighborSales.length);
+  }
+
+  if (g.helpRequests.length > 0 && g.helpRequests.length <= GAZETTE_VIRTUAL_THRESHOLD) {
     html += '<h3 class="gazette-section-title">🙏 Help Wanted</h3>';
     html += '<div class="gazette-help-grid">';
     for (const req of g.helpRequests) {
@@ -148,36 +158,143 @@ function render(body: HTMLElement): void {
     html += '</div>';
   }
 
-  body.innerHTML = html;
+  if (g.helpRequests.length > GAZETTE_VIRTUAL_THRESHOLD) {
+    html += virtualGazetteSectionHTML('help', 'Help Wanted', g.helpRequests.length);
+  }
 
-  body.querySelectorAll<HTMLButtonElement>('button[data-buy-neighbor]').forEach(btn =>
-    btn.addEventListener('click', () => {
-      const nb = btn.dataset.buyNeighbor!;
-      const it = btn.dataset.buyItem!;
-      if (buyNeighborSale(nb, it)) {
+  body.innerHTML = html;
+  mountGazetteVirtualLists(body, g.neighborSales, g.helpRequests);
+
+  body.onclick = (event) => {
+    const btn = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>('button');
+    if (!btn) return;
+    const nb = btn.dataset.buyNeighbor;
+    const item = btn.dataset.buyItem;
+    if (nb && item) {
+      if (buyNeighborSale(nb, item)) {
         updateHUD();
         render(body);
       }
-    }),
-  );
-  body.querySelectorAll<HTMLButtonElement>('button[data-help]').forEach(btn =>
-    btn.addEventListener('click', () => {
-      if (fulfillHelpRequest(btn.dataset.help!)) {
+      return;
+    }
+    if (btn.dataset.help) {
+      if (fulfillHelpRequest(btn.dataset.help)) {
         updateHUD();
         render(body);
       }
-    }),
-  );
-  const dealBtn = document.getElementById('gazette-deal-buy');
-  if (dealBtn) {
-    dealBtn.addEventListener('click', () => {
+      return;
+    }
+    if (btn.id === 'gazette-deal-buy') {
       if (buyDailyDeal()) render(body);
-    });
-  }
-  const adBtn = document.getElementById('gazette-ad-buy');
-  if (adBtn) {
-    adBtn.addEventListener('click', () => {
+      return;
+    }
+    if (btn.id === 'gazette-ad-buy') {
       if (advertiseStallListing()) render(body);
-    });
+    }
+  };
+}
+
+function virtualGazetteSectionHTML(kind: 'neighbor' | 'help', title: string, count: number): string {
+  const icon = kind === 'neighbor' ? 'ðŸ›’' : 'ðŸ™';
+  const rows = Math.ceil(count / GAZETTE_CARDS_PER_ROW);
+  return `
+    <h3 class="gazette-section-title">${icon} ${title}</h3>
+    <p class="virtual-list-note">Virtualized ${rows} rows for smoother newspaper scrolling.</p>
+    <div class="gazette-virtual-mount" data-gazette-virtual="${kind}"></div>
+  `;
+}
+
+function mountGazetteVirtualLists(
+  body: HTMLElement,
+  sales: NeighborSaleOffer[],
+  requests: HelpRequestOffer[],
+): void {
+  if (sales.length > GAZETTE_VIRTUAL_THRESHOLD) {
+    const mount = body.querySelector<HTMLElement>('[data-gazette-virtual="neighbor"]');
+    if (mount) {
+      renderVirtualList(mount, {
+        items: chunk(sales, GAZETTE_CARDS_PER_ROW),
+        rowHeight: GAZETTE_ROW_HEIGHT,
+        overscan: 3,
+        ariaLabel: 'Neighbor sales',
+        key: row => row.map(o => `${o.neighborId}:${o.itemKey}`).join('|'),
+        renderRow: row => `<div class="virtual-gazette-row">${row.map(neighborOfferHTML).join('')}</div>`,
+      });
+    }
   }
+  if (requests.length > GAZETTE_VIRTUAL_THRESHOLD) {
+    const mount = body.querySelector<HTMLElement>('[data-gazette-virtual="help"]');
+    if (mount) {
+      renderVirtualList(mount, {
+        items: chunk(requests, GAZETTE_CARDS_PER_ROW),
+        rowHeight: GAZETTE_ROW_HEIGHT,
+        overscan: 3,
+        ariaLabel: 'Help requests',
+        key: row => row.map(r => r.id).join('|'),
+        renderRow: row => `<div class="virtual-gazette-row">${row.map(helpRequestHTML).join('')}</div>`,
+      });
+    }
+  }
+}
+
+function neighborOfferHTML(offer: NeighborSaleOffer): string {
+  const v = VILLAGERS[offer.neighborId];
+  if (!v) return '';
+  const it = ITEMS[offer.itemKey];
+  const total = offer.qty * offer.pricePerUnit;
+  const disabled = offer.bought || state.coins < total;
+  return `
+    <div class="gazette-offer ${offer.bought ? 'bought' : ''}" style="--cust-accent:${v.accent}">
+      <div class="gazette-offer-row">
+        <span class="gazette-offer-emoji">${v.emoji}</span>
+        <b>${v.name}</b>
+        <small>Â· ${v.role}</small>
+      </div>
+      <div class="gazette-offer-row">
+        <img class="ico-mini" src="${sprites.item[offer.itemKey]?.toDataURL() ?? ''}">
+        <span>${offer.qty}Ã— ${it?.name ?? offer.itemKey}</span>
+        <span class="gazette-offer-price">${total}ðŸ’°</span>
+      </div>
+      <button class="btn small primary" data-buy-neighbor="${offer.neighborId}" data-buy-item="${offer.itemKey}" ${disabled ? 'disabled' : ''}>
+        ${offer.bought ? 'âœ“ Bought' : 'Buy'}
+      </button>
+    </div>
+  `;
+}
+
+function helpRequestHTML(req: HelpRequestOffer): string {
+  const v = VILLAGERS[req.neighborId];
+  if (!v) return '';
+  const it = ITEMS[req.itemKey];
+  const have = state.inv[req.itemKey] ?? 0;
+  const enough = have >= req.qty;
+  return `
+    <div class="gazette-help ${req.done ? 'done' : ''}" style="--cust-accent:${v.accent}">
+      <div class="gazette-help-row">
+        <span class="gazette-offer-emoji">${v.emoji}</span>
+        <b>${v.name}</b>
+        <small>Â· ${v.role}</small>
+      </div>
+      <div class="gazette-help-row">
+        <span>Needs:</span>
+        <img class="ico-mini" src="${sprites.item[req.itemKey]?.toDataURL() ?? ''}">
+        <span>${req.qty}Ã— ${it?.name ?? req.itemKey}</span>
+        <small style="opacity:0.6">(have ${have})</small>
+      </div>
+      <div class="gazette-help-rewards">
+        <span class="gazette-reward">+${req.rewardCoins}ðŸ’°</span>
+        <span class="gazette-reward">+${req.rewardXp}XP</span>
+        ${req.rewardMaterial ? `<span class="gazette-reward gazette-reward-mat"><img class="ico-mini" src="${sprites.item[req.rewardMaterial]?.toDataURL() ?? ''}">+1</span>` : ''}
+      </div>
+      <button class="btn small primary" data-help="${req.id}" ${req.done || !enough ? 'disabled' : ''}>
+        ${req.done ? 'âœ“ Helped' : enough ? 'Help' : 'Not enough'}
+      </button>
+    </div>
+  `;
+}
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
 }

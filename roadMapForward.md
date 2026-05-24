@@ -9,7 +9,7 @@
 
 ## Current Status — Snapshot
 
-_Last updated 2026-05-24 after completing Phase 8 live-ops calendar parity._
+_Last updated 2026-05-24 after completing Phase 9.1 virtualized panel lists._
 
 | Phase | Items | Status |
 |---|---|---|
@@ -21,11 +21,11 @@ _Last updated 2026-05-24 after completing Phase 8 live-ops calendar parity._
 | 6 — Monetization-grammar completeness | 5 / 5 | ✅ shipped locally |
 | 7 — Animal husbandry depth | 5 / 5 | ✅ shipped locally |
 | 8 — Live-ops calendar (Sky Race / County Fair / Country Camping / Fishing Tournament) | 5 / 5 | ✅ shipped locally |
-| 9 — Performance + virtualization | 0 / 5 | ⬜ not started |
+| 9 — Performance + virtualization | 1 / 5 | 🟧 9.1 shipped locally |
 | 10 — Real-world CSR campaigns | 0 / 2 | ⬜ not started |
 | 11 — Final QA pass | 0 / 6 | ⬜ not started |
 
-**Done so far:** 47 / 56 items. **Next actionable unchecked item:** Phase 9.1 — Virtualized lists for Inventory + Gazette + Leaderboard. Phase 4.5 remains deferred to Phase 11 browser-side QA.
+**Done so far:** 48 / 56 items. **Next actionable unchecked item:** Phase 9.2 — IntersectionObserver for timer ticks. Phase 4.5 remains deferred to Phase 11 browser-side QA.
 
 **Verified facts about the codebase as of this snapshot:**
 - 14 files in `src/three/decor/` (one per Phase-1 prop).
@@ -42,6 +42,7 @@ _Last updated 2026-05-24 after completing Phase 8 live-ops calendar parity._
 - Animal pens now support auto-feed upgrades, full-pen world bubbles, mood bubbles, grow-up celebrations, and bulk sell controls.
 - Phase 8 featured events are implemented as `skyRace`, `countyFair`, `countryCamping`, and `fishingTournament` save roots (save schema v10), coordinated by `src/systems/featured-events.ts`.
 - The Event Board now has a Featured tab, the QEB shows each active featured event, and four world props anchor the calendar: Sky Race flag, County Fair tent, Camping marker, and Fishing Tournament board.
+- Phase 9.1 virtualized lists are implemented via `src/ui/virtual-list.ts` and applied to Inventory/Barn + Silo, Gazette neighbor/help lists, and the expanded simulated Leaderboard.
 
 ---
 
@@ -738,7 +739,7 @@ Track every meaningful task. Tick the box when committed AND pushed AND the type
 - [x] 8.5 — Event Board featured section enhancement
 
 ### Phase 9 — Performance & Polish
-- [ ] 9.1 — Virtualized lists (inventory, gazette, leaderboard)
+- [x] 9.1 — Virtualized lists (inventory, gazette, leaderboard)
 - [ ] 9.2 — IntersectionObserver for timer ticks
 - [ ] 9.3 — Sprite atlas for procedural icons (optional)
 - [ ] 9.4 — IndexedDB for telemetry + journal (optional, when needed)
@@ -766,6 +767,7 @@ Append a one-line entry per session here. Keep newest at top. Don't delete entri
 YYYY-MM-DD  Phase X.Y started / completed — commit <sha> — note
 ```
 
+- 2026-05-24  Phase 9.1 complete — commit pending — Added `src/ui/virtual-list.ts`, virtualized long Inventory/Barn + Silo sections, Gazette neighbor/help lists with delegated actions, and expanded/virtualized Leaderboard rows. Typecheck + build green.
 - 2026-05-24  Phase 8.1-8.5 complete — commit pending — Added save-backed Sky Race, County Fair, Country Camping, and Fishing Tournament systems, Featured Event Board tab, QEB entries, action-hook integration, save schema v10, and four dedicated 3D event props with world bubbles. Typecheck + build green.
 - 2026-05-23  Phase 7.1-7.5 complete — commit pending — Added `state.animalCare` with per-pen auto-feed upgrades, auto-feed consumption in `systems/pens.ts`, full-pen and mood world bubbles, baby grow-up celebrations in lifecycle, and bulk sell controls in `pen-panel.ts`. Typecheck + build green.
 - 2026-05-23  Phase 6.1-6.5 complete — commit pending — Added `src/systems/maggie-offers.ts`, persistent Maggie visits, weekly "This Week Only" shop offers, Roadside Stall daily listing caps, pass bundle claim cards, and Surprise Box odds disclosure. Save version bumped to v9. Typecheck + build green.

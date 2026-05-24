@@ -8138,6 +8138,61 @@ body.family-friendly .mailbox-letter-body {
   color: var(--muted);
 }
 
+/* =====================================================================
+   VIRTUALIZED MODAL LISTS  (Phase 9.1)
+   ===================================================================== */
+.virtual-list {
+  min-width: 0;
+}
+.virtual-list-viewport {
+  position: relative;
+  max-height: min(54vh, 560px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  border-radius: 8px;
+}
+.virtual-list-spacer {
+  position: relative;
+  min-height: 1px;
+}
+.virtual-list-window {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  will-change: transform;
+}
+.virtual-list-row {
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.virtual-grid-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+  padding: 0 4px 8px 0;
+}
+.virtual-gazette-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+  padding: 0 4px 8px 0;
+}
+.virtual-list-note {
+  margin: -2px 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.inventory-virtual-mount,
+.gazette-virtual-mount,
+.leaderboard-virtual-mount {
+  margin-bottom: 12px;
+}
+.leaderboard-virtual-mount .virtual-list-viewport {
+  max-height: min(36vh, 360px);
+}
+
 @media (max-width: 760px) {
   .featured-two-col { grid-template-columns: 1fr; }
   .featured-task,
@@ -8154,4 +8209,3 @@ body.family-friendly .mailbox-letter-body {
     width: 100%;
   }
 }
-

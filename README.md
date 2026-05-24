@@ -303,7 +303,8 @@ Manual smoke test for new builds:
 The game has now completed forward-roadmap Phase 8 live-ops calendar parity:
 Sky Race, County Fair, Country Camping, and Fishing Tournament are save-backed,
 shown in the Quick Event Bar, hosted by the Event Board, and anchored by
-dedicated 3D props. The save schema is v10.
+dedicated 3D props. Phase 9.1 also adds a shared virtual-list helper for
+long Inventory, Gazette, and Leaderboard lists. The save schema is v10.
 
 The game is **intentionally code-generated and procedural** — no external
 game assets, no CDN, no analytics, no network calls. It loads in under a

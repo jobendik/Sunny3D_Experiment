@@ -39,7 +39,13 @@ function savePB(pb: PB): void {
 }
 
 // Simulated peers grow weekly to keep pressure on.
-const NAMES = ['Holly H.', 'Marsh M.', 'River R.', 'Oat O.', 'Pip P.', 'Sage S.', 'Clover C.', 'Wren W.'];
+const NAMES = [
+  'Holly H.', 'Marsh M.', 'River R.', 'Oat O.', 'Pip P.', 'Sage S.', 'Clover C.', 'Wren W.',
+  'Juniper J.', 'Bram B.', 'Mina M.', 'Tess T.', 'Rowan R.', 'Iris I.', 'Sunny S.', 'Faye F.',
+  'Otto O.', 'Lena L.', 'Poppy P.', 'Gale G.', 'Nora N.', 'Silas S.', 'Mabel M.', 'Fern F.',
+  'Kit K.', 'Romy R.', 'Hazel H.', 'Theo T.', 'Della D.', 'Moss M.', 'Vera V.', 'Quinn Q.',
+  'Aster A.', 'Bryn B.', 'Cora C.', 'Eli E.',
+];
 function simulatedPeers(category: keyof PB): Array<{ name: string; score: number }> {
   const week = Math.floor(Date.now() / (7 * 86400000));
   const base = {
@@ -85,7 +91,7 @@ export function refreshLeaderboards(): LBSlice[] {
       label: labels[c],
       yours,
       rank,
-      topPeers: merged.slice(0, 5),
+      topPeers: merged,
     });
   }
   savePB(pb);

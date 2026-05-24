@@ -8,6 +8,11 @@ import {
   upgradeBarn, upgradeSilo, isSiloItem,
 } from '../systems/storage';
 import { updateHUD } from './hud';
+import { renderVirtualList } from './virtual-list';
+
+const VIRTUAL_ITEM_THRESHOLD = 50;
+const INVENTORY_CELLS_PER_ROW = 3;
+const INVENTORY_ROW_HEIGHT = 142;
 
 export function openInventory(): void {
   initStorage();
@@ -61,14 +66,17 @@ function render(body: HTMLElement): void {
 
     ${siloItems.length > 0 ? `
       <div class="storage-section-title">🌾 Silo Contents (${siloItems.length})</div>
-      <div class="shop-grid">${siloItems.map(itemCellHTML).join('')}</div>
+      ${inventorySectionHTML('silo', siloItems)}
     ` : ''}
 
     ${barnItems.length > 0 ? `
       <div class="storage-section-title">🏠 Barn Contents (${barnItems.length})</div>
-      <div class="shop-grid">${barnItems.map(itemCellHTML).join('')}</div>
+      ${inventorySectionHTML('barn', barnItems)}
     ` : ''}
   `;
+
+  mountInventoryVirtualList(body, 'silo', siloItems);
+  mountInventoryVirtualList(body, 'barn', barnItems);
 
   body.querySelectorAll<HTMLButtonElement>('button[data-upgrade]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -80,6 +88,38 @@ function render(body: HTMLElement): void {
       }
     });
   });
+}
+
+function inventorySectionHTML(kind: 'barn' | 'silo', keys: string[]): string {
+  if (keys.length <= VIRTUAL_ITEM_THRESHOLD) {
+    return `<div class="shop-grid">${keys.map(itemCellHTML).join('')}</div>`;
+  }
+  const rows = Math.ceil(keys.length / INVENTORY_CELLS_PER_ROW);
+  return `
+    <p class="virtual-list-note">Virtualized ${rows} rows for smoother scrolling.</p>
+    <div class="inventory-virtual-mount" data-inventory-virtual="${kind}"></div>
+  `;
+}
+
+function mountInventoryVirtualList(body: HTMLElement, kind: 'barn' | 'silo', keys: string[]): void {
+  if (keys.length <= VIRTUAL_ITEM_THRESHOLD) return;
+  const mount = body.querySelector<HTMLElement>(`[data-inventory-virtual="${kind}"]`);
+  if (!mount) return;
+  const rows = chunk(keys, INVENTORY_CELLS_PER_ROW);
+  renderVirtualList(mount, {
+    items: rows,
+    rowHeight: INVENTORY_ROW_HEIGHT,
+    overscan: 3,
+    ariaLabel: `${kind === 'silo' ? 'Silo' : 'Barn'} contents`,
+    key: row => row.join('|'),
+    renderRow: row => `<div class="virtual-grid-row">${row.map(itemCellHTML).join('')}</div>`,
+  });
+}
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
 }
 
 function itemCellHTML(k: string): string {
