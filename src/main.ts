@@ -65,6 +65,7 @@ import { initBiome } from './systems/biome';
 import { initPrestige } from './systems/prestige';
 import { initTutorial } from './systems/tutorial';
 import { track } from './systems/telemetry';
+import { initSession1, markSplashDismissed } from './systems/session1';
 const lazyDaily = lazy(() => import('./ui/daily-panel'));
 const lazyWeatherGrid = lazy(() => import('./ui/weather-grid-panel'));
 const lazySpec = lazy(() => import('./ui/spec-panel'));
@@ -72,6 +73,7 @@ const lazyCollection = lazy(() => import('./ui/collection-panel'));
 const lazyMarket = lazy(() => import('./ui/market-panel'));
 const lazyLeaderboard = lazy(() => import('./ui/leaderboard-panel'));
 const lazyPrestige = lazy(() => import('./ui/prestige-panel'));
+const lazyBoosts = lazy(() => import('./ui/boosts-panel'));
 const lazySnapshot = lazy(() => import('./ui/snapshot-panel'));
 import { renderObjectiveRail } from './ui/objective-rail';
 import { renderTutorialBubble, bindTutorial } from './ui/tutorial-overlay';
@@ -148,6 +150,8 @@ import { initSanctuary, tickSanctuary } from './systems/sanctuary';
 import { initSettings } from './systems/settings';
 import { initImperfectProduce, rolloverImperfectProduce } from './systems/imperfect-produce';
 import { initHabitatPartner } from './systems/habitat-partner';
+import { initAdRewards } from './systems/ad-rewards';
+import { initDailyReminder } from './systems/daily-reminder';
 import {
   initCrazyGames, crazyGamesLoadingDone, crazyGamesPause, crazyGamesResume,
 } from './systems/crazygames';
@@ -193,6 +197,7 @@ function bindToolbarHandlers(): void {
   document.getElementById('open-market')!.addEventListener('click', () => lazyMarket.call('openMarket'));
   document.getElementById('open-leaderboard')!.addEventListener('click', () => lazyLeaderboard.call('openLeaderboard'));
   document.getElementById('open-prestige')!.addEventListener('click', () => lazyPrestige.call('openPrestige'));
+  document.getElementById('open-boosts')!.addEventListener('click', () => lazyBoosts.call('openBoosts'));
   document.getElementById('open-snapshot')!.addEventListener('click', () => lazySnapshot.call('openSnapshot'));
   document.getElementById('open-wheel')!.addEventListener('click', () => lazyWheel.call('openWheel'));
   document.getElementById('open-pass')!.addEventListener('click', () => lazyPass.call('openPass'));
@@ -385,6 +390,7 @@ function init(): void {
   initImperfectProduce();
   rolloverImperfectProduce();
   initHabitatPartner();
+  initAdRewards();
   installWorldBubbles();
   initOrderMeter();
   initStorageInterrupt();
@@ -399,6 +405,7 @@ function init(): void {
   }
   maybeRolloverGazette();
   track(loaded ? 'session_resume' : 'session_new', { level: state.level });
+  initSession1(!loaded);
 
   // Centre the camera on the home zone (the playable starting area)
   // and choose a default zoom that frames roughly the home block plus
@@ -443,8 +450,13 @@ function init(): void {
   if (!loaded) {
     // Splash overlay + cinematic camera intro for fresh sessions
     bindSplash(() => {
+      markSplashDismissed();
       startCameraIntro();
-      setTimeout(() => lazyHelp.call('openHelp'), 1600);
+      // Intentionally do NOT auto-open the Help modal here. The
+      // tutorial spotlight already guides the first plow/plant/harvest
+      // chain in-canvas; a wall of help text 1.6s into the session
+      // pushes the play moment further away and hurts session-1
+      // retention. Players can open Help from the More menu at will.
     });
     // Drop a starter chest near the entrance plot so the new player gets an
     // immediate "wow" moment within the first 30 seconds of play. We pick
@@ -475,10 +487,10 @@ function init(): void {
   // Fade out the preload cover to reveal either the beautiful splash
   // (new session) or the live game (returning session). By this point
   // style.css is fully injected, so the CSS transition works correctly.
+  document.body.classList.add('app-ready');
   const preloadCover = document.getElementById('preload-cover');
   if (preloadCover) {
-    preloadCover.style.opacity = '0';
-    setTimeout(() => preloadCover.remove(), 350);
+    setTimeout(() => preloadCover.remove(), 500);
   }
 
   // Warm-load panels during idle time so first-open feels instant.
@@ -506,6 +518,11 @@ function init(): void {
     if (document.hidden) crazyGamesPause();
     else crazyGamesResume();
   });
+  // Schedule the ~22h come-back reminder. Best-effort: tries the CG
+  // SDK notifications bridge first (currently unimplemented by CG
+  // v3 — kept as a hook for the future) then falls back to the
+  // browser Notification API while this tab stays alive.
+  void initDailyReminder();
 }
 
 init();

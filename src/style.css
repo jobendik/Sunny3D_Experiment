@@ -4084,6 +4084,14 @@ button {
   display: block;
   overflow: visible;
 }
+/* Lock the rotating group's pivot to the SVG geometric center.
+   Without this, CSS transform uses the bounding-box center of the
+   <g>, which includes the labels extending beyond the disc, so the
+   wheel appears to drift sideways while spinning. */
+.wheel-svg #wheel-g {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+}
 .wheel-pointer {
   position: absolute;
   left: 50%; top: -4px;
@@ -4123,6 +4131,54 @@ button {
   font-size: var(--fs-18);
   padding: 14px 36px;
 }
+
+/* Rewarded-ad CTA button — sits under the wheel/boat primary
+   action, deliberately less prominent than the main button. */
+.wheel-ad-btn {
+  background: linear-gradient(180deg, #2a5a8a 0%, #1f3f60 100%);
+  color: #fff;
+  border: 2px solid #1a3050;
+  border-radius: var(--r-pill);
+  padding: 10px 22px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #1a3050, 0 5px 12px rgba(0, 0, 0, 0.25);
+  transition: transform 0.12s, filter 0.12s;
+}
+.wheel-ad-btn:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+.wheel-ad-btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #1a3050; }
+.wheel-ad-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Boosts panel — 3 stacked / wrapped cards (wheel / boat / harvest). */
+.boosts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  margin: 8px 0 14px;
+}
+.boost-card {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 4px;
+  padding: 14px 10px;
+  background: linear-gradient(180deg, #fff8e8 0%, #ffe8b0 100%);
+  border: 2px solid #c8861d;
+  border-radius: 12px;
+  color: #4a2f08;
+  font-family: var(--font-body);
+  cursor: pointer;
+  text-align: center;
+  transition: transform 0.12s, filter 0.12s;
+  box-shadow: 0 3px 0 #c8861d, 0 4px 10px rgba(80, 50, 10, 0.18);
+}
+.boost-card:hover:not(:disabled) { filter: brightness(1.05); transform: translateY(-1px); }
+.boost-card:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #c8861d; }
+.boost-card:disabled { opacity: 0.5; cursor: not-allowed; }
+.boost-card-ico { font-size: 32px; line-height: 1; }
+.boost-card-title { font-family: var(--font-display); font-weight: 700; font-size: 15px; }
+.boost-card-sub { font-size: 11px; opacity: 0.78; line-height: 1.3; }
+.boost-card.is-loading { filter: grayscale(0.4); cursor: progress; }
 
 /* =====================================================================
    SEASON PASS

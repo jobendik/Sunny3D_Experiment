@@ -1245,6 +1245,21 @@ export interface HabitatPartnerRoot {
   };
 }
 
+// ---- CrazyGames rewarded ads — opt-in bonus rewards ----
+
+export interface AdRewardsRoot {
+  /** Free extra Daily Wheel spins purchased with ad views (today only). */
+  bonusSpins: number;
+  /** Remaining 2× harvest yields the player has banked. Consumed on
+   *  the next successful harvest each. */
+  harvestBoostUses: number;
+  /** ms-since-epoch of the last successful ad watch — used to throttle
+   *  back-to-back ad offers and avoid abusive spam patterns. */
+  lastAdAt: number;
+  /** Total rewarded ads watched, lifetime. Telemetry / debug only. */
+  totalWatched: number;
+}
+
 // ---- Settings (accessibility / scenic mode preferences) ----
 
 export interface SettingsRoot {
@@ -1376,6 +1391,9 @@ export interface GameState {
   // Phase 10: real-world CSR campaigns
   imperfectProduce?: ImperfectProduceRoot;
   habitatPartner?: HabitatPartnerRoot;
+  // CrazyGames rewarded-ad rewards. Survives reloads so a primed
+  // harvest-boost doesn't evaporate if the player closes the tab.
+  adRewards?: AdRewardsRoot;
   saveVersion?: number;
   // Internal periodic timers
   _weatherPartT?: number;

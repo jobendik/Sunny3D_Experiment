@@ -13,6 +13,7 @@ import { dailyChallengeProgress } from './daily';
 import { addWeeklyPoints } from './weekly';
 import { checkAchievements } from './achievements';
 import { track } from './telemetry';
+import { markFirst } from './session1';
 import { addPassPoints } from './season-pass';
 import { addOrderPoints } from './order-meter';
 import { spawnHUDBurst } from './flyers';
@@ -81,6 +82,7 @@ export function fulfillOrder(orderId: string): void {
   state.coins += reward;
   state.stats.earned += reward;
   state.stats.ordersFulfilled += 1;
+  if (wasFirst) markFirst('s1_first_order', { reward });
   recordHabitatContribution('order', 1);
   addXP(o.xp);
   // Order Board macro-meter: bigger payouts advance the bar faster.

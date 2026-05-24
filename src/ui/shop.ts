@@ -20,6 +20,7 @@ import { activeEffects as weatherGridEffects } from '../systems/weather-grid';
 import { collectionBonuses } from '../systems/collection';
 import { perkValue } from '../systems/prestige';
 import { track } from '../systems/telemetry';
+import { markFirst } from '../systems/session1';
 import { comboHit } from '../systems/combo';
 import {
   addPassPoints, passDaysLeft, isEliteUnlocked, isPlatinumUnlocked, PASS_TIERS,
@@ -180,13 +181,22 @@ export function sellItem(k: string, qty: number): void {
   const total = baseTotal + imperfectBonus;
   if (imperfectBonus > 0) recordImperfectBonus(imperfectBonus);
   recordHabitatContribution('sale', qty);
+  const wasFirstSale = state.stats.sold === 0;
   state.coins += total;
   state.stats.sold += qty;
   state.stats.earned += total;
   sfx.coin();
   const imperfectNote = imperfectBonus > 0 ? ` · 🥕+${imperfectBonus} Imperfect Hero` : '';
-  toast(`+${total}${isEvent('market_rush') ? ' (+50%!)' : ''}${imperfectNote}`, 'gold');
-  spawnHUDBurst('coin', Math.min(8, 2 + Math.floor(total / 30)));
+  // First-sale moment: make it feel like a milestone so the player
+  // links the loop (plant → harvest → sell) with a real reward. The
+  // bigger coin burst + special toast wording are deliberate juice.
+  if (wasFirstSale) {
+    toast(`🎉 First sale! +${total} coins`, 'gold');
+    spawnHUDBurst('coin', 14);
+  } else {
+    toast(`+${total}${isEvent('market_rush') ? ' (+50%!)' : ''}${imperfectNote}`, 'gold');
+    spawnHUDBurst('coin', Math.min(8, 2 + Math.floor(total / 30)));
+  }
   updateHUD();
   renderShopSell(document.getElementById('modal-body')!);
   questProgress('sell', k, qty);
@@ -196,6 +206,7 @@ export function sellItem(k: string, qty: number): void {
   addWeeklyPoints(qty * 3, 'craft');
   addPassPoints(qty * 2);
   track('sell', { item: k, qty, total });
+  markFirst('s1_first_sell', { item: k, qty, total });
   checkAchievements();
 }
 

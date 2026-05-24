@@ -14,8 +14,73 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap">
+<style>
+  /* ===========================================================
+     Critical inline CSS — prevents the flash-of-unstyled-content
+     (FOUC) while style.css (imported via main.ts) is still loading.
+     The #preload-cover element below paints a branded warm gradient
+     over the page until main.ts fades it out. Keep this block lean.
+     =========================================================== */
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    background: #2a1608;
+    font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+  }
+  #preload-cover {
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+    background: radial-gradient(ellipse at 50% 35%,
+      #ffe8a8 0%, #ffc36a 40%, #e08a32 75%, #4a230a 100%);
+    color: #fffae8;
+    text-align: center;
+    transition: opacity 0.45s ease;
+    pointer-events: none;
+    user-select: none;
+  }
+  #preload-cover .pl-mark {
+    font-size: 84px; line-height: 1;
+    filter: drop-shadow(0 6px 14px rgba(80, 30, 4, 0.45));
+    margin-bottom: 12px;
+  }
+  #preload-cover .pl-title {
+    font-family: 'Fredoka', system-ui, sans-serif;
+    font-weight: 700;
+    font-size: clamp(40px, 10vw, 84px);
+    margin: 0; line-height: 1;
+    letter-spacing: 1px;
+    text-shadow: 0 3px 0 #6e2c08, 0 6px 14px rgba(40, 10, 4, 0.55);
+  }
+  #preload-cover .pl-tag {
+    font-family: 'Fredoka', system-ui, sans-serif;
+    font-weight: 600;
+    font-size: clamp(13px, 2.4vw, 18px);
+    margin: 10px 0 26px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    opacity: 0.85;
+  }
+  #preload-cover .pl-spinner {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: 4px solid rgba(255, 245, 200, 0.25);
+    border-top-color: #fffae8;
+    animation: pl-spin 0.9s linear infinite;
+  }
+  @keyframes pl-spin { to { transform: rotate(360deg); } }
+  /* Once main.ts adds .app-ready to body, the preload cover fades out
+     and the underlying styled splash / game UI is revealed. */
+  body.app-ready #preload-cover { opacity: 0; }
+</style>
 </head>
 <body>
+<div id="preload-cover" aria-hidden="true">
+  <div class="pl-mark">🌻</div>
+  <h1 class="pl-title">Sunny Acres</h1>
+  <p class="pl-tag">A Farming Adventure</p>
+  <div class="pl-spinner" aria-hidden="true"></div>
+</div>
 <div id="game-root">
   <canvas id="world"></canvas>
 
@@ -357,6 +422,11 @@
         <span class="ico-emoji">✨</span>
         <span>Prestige</span>
       </button>
+      <button class="sheet-btn" data-more="open-boosts">
+        <span class="ico-emoji">🎬</span>
+        <span>Boosts</span>
+        <span class="sheet-pip" id="boosts-pip" hidden></span>
+      </button>
     </div>
     <div class="bottom-sheet-section">Tools</div>
     <div class="bottom-sheet-grid">
@@ -546,6 +616,7 @@
     <button id="open-piggy" type="button"></button>
     <button id="open-settings" type="button"></button>
     <button id="open-buildings" type="button"></button>
+    <button id="open-boosts" type="button"></button>
     <button id="toggle-edit-mode" type="button"></button>
     <button id="open-quests-fab" type="button">
       <span class="corner-fab-badge" id="quests-fab-badge" hidden>0</span>

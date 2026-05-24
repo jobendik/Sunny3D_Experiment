@@ -25,6 +25,7 @@ import { localDayIndex } from './daily';
 import { requestBoardHasAttention } from './request-board';
 import { friendshipGiftsRemainingToday } from './friendship';
 import { anyFeaturedEventActive, featuredEventsHaveAttention } from './featured-events';
+import { crazyGamesActive } from './crazygames';
 
 export type FeatureCategory =
   | 'core'        // always visible (shop/build/help/save)
@@ -279,6 +280,19 @@ export const FEATURE_GATES: FeatureGate[] = [
   },
   { id: 'share', label: 'Share', icon: '🖼️', category: 'advanced',
     unlockLevel: 8, openButtonId: 'open-snapshot' },
+  // CrazyGames rewarded-ad boosts. Only surfaces when the SDK is
+  // active so non-CG hosts (GitHub Pages, dev preview) don't see
+  // a button that opens to a placeholder. revealAt: -99 disables
+  // the teaser path entirely — players who aren't on CG never see
+  // the button at all.
+  { id: 'boosts', label: 'Boosts', icon: '🎬', category: 'daily',
+    unlockLevel: 1, revealAt: -99, openButtonId: 'open-boosts',
+    isUnlocked: () => crazyGamesActive(),
+    hasAttention: () => {
+      const r = state.adRewards;
+      return !!r && (r.bonusSpins > 0 || r.harvestBoostUses > 0);
+    },
+  },
 
   // ---- Hay Day-grammar additions (v7) ----
   { id: 'mailbox', label: 'Mail', icon: '📬', category: 'daily',

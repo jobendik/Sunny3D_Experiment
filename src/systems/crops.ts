@@ -14,10 +14,17 @@ export function growthMultiplier(): number {
   const sp = specEffects();
   const eff = weatherGridEffects();
   const hazard = currentHazardMod();
+  // First-session jumpstart: while the player hasn't completed a
+  // single harvest yet, crops grow ~1.7× faster. The 18 s wheat becomes
+  // ~10 s, so the plow → plant → harvest loop fits comfortably inside
+  // the first 90 seconds of play. Once they've harvested once, normal
+  // pacing kicks in and the "come back tomorrow" loop resumes.
+  const jumpstart = state.stats.harvested === 0 ? 1.7 : 1.0;
   // paceMultiplier() (1×/2×/3×) divides growth — cozy mode lets players
   // savour the "come back tomorrow" loop instead of resolving everything
   // in a single sitting.
   return (base
+    * jumpstart
     * (1 + (sp.cropGrowth ?? 0))
     * (1 + eff.growth)
     * (1 + perkValue('growthBoost'))

@@ -117,6 +117,7 @@ interface SaveData {
   // Phase 10: real-world CSR campaigns (v11)
   imperfectProduce?: GameState['imperfectProduce'];
   habitatPartner?: GameState['habitatPartner'];
+  adRewards?: GameState['adRewards'];
   // Transient migration hints (not stored in localStorage; set by
   // migrateSave() and read by loadGame() to shift entity coords).
   _migrateOffsetX?: number;
@@ -220,6 +221,7 @@ export function saveGame(): void {
     settings: state.settings,
     imperfectProduce: state.imperfectProduce,
     habitatPartner: state.habitatPartner,
+    adRewards: state.adRewards,
   };
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
@@ -410,6 +412,7 @@ export function loadGame(): boolean {
     if (data.settings) state.settings = data.settings;
     if (data.imperfectProduce) state.imperfectProduce = data.imperfectProduce;
     if (data.habitatPartner) state.habitatPartner = data.habitatPartner;
+    if (data.adRewards) state.adRewards = data.adRewards;
     state.saveVersion = data.saveVersion ?? CURRENT_SAVE_VERSION;
 
     const offset = data.saveTime || 0;

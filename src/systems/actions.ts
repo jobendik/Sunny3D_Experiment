@@ -27,6 +27,8 @@ import { beautyBonus } from './beautification';
 import { collectionBonuses } from './collection';
 import { perkValue } from './prestige';
 import { track } from './telemetry';
+import { markFirst } from './session1';
+import { consumeHarvestBoost } from './ad-rewards';
 import { comboHit } from './combo';
 import { maybeSpawnChest } from './treasures';
 import { addPassPoints } from './season-pass';
@@ -124,6 +126,7 @@ export function tryPlow(gx: number, gy: number): void {
   sfx.plow();
   spawnParticles(gx * TILE + TILE / 2, gy * TILE + TILE / 2, '#8b5a2b', 10);
   checkAchievements();
+  markFirst('s1_first_plow');
 }
 
 export function tryPlant(gx: number, gy: number): void {
@@ -155,6 +158,7 @@ export function tryPlant(gx: number, gy: number): void {
   spawnParticles(gx * TILE + TILE / 2, gy * TILE + TILE / 2, '#7ec850', 8);
   floatText(gx * TILE + TILE / 2, gy * TILE + TILE / 2 - 12, `-${crop.seedCost}`, '#c44040');
   updateHUD();
+  markFirst('s1_first_plant', { crop: cropKey });
 }
 
 /** Attempt to clear a tile-level obstacle with the hand tool. The
@@ -220,7 +224,14 @@ export function tryHarvestOrInteract(gx: number, gy: number): void {
     mult *= 1 + beautyBonus();
     mult *= 1 + cb.yieldMult;
     mult *= combo.mult;
+    // Rewarded-ad 2× harvest boost (one charge per ad view). Consume
+    // it after every other multiplier so the doubling is visible.
+    const adBoost = consumeHarvestBoost();
+    mult *= adBoost;
     yieldAmt = Math.max(1, Math.round(yieldAmt * mult));
+    if (adBoost > 1) {
+      floatText(gx * TILE + TILE / 2, gy * TILE + TILE / 2 + 12, '🎬 2× boost!', '#c890ff');
+    }
     if (combo.count >= 3) {
       floatText(gx * TILE + TILE / 2, gy * TILE + TILE / 2 + 4, `COMBO ×${combo.count}!`, '#e87018');
     }
@@ -280,5 +291,6 @@ export function tryHarvestOrInteract(gx: number, gy: number): void {
     addClubProgress('harvest', yieldAmt);
     checkJournalMilestones();
     track('harvest', { crop: crop.item, amt: yieldAmt });
+    markFirst('s1_first_harvest', { crop: crop.item, amt: yieldAmt });
   }
 }

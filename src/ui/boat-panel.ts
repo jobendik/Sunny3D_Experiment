@@ -8,6 +8,7 @@ import { sprites } from '../sprites';
 import { openModal } from './modal';
 import { initBoat, fillBoatCrate, fillBoatCrateMax, boatStatusLabel, instantSummonBoat, BOAT_INSTANT_COST } from '../systems/boat';
 import { startVisibleTicker } from './visible-ticker';
+import { canOfferAd, offerRewardedAd } from '../systems/ad-rewards';
 
 export function openBoatPanel(): void {
   initBoat();
@@ -61,6 +62,12 @@ function render(body: HTMLElement): void {
       <div class="boat-bonus">
         Full Boat Bonus: <img class="ico-mini" src="${sprites.item[b.bonusMaterial]?.toDataURL() ?? ''}"> 1 ${ITEMS[b.bonusMaterial]?.name ?? b.bonusMaterial} + 50% reward
       </div>` : ''}
+    ${canOfferAd() && (b.state === 'arriving' || b.state === 'docked' || b.state === 'departed') ? `
+      <div style="text-align:center;margin-top:14px">
+        <button class="btn wheel-ad-btn" id="boat-ad">
+          🎬 Watch ad: skip 30 minutes
+        </button>
+      </div>` : ''}
   `;
   body.querySelectorAll<HTMLButtonElement>('button[data-fill]').forEach(btn =>
     btn.addEventListener('click', () => {
@@ -80,6 +87,17 @@ function render(body: HTMLElement): void {
   if (instantBtn) {
     instantBtn.addEventListener('click', () => {
       if (instantSummonBoat()) render(body);
+    });
+  }
+  const adBtn = document.getElementById('boat-ad');
+  if (adBtn) {
+    adBtn.addEventListener('click', async () => {
+      adBtn.setAttribute('disabled', 'true');
+      adBtn.textContent = 'Loading ad…';
+      await offerRewardedAd('boat');
+      // Re-render whether the ad ran or not — the cooldown chip will
+      // update either way and the boat timers may have shifted.
+      render(body);
     });
   }
 }

@@ -11,6 +11,7 @@ import { addXP } from './xp';
 import { addItem } from './inventory';
 import { track } from './telemetry';
 import { localDayIndex } from './daily';
+import { consumeBonusSpin, hasBonusSpin } from './ad-rewards';
 
 export interface WheelSlice {
   label: string;
@@ -31,7 +32,10 @@ export function initWheel(): void {
 
 export function canSpin(): boolean {
   initWheel();
-  return state.wheel!.lastSpinDay !== localDayIndex();
+  if (state.wheel!.lastSpinDay !== localDayIndex()) return true;
+  // The free daily spin is used; bonus spins (from rewarded ads)
+  // keep the wheel spinnable until they run out.
+  return hasBonusSpin();
 }
 
 export function getSlices(): WheelSlice[] {
@@ -78,7 +82,13 @@ export function spinWheel(): number | null {
     r -= slices[i]!.weight;
     if (r <= 0) { picked = i; break; }
   }
-  state.wheel!.lastSpinDay = localDayIndex();
+  // Consume the free daily spin first; if it's already been used
+  // today, drain a bonus spin from the rewarded-ad pool instead.
+  if (state.wheel!.lastSpinDay !== localDayIndex()) {
+    state.wheel!.lastSpinDay = localDayIndex();
+  } else {
+    consumeBonusSpin();
+  }
   state.wheel!.pendingResult = picked;
   state.wheel!.spinning = true;
   sfx.click();

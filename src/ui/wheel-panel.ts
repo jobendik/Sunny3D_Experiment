@@ -9,6 +9,8 @@ import { state } from '../state';
 import { getSlices, canSpin, spinWheel, applySpinResult, initWheel } from '../systems/wheel';
 import { openModal } from './modal';
 import { sfx } from '../audio/sfx';
+import { canOfferAd, offerRewardedAd, hasBonusSpin } from '../systems/ad-rewards';
+import { localDayIndex } from '../systems/daily';
 
 let spinningTimer: number | null = null;
 
@@ -78,6 +80,10 @@ function render(body: HTMLElement): void {
     a += span;
   });
 
+  const freeSpinUsed = state.wheel?.lastSpinDay === localDayIndex();
+  const bonusReady = hasBonusSpin();
+  const showAdOffer = freeSpinUsed && !bonusReady && canOfferAd();
+
   body.innerHTML = `
     <div class="wheel-wrap">
       <div class="wheel-pointer" aria-hidden="true">▼</div>
@@ -102,11 +108,31 @@ function render(body: HTMLElement): void {
     </div>
     <div class="wheel-actions">
       <button id="wheel-spin" class="btn primary wheel-spin-btn" ${canSpinNow ? '' : 'disabled'}>
-        <span class="wheel-spin-label">${canSpinNow ? 'SPIN!' : 'Come back tomorrow'}</span>
+        <span class="wheel-spin-label">${canSpinNow ? (bonusReady ? '✨ BONUS SPIN!' : 'SPIN!') : 'Come back tomorrow'}</span>
       </button>
+      ${showAdOffer ? `
+        <button id="wheel-ad" class="btn wheel-ad-btn" style="margin-top:8px">
+          <span>🎬 Watch ad for +1 spin</span>
+        </button>` : ''}
     </div>
     <p class="wheel-fineprint">One free spin per day. JACKPOT and Treasure tiers exist!</p>
   `;
+
+  const adBtn = document.getElementById('wheel-ad');
+  if (adBtn) {
+    adBtn.addEventListener('click', async () => {
+      adBtn.setAttribute('disabled', 'true');
+      adBtn.textContent = 'Loading ad…';
+      const watched = await offerRewardedAd('wheel');
+      if (watched) {
+        // Re-render so the spin button becomes enabled again.
+        render(body);
+      } else {
+        adBtn.removeAttribute('disabled');
+        adBtn.innerHTML = '<span>🎬 Watch ad for +1 spin</span>';
+      }
+    });
+  }
 
   document.getElementById('wheel-spin')!.addEventListener('click', () => {
     if (!canSpin()) return;
@@ -128,6 +154,12 @@ function render(body: HTMLElement): void {
     const final = 360 * 5 + (270 - target);
     const g = document.getElementById('wheel-g') as unknown as SVGGElement | null;
     if (!g) return;
+    // Pivot around the SVG geometric centre (50, 50 in user units) so
+    // the wedges don't drift sideways during the spin. The CSS rule in
+    // style.css covers modern browsers; this inline fallback keeps the
+    // wheel centred if that rule is stripped or overridden.
+    g.style.transformBox = 'view-box';
+    g.style.transformOrigin = '50% 50%';
     g.style.transition = 'transform 3.4s cubic-bezier(0.16, 1, 0.3, 1)';
     g.style.transform = `rotate(${final}deg)`;
 
