@@ -12,7 +12,6 @@ import {
 } from './constants';
 import { clamp, nowSeconds } from './utils';
 import { ensureAudio, sfx } from './audio/sfx';
-import { startMusic, stopMusic } from './audio/music';
 import { buildSprites } from './sprites';
 import { initGrid, markBuildingTiles } from './systems/grid';
 import { refillQuests, renderQuests } from './systems/quests';
@@ -29,18 +28,29 @@ import { updateHUD } from './ui/hud';
 import { setTool, updateSeedBtnLabel, attachToolButtons } from './ui/tools';
 import { toast } from './ui/toasts';
 import { closeModal } from './ui/modal';
-import { openShop, openShopOffers } from './ui/shop';
-import { openInventory } from './ui/inventory-panel';
-import { openBuildMenu } from './ui/build-menu';
-import { openDecorMenu } from './ui/decor-menu';
-import { openAchievements } from './ui/achievements-panel';
-import { openNews } from './ui/news';
-import { openHelp } from './ui/help';
+import { lazy, idlePreload } from './ui/lazy-panels';
 import {
   bindMobileShell,
   updateQuestsFabBadge,
   updatePlacingBanner,
 } from './ui/mobile-shell';
+
+// Music module is gated on a user gesture; defer its load (and the
+// 4 MP3-URL imports it owns) until the player actually toggles music
+// or kicks off audio with their first click.
+const lazyMusic = lazy(() => import('./audio/music'));
+const startMusic = (): void => lazyMusic.call('startMusic');
+const stopMusic = (): void => lazyMusic.call('stopMusic');
+
+// Panel modules — loaded on first open. After init() we idle-preload
+// the common ones so taps still feel instant.
+const lazyShop = lazy(() => import('./ui/shop'));
+const lazyInventory = lazy(() => import('./ui/inventory-panel'));
+const lazyBuildMenu = lazy(() => import('./ui/build-menu'));
+const lazyDecorMenu = lazy(() => import('./ui/decor-menu'));
+const lazyAchievements = lazy(() => import('./ui/achievements-panel'));
+const lazyNews = lazy(() => import('./ui/news'));
+const lazyHelp = lazy(() => import('./ui/help'));
 // Phase 0–4 retention/diff/meta systems
 import { initDaily, dailyTick } from './systems/daily';
 import { initWeekly, weeklyTick } from './systems/weekly';
@@ -55,14 +65,14 @@ import { initBiome } from './systems/biome';
 import { initPrestige } from './systems/prestige';
 import { initTutorial } from './systems/tutorial';
 import { track } from './systems/telemetry';
-import { openDaily } from './ui/daily-panel';
-import { openWeatherGrid } from './ui/weather-grid-panel';
-import { openSpecialization } from './ui/spec-panel';
-import { openCollection } from './ui/collection-panel';
-import { openMarket } from './ui/market-panel';
-import { openLeaderboard } from './ui/leaderboard-panel';
-import { openPrestige } from './ui/prestige-panel';
-import { openSnapshot } from './ui/snapshot-panel';
+const lazyDaily = lazy(() => import('./ui/daily-panel'));
+const lazyWeatherGrid = lazy(() => import('./ui/weather-grid-panel'));
+const lazySpec = lazy(() => import('./ui/spec-panel'));
+const lazyCollection = lazy(() => import('./ui/collection-panel'));
+const lazyMarket = lazy(() => import('./ui/market-panel'));
+const lazyLeaderboard = lazy(() => import('./ui/leaderboard-panel'));
+const lazyPrestige = lazy(() => import('./ui/prestige-panel'));
+const lazySnapshot = lazy(() => import('./ui/snapshot-panel'));
 import { renderObjectiveRail } from './ui/objective-rail';
 import { renderTutorialBubble, bindTutorial } from './ui/tutorial-overlay';
 import { renderChoiceOverlay, bindChoice } from './ui/choice-overlay';
@@ -73,10 +83,10 @@ import { initCombo } from './systems/combo';
 import { initTreasures, tickTreasures } from './systems/treasures';
 import { initPass } from './systems/season-pass';
 import { bindReadyNotifier, tickReadyTitle } from './systems/ready-notifier';
-import { openWheel } from './ui/wheel-panel';
-import { openPass } from './ui/pass-panel';
+const lazyWheel = lazy(() => import('./ui/wheel-panel'));
+const lazyPass = lazy(() => import('./ui/pass-panel'));
 import { renderComboHud } from './ui/combo-hud';
-import { maybeOpenWelcomeBack } from './ui/welcome-back';
+const lazyWelcomeBack = lazy(() => import('./ui/welcome-back'));
 import { bindSplash, startCameraIntro, tickCameraIntro } from './systems/intro';
 // Roadmap expansion systems
 import { initStorage } from './systems/storage';
@@ -87,12 +97,12 @@ import { initTrain, tickTrain } from './systems/train';
 import { initLandmarks } from './systems/landmarks';
 import { initFriendship } from './systems/friendship';
 import { initBuildingMastery } from './systems/building-mastery';
-import { openMarketStall } from './ui/market-stall-panel';
-import { openGazette } from './ui/gazette-panel';
-import { openBoatPanel } from './ui/boat-panel';
-import { openTrainPanel } from './ui/train-panel';
-import { openLandmarkPanel } from './ui/landmark-panel';
-import { openFriendshipPanel } from './ui/friendship-panel';
+const lazyMarketStall = lazy(() => import('./ui/market-stall-panel'));
+const lazyGazette = lazy(() => import('./ui/gazette-panel'));
+const lazyBoat = lazy(() => import('./ui/boat-panel'));
+const lazyTrain = lazy(() => import('./ui/train-panel'));
+const lazyLandmark = lazy(() => import('./ui/landmark-panel'));
+const lazyFriendship = lazy(() => import('./ui/friendship-panel'));
 // Phase 4-15 expansion systems
 import { initBalloon } from './systems/balloon';
 import { initFestivalCart, maybeRolloverCart } from './systems/festival-cart';
@@ -119,15 +129,15 @@ import { initToolShed } from './systems/tool-shed';
 import { initBuildingUpgrades } from './systems/building-upgrades';
 import { initDecorSets, refreshSetsAndAnnounce } from './systems/decor-sets';
 import { maybeEnableDebug } from './systems/debug';
-import { openBalloonPanel } from './ui/balloon-panel';
-import { openFestivalCartPanel } from './ui/festival-cart-panel';
-import { openClubPanel } from './ui/club-panel';
-import { openVillagePanel } from './ui/village-panel';
-import { openExpeditionsPanel } from './ui/expeditions-panel';
-import { openLiveEventsPanel } from './ui/live-events-panel';
-import { openExpansionPanel } from './ui/expansion-panel';
-import { openRecipeBook } from './ui/recipe-book-panel';
-import { openMuseum } from './ui/museum-panel';
+const lazyBalloon = lazy(() => import('./ui/balloon-panel'));
+const lazyFestivalCart = lazy(() => import('./ui/festival-cart-panel'));
+const lazyClub = lazy(() => import('./ui/club-panel'));
+const lazyVillage = lazy(() => import('./ui/village-panel'));
+const lazyExpeditions = lazy(() => import('./ui/expeditions-panel'));
+const lazyLiveEvents = lazy(() => import('./ui/live-events-panel'));
+const lazyExpansion = lazy(() => import('./ui/expansion-panel'));
+const lazyRecipeBook = lazy(() => import('./ui/recipe-book-panel'));
+const lazyMuseum = lazy(() => import('./ui/museum-panel'));
 // Hay Day-grammar additions (v7)
 import { initMailbox, mailboxTick, unreadCount } from './systems/mailbox';
 import { initSurpriseBox, tickSurpriseBox, hasPendingBox } from './systems/surprise-box';
@@ -140,11 +150,11 @@ import { initImperfectProduce, rolloverImperfectProduce } from './systems/imperf
 import { initHabitatPartner } from './systems/habitat-partner';
 import { toggleEditMode, isEditMode, setEditMode } from './systems/edit-mode';
 import { setScenicMode } from './systems/settings';
-import { openMailboxPanel } from './ui/mailbox-panel';
-import { openSurpriseBoxPanel } from './ui/surprise-box-panel';
-import { openSanctuaryPanel } from './ui/sanctuary-panel';
-import { openPiggyPanel } from './ui/piggy-panel';
-import { openSettingsPanel } from './ui/settings-panel';
+const lazyMailbox = lazy(() => import('./ui/mailbox-panel'));
+const lazySurpriseBox = lazy(() => import('./ui/surprise-box-panel'));
+const lazySanctuary = lazy(() => import('./ui/sanctuary-panel'));
+const lazyPiggy = lazy(() => import('./ui/piggy-panel'));
+const lazySettings = lazy(() => import('./ui/settings-panel'));
 // FV3 grammar: screen-space speech bubble overlay (object-pooled,
 // camera-projected). See src/ui/world-bubbles.ts.
 import {
@@ -157,7 +167,7 @@ import { initStorageInterrupt } from './systems/storage-interrupt';
 import { bindFeedTray, tickFeedTray } from './ui/feed-tray';
 import { initChatter, tickChatter } from './systems/chatter';
 import { initRequestBoard } from './systems/request-board';
-import { openRequestBoardPanel } from './ui/request-board-panel';
+const lazyRequestBoard = lazy(() => import('./ui/request-board-panel'));
 
 // Note: starting farm layout (lake, paths, soil hints, pre-plowed
 // patch) is now built by `generateWorld()` in three/terrain/world-gen.ts
@@ -166,51 +176,51 @@ import { openRequestBoardPanel } from './ui/request-board-panel';
 
 function bindToolbarHandlers(): void {
   document.getElementById('modal-close')!.addEventListener('click', closeModal);
-  document.getElementById('open-shop')!.addEventListener('click', () => openShop());
-  document.getElementById('offer-pill')?.addEventListener('click', () => openShopOffers());
-  document.getElementById('open-inventory')!.addEventListener('click', openInventory);
-  document.getElementById('open-buildings')!.addEventListener('click', openBuildMenu);
-  document.getElementById('open-decor')!.addEventListener('click', openDecorMenu);
-  document.getElementById('open-achievements')!.addEventListener('click', openAchievements);
-  document.getElementById('open-news')!.addEventListener('click', openNews);
-  document.getElementById('open-daily')!.addEventListener('click', openDaily);
-  document.getElementById('open-weather-grid')!.addEventListener('click', openWeatherGrid);
-  document.getElementById('open-spec')!.addEventListener('click', openSpecialization);
-  document.getElementById('open-collection')!.addEventListener('click', openCollection);
-  document.getElementById('open-market')!.addEventListener('click', openMarket);
-  document.getElementById('open-leaderboard')!.addEventListener('click', openLeaderboard);
-  document.getElementById('open-prestige')!.addEventListener('click', openPrestige);
-  document.getElementById('open-snapshot')!.addEventListener('click', openSnapshot);
-  document.getElementById('open-wheel')!.addEventListener('click', openWheel);
-  document.getElementById('open-pass')!.addEventListener('click', openPass);
-  document.getElementById('open-stall')!.addEventListener('click', openMarketStall);
-  document.getElementById('open-gazette')!.addEventListener('click', openGazette);
-  document.getElementById('open-boat')!.addEventListener('click', openBoatPanel);
-  document.getElementById('open-train')!.addEventListener('click', openTrainPanel);
-  document.getElementById('open-landmark')!.addEventListener('click', openLandmarkPanel);
-  document.getElementById('open-friendship')!.addEventListener('click', openFriendshipPanel);
-  document.getElementById('open-balloon')?.addEventListener('click', openBalloonPanel);
-  document.getElementById('open-cart')?.addEventListener('click', openFestivalCartPanel);
-  document.getElementById('open-club')?.addEventListener('click', openClubPanel);
-  document.getElementById('open-request-board')?.addEventListener('click', openRequestBoardPanel);
-  document.getElementById('open-village')?.addEventListener('click', openVillagePanel);
-  document.getElementById('open-expeditions')?.addEventListener('click', openExpeditionsPanel);
-  document.getElementById('open-events')?.addEventListener('click', openLiveEventsPanel);
-  document.getElementById('open-expansion')?.addEventListener('click', openExpansionPanel);
-  document.getElementById('open-recipe-book')?.addEventListener('click', openRecipeBook);
-  document.getElementById('open-museum')?.addEventListener('click', openMuseum);
+  document.getElementById('open-shop')!.addEventListener('click', () => lazyShop.call('openShop'));
+  document.getElementById('offer-pill')?.addEventListener('click', () => lazyShop.call('openShopOffers'));
+  document.getElementById('open-inventory')!.addEventListener('click', () => lazyInventory.call('openInventory'));
+  document.getElementById('open-buildings')!.addEventListener('click', () => lazyBuildMenu.call('openBuildMenu'));
+  document.getElementById('open-decor')!.addEventListener('click', () => lazyDecorMenu.call('openDecorMenu'));
+  document.getElementById('open-achievements')!.addEventListener('click', () => lazyAchievements.call('openAchievements'));
+  document.getElementById('open-news')!.addEventListener('click', () => lazyNews.call('openNews'));
+  document.getElementById('open-daily')!.addEventListener('click', () => lazyDaily.call('openDaily'));
+  document.getElementById('open-weather-grid')!.addEventListener('click', () => lazyWeatherGrid.call('openWeatherGrid'));
+  document.getElementById('open-spec')!.addEventListener('click', () => lazySpec.call('openSpecialization'));
+  document.getElementById('open-collection')!.addEventListener('click', () => lazyCollection.call('openCollection'));
+  document.getElementById('open-market')!.addEventListener('click', () => lazyMarket.call('openMarket'));
+  document.getElementById('open-leaderboard')!.addEventListener('click', () => lazyLeaderboard.call('openLeaderboard'));
+  document.getElementById('open-prestige')!.addEventListener('click', () => lazyPrestige.call('openPrestige'));
+  document.getElementById('open-snapshot')!.addEventListener('click', () => lazySnapshot.call('openSnapshot'));
+  document.getElementById('open-wheel')!.addEventListener('click', () => lazyWheel.call('openWheel'));
+  document.getElementById('open-pass')!.addEventListener('click', () => lazyPass.call('openPass'));
+  document.getElementById('open-stall')!.addEventListener('click', () => lazyMarketStall.call('openMarketStall'));
+  document.getElementById('open-gazette')!.addEventListener('click', () => lazyGazette.call('openGazette'));
+  document.getElementById('open-boat')!.addEventListener('click', () => lazyBoat.call('openBoatPanel'));
+  document.getElementById('open-train')!.addEventListener('click', () => lazyTrain.call('openTrainPanel'));
+  document.getElementById('open-landmark')!.addEventListener('click', () => lazyLandmark.call('openLandmarkPanel'));
+  document.getElementById('open-friendship')!.addEventListener('click', () => lazyFriendship.call('openFriendshipPanel'));
+  document.getElementById('open-balloon')?.addEventListener('click', () => lazyBalloon.call('openBalloonPanel'));
+  document.getElementById('open-cart')?.addEventListener('click', () => lazyFestivalCart.call('openFestivalCartPanel'));
+  document.getElementById('open-club')?.addEventListener('click', () => lazyClub.call('openClubPanel'));
+  document.getElementById('open-request-board')?.addEventListener('click', () => lazyRequestBoard.call('openRequestBoardPanel'));
+  document.getElementById('open-village')?.addEventListener('click', () => lazyVillage.call('openVillagePanel'));
+  document.getElementById('open-expeditions')?.addEventListener('click', () => lazyExpeditions.call('openExpeditionsPanel'));
+  document.getElementById('open-events')?.addEventListener('click', () => lazyLiveEvents.call('openLiveEventsPanel'));
+  document.getElementById('open-expansion')?.addEventListener('click', () => lazyExpansion.call('openExpansionPanel'));
+  document.getElementById('open-recipe-book')?.addEventListener('click', () => lazyRecipeBook.call('openRecipeBook'));
+  document.getElementById('open-museum')?.addEventListener('click', () => lazyMuseum.call('openMuseum'));
   // Hay Day-grammar additions
-  document.getElementById('open-mailbox')?.addEventListener('click', openMailboxPanel);
-  document.getElementById('open-surprise')?.addEventListener('click', openSurpriseBoxPanel);
-  document.getElementById('open-sanctuary')?.addEventListener('click', openSanctuaryPanel);
-  document.getElementById('open-piggy')?.addEventListener('click', openPiggyPanel);
-  document.getElementById('open-settings')?.addEventListener('click', openSettingsPanel);
+  document.getElementById('open-mailbox')?.addEventListener('click', () => lazyMailbox.call('openMailboxPanel'));
+  document.getElementById('open-surprise')?.addEventListener('click', () => lazySurpriseBox.call('openSurpriseBoxPanel'));
+  document.getElementById('open-sanctuary')?.addEventListener('click', () => lazySanctuary.call('openSanctuaryPanel'));
+  document.getElementById('open-piggy')?.addEventListener('click', () => lazyPiggy.call('openPiggyPanel'));
+  document.getElementById('open-settings')?.addEventListener('click', () => lazySettings.call('openSettingsPanel'));
   document.getElementById('toggle-edit-mode')?.addEventListener('click', () => toggleEditMode());
   document.getElementById('save-btn')!.addEventListener('click', () => {
     saveGame();
     toast('Game saved!');
   });
-  document.getElementById('help-btn')!.addEventListener('click', openHelp);
+  document.getElementById('help-btn')!.addEventListener('click', () => lazyHelp.call('openHelp'));
   document.getElementById('fishing-tap')!.addEventListener('click', tryHookFish);
   document.getElementById('fishing-cancel')!.addEventListener('click', cancelFishing);
   document.getElementById('music-toggle')!.addEventListener('click', () => {
@@ -430,7 +440,7 @@ function init(): void {
     // Splash overlay + cinematic camera intro for fresh sessions
     bindSplash(() => {
       startCameraIntro();
-      setTimeout(openHelp, 1600);
+      setTimeout(() => lazyHelp.call('openHelp'), 1600);
     });
     // Drop a starter chest near the entrance plot so the new player gets an
     // immediate "wow" moment within the first 30 seconds of play. We pick
@@ -454,9 +464,33 @@ function init(): void {
     // Returning sessions skip the splash entirely
     document.getElementById('splash')?.remove();
     // Show a rich "while you were away" panel if applicable, else the toast
-    setTimeout(maybeOpenWelcomeBack, 400);
+    setTimeout(() => lazyWelcomeBack.call('maybeOpenWelcomeBack'), 400);
     toast('Welcome back!');
   }
+
+  // Fade out the preload cover to reveal either the beautiful splash
+  // (new session) or the live game (returning session). By this point
+  // style.css is fully injected, so the CSS transition works correctly.
+  const preloadCover = document.getElementById('preload-cover');
+  if (preloadCover) {
+    preloadCover.style.opacity = '0';
+    setTimeout(() => preloadCover.remove(), 350);
+  }
+
+  // Warm-load panels during idle time so first-open feels instant.
+  // Ordered by likely-use so common panels (shop, inventory) land first.
+  idlePreload([
+    lazyShop, lazyInventory, lazyBuildMenu, lazyDecorMenu,
+    lazyAchievements, lazyNews, lazyDaily, lazyWeatherGrid,
+    lazyMarket, lazyCollection, lazyLeaderboard, lazySpec,
+    lazySnapshot, lazyWheel, lazyPass, lazyMarketStall,
+    lazyGazette, lazyBoat, lazyTrain, lazyLandmark,
+    lazyFriendship, lazyBalloon, lazyFestivalCart, lazyClub,
+    lazyRequestBoard, lazyVillage, lazyExpeditions, lazyLiveEvents,
+    lazyExpansion, lazyRecipeBook, lazyMuseum, lazyMailbox,
+    lazySurpriseBox, lazySanctuary, lazyPiggy, lazySettings,
+    lazyPrestige, lazyHelp, lazyWelcomeBack,
+  ]);
 
   lastTime = performance.now();
   requestAnimationFrame(frame);

@@ -31,9 +31,14 @@ import { moodLevel } from '../systems/animal-mood';
 import { activeVisitors } from '../systems/visitors-v2';
 import { activeChatter } from '../systems/chatter';
 import { gateForButton, gateStatus } from '../systems/feature-visibility';
-import { openProductionPanel } from './production-panel';
-import { openPenPanel } from './pen-panel';
-import { openStoragePanel } from './storage-panel';
+import { lazy } from './lazy-panels';
+import type { BuildingInstance } from '../types';
+const lazyProductionPanel = lazy(() => import('./production-panel'));
+const lazyPenPanel = lazy(() => import('./pen-panel'));
+const lazyStoragePanel = lazy(() => import('./storage-panel'));
+const openProductionPanel = (b: BuildingInstance): void => lazyProductionPanel.call('openProductionPanel', b);
+const openPenPanel = (b: BuildingInstance): void => lazyPenPanel.call('openPenPanel', b);
+const openStoragePanel = (): void => lazyStoragePanel.call('openStoragePanel');
 import { openSidePanel } from './mobile-shell';
 import {
   ORDER_TRUCK_X, ORDER_TRUCK_Z, ORDER_TRUCK_BUBBLE_Y,

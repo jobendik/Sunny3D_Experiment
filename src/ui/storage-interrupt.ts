@@ -10,7 +10,9 @@ import {
 } from '../systems/storage-interrupt';
 import { siloUsage, barnUsage } from '../systems/storage';
 import { sfx } from '../audio/sfx';
-import { openStoragePanel } from './storage-panel';
+import { lazy } from './lazy-panels';
+const lazyStorage = lazy(() => import('./storage-panel'));
+const openStoragePanel = (): void => lazyStorage.call('openStoragePanel');
 
 let modalEl: HTMLElement | null = null;
 let bound = false;

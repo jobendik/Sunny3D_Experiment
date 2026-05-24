@@ -4,14 +4,25 @@
 
 import { openModal } from './modal';
 import { initVillage, VILLAGE_NODES, visitNode, isNodeUnlocked, isNodeVisitedToday, reputationTierProgress } from '../systems/village';
-import { openGazette } from './gazette-panel';
-import { openBoatPanel } from './boat-panel';
-import { openTrainPanel } from './train-panel';
-import { openLandmarkPanel } from './landmark-panel';
-import { openFriendshipPanel } from './friendship-panel';
-import { openMarketStall } from './market-stall-panel';
-import { openWeatherGrid } from './weather-grid-panel';
-import { openClubPanel } from './club-panel';
+import { lazy } from './lazy-panels';
+
+const lazyGazette = lazy(() => import('./gazette-panel'));
+const lazyBoat = lazy(() => import('./boat-panel'));
+const lazyTrain = lazy(() => import('./train-panel'));
+const lazyLandmark = lazy(() => import('./landmark-panel'));
+const lazyFriendship = lazy(() => import('./friendship-panel'));
+const lazyMarketStall = lazy(() => import('./market-stall-panel'));
+const lazyWeatherGrid = lazy(() => import('./weather-grid-panel'));
+const lazyClub = lazy(() => import('./club-panel'));
+
+const openGazette = (): void => lazyGazette.call('openGazette');
+const openBoatPanel = (): void => lazyBoat.call('openBoatPanel');
+const openTrainPanel = (): void => lazyTrain.call('openTrainPanel');
+const openLandmarkPanel = (): void => lazyLandmark.call('openLandmarkPanel');
+const openFriendshipPanel = (): void => lazyFriendship.call('openFriendshipPanel');
+const openMarketStall = (): void => lazyMarketStall.call('openMarketStall');
+const openWeatherGrid = (): void => lazyWeatherGrid.call('openWeatherGrid');
+const openClubPanel = (): void => lazyClub.call('openClubPanel');
 
 export function openVillagePanel(): void {
   initVillage();

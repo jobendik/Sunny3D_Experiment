@@ -21,8 +21,12 @@ import { tryPlow, tryPlant, tryHarvestOrInteract, tryPlaceDecoration } from './s
 import { plantTree, tryHarvestTree } from './systems/trees';
 import { chestAt, openChest } from './systems/treasures';
 import { spawnRipple } from './systems/flyers';
-import { tryPlaceBuilding } from './ui/build-menu';
-import { openBuildingPanel } from './ui/building-panel';
+import { lazy } from './ui/lazy-panels';
+import type { BuildingInstance } from './types';
+const lazyBuildMenuInput = lazy(() => import('./ui/build-menu'));
+const lazyBuildingPanel = lazy(() => import('./ui/building-panel'));
+const tryPlaceBuilding = (gx: number, gy: number): void => lazyBuildMenuInput.call('tryPlaceBuilding', gx, gy);
+const openBuildingPanel = (b: BuildingInstance): void => lazyBuildingPanel.call('openBuildingPanel', b);
 import { setTool } from './ui/tools';
 import { toast } from './ui/toasts';
 import { closeModal } from './ui/modal';
