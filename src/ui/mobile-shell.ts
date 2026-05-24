@@ -36,6 +36,7 @@ import { piggyPct } from '../systems/piggy-bank';
 import { setScenicMode } from '../systems/settings';
 import { toggleEditMode, setEditMode } from '../systems/edit-mode';
 import { trapFocus } from './focus-trap';
+import { requestBoardHasAttention } from '../systems/request-board';
 
 // =============================================================
 //  SHEETS / DRAWERS
@@ -342,6 +343,26 @@ function buildQEBEntries(): QEBEntry[] {
       badge: state.piggyBank.gems,
       pulse: piggyPct() >= 0.3,
       open: () => clickHidden('open-piggy'),
+    });
+  }
+
+  // Club chat - only when a new simulated message is waiting.
+  const clubUnread = state.club?.chat?.unread ?? 0;
+  if (clubUnread > 0 && gateAllows('open-club')) {
+    out.push({
+      id: 'club', icon: '🏆', label: 'Club',
+      badge: clubUnread > 99 ? '99+' : clubUnread,
+      pulse: true,
+      open: () => clickHidden('open-club'),
+    });
+  }
+
+  if (gateAllows('open-request-board') && requestBoardHasAttention()) {
+    out.push({
+      id: 'requests', icon: '📌', label: 'Requests',
+      badge: '!',
+      pulse: true,
+      open: () => clickHidden('open-request-board'),
     });
   }
 

@@ -8,6 +8,7 @@ import { openModal } from './modal';
 import {
   initFriendship, friendshipLevel, friendshipXp,
   friendshipNeedForNext, claimDailyGift, canClaimDailyGift, friendshipHearts,
+  friendshipGiftsRemainingToday, FRIENDSHIP_DAILY_GIFT_CAP,
 } from '../systems/friendship';
 import { initVisitorsV2, activeVisitors, serveVisitor, dismissVisitor } from '../systems/visitors-v2';
 import { ITEMS } from '../data/items';
@@ -25,7 +26,8 @@ export function openFriendshipPanel(): void {
 function render(body: HTMLElement): void {
   initVisitorsV2();
   const visitors = activeVisitors();
-  let html = `<p style="margin:0 0 10px;color:#666;font-size:12px">Deliver orders and help with requests to grow friendships. Higher friendships unlock daily gifts and bonus rewards.</p>`;
+  const giftsLeft = friendshipGiftsRemainingToday();
+  let html = `<p style="margin:0 0 10px;color:#666;font-size:12px">Deliver orders and help with requests to grow friendships. Higher friendships unlock daily gifts and bonus rewards. Gifts today: ${FRIENDSHIP_DAILY_GIFT_CAP - giftsLeft} / ${FRIENDSHIP_DAILY_GIFT_CAP}.</p>`;
 
   // Walking visitors (Visitor 2.0)
   if (visitors.length > 0) {
@@ -69,7 +71,7 @@ function render(body: HTMLElement): void {
         </div>
         <div class="friend-bar"><div class="friend-bar-fill" style="width:${Math.min(100, (xp / need) * 100)}%"></div></div>
         <button class="btn small primary" data-gift="${id}" ${giftReady ? '' : 'disabled'}>
-          ${giftReady ? '🎁 Claim daily gift' : lvl < 2 ? 'Lv 2 for gifts' : '✓ Gift claimed today'}
+          ${giftReady ? '🎁 Claim daily gift' : lvl < 2 ? 'Lv 2 for gifts' : giftsLeft <= 0 && entry.lastGiftDay !== state.day ? 'Daily gift cap reached' : '✓ Gift claimed today'}
         </button>
       </div>
     `;

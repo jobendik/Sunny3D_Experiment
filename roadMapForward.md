@@ -9,23 +9,23 @@
 
 ## Current Status — Snapshot
 
-_Last updated 2026-05-22 after the Phase 1 + 2 + 4 push._
+_Last updated 2026-05-23 after completing Phase 6 offer grammar and Phase 7 animal husbandry depth._
 
 | Phase | Items | Status |
 |---|---|---|
 | 1 — Diegetic 3D world objects | 14 / 14 | ✅ shipped, merged to main (PR #16, #17) |
 | 2 — Shop taxonomy + offer pill + gem packs + bundles | 4 / 4 | ✅ shipped, merged |
-| 3 — Co-op chat + donations + gift caps | 0 / 5 | ⬜ not started |
+| 3 — Co-op chat + donations + gift caps | 5 / 5 | ✅ shipped locally |
 | 4 — Accessibility | 4 / 5 | 🟧 4.5 (Lighthouse) deferred to Phase 11 |
-| 5 — Onboarding polish | 0 / 5 | ⬜ not started |
-| 6 — Monetization-grammar completeness | 0 / 5 | ⬜ not started |
-| 7 — Animal husbandry depth | 0 / 5 | ⬜ not started |
+| 5 — Onboarding polish | 5 / 5 | ✅ shipped locally |
+| 6 — Monetization-grammar completeness | 5 / 5 | ✅ shipped locally |
+| 7 — Animal husbandry depth | 5 / 5 | ✅ shipped locally |
 | 8 — Live-ops calendar (Sky Race / County Fair / Country Camping / Fishing Tournament) | 0 / 5 | ⬜ not started |
 | 9 — Performance + virtualization | 0 / 5 | ⬜ not started |
 | 10 — Real-world CSR campaigns | 0 / 2 | ⬜ not started |
 | 11 — Final QA pass | 0 / 6 | ⬜ not started |
 
-**Done so far:** 22 / 56 items. **Next unchecked item:** Phase 3.1 — Co-op chat panel.
+**Done so far:** 42 / 56 items. **Next actionable unchecked item:** Phase 8.1 — Sky Race weekly event. Phase 4.5 remains deferred to Phase 11 browser-side QA.
 
 **Verified facts about the codebase as of this snapshot:**
 - 14 files in `src/three/decor/` (one per Phase-1 prop).
@@ -34,6 +34,12 @@ _Last updated 2026-05-22 after the Phase 1 + 2 + 4 push._
 - `index.html` has `#offer-pill` in the `.currency-stack`; `src/ui/hud.ts` exports `updateOfferPill`.
 - `.sr-only` and `:focus-visible` rules live in `src/style.css`.
 - `npm run typecheck && npm run build` are clean.
+- Farming Club chat is implemented as optional `state.club.chat` with capped persisted messages, unread attention pips, simulated peer messages, and canned quick replies.
+- Club request board is implemented as optional `state.club.requestBoard`: player requests, simulated peer fills, NPC donation requests, daily give/receive caps, QEB/world-bubble attention, and opt-in notification helper.
+- Friendship daily gifts now have a daily cap and the social surfaces use the family-friendly text filter.
+- Onboarding now starts with farm naming, uses Alfred-flavored tutorial copy, celebrates major unlock levels, gives a Level 5 Weather Grid tip, and enriches Welcome Back hooks.
+- Maggie's recurring offers, "This Week Only" shop offers, pass bundle claims, stall daily listing caps, and Surprise Box odds disclosure are implemented.
+- Animal pens now support auto-feed upgrades, full-pen world bubbles, mood bubbles, grow-up celebrations, and bulk sell controls.
 
 ---
 
@@ -275,7 +281,7 @@ Phases are ordered by impact-on-Hay-Day-parity. Each phase is independently ship
 - File: `src/three/decor/request-board.ts` (new).
 - Components: tall pole, birdhouse-style box on top with a slanted roof, request cards pinned to a corkboard below.
 - Spawn near where the Co-Op signpost world bubble currently lives (`HOME_CENTER_X - 5, HOME_CENTER_Y - 3`).
-- World bubble: `🤝` hub. Tap → opens a NEW panel `request-board-panel.ts` (created in Phase 3). Until Phase 3 lands, fall back to opening the existing club panel.
+- World bubble: `📌` hub once Club Requests unlock; before then it routes to Friends as a gentle teaser.
 
 ### 1.7 — 3D Ranger Tower (Expeditions hub)
 - File: `src/three/decor/ranger-tower.ts` (new).
@@ -389,7 +395,7 @@ Keep the **legacy tabs as a sub-menu inside Buildings** ("Seeds & Crops" — sub
 - File: `src/ui/request-board-panel.ts` (new).
 - Mechanic: 3 slots. Player can `Request` an item (consume 0 coins, set a timer of e.g. 30 min). Simulated members may "donate" — at the timer's end, with probability p (scale with club level), the request is fulfilled and the item arrives in inventory.
 - Reverse: player can `Donate` from inventory to a fake simulated peer request. Reward: club points + reputation.
-- Persistent state under `state.requestBoard` (add to types + save).
+- Persistent state under optional `state.club.requestBoard` (save-compatible with existing Club persistence).
 - World object: the birdhouse request board mesh built in Phase 1.6 opens this panel.
 
 ### 3.3 — Daily gift caps in Friendship
@@ -688,11 +694,11 @@ Track every meaningful task. Tick the box when committed AND pushed AND the type
 - [x] 2.4 — Multi-season Pass Bundles card
 
 ### Phase 3 — Co-op Chat + Donations + Gift Caps
-- [ ] 3.1 — Co-op chat panel (simulated peer messages, rolling buffer)
-- [ ] 3.2 — Donation / Request board (`src/ui/request-board-panel.ts`)
-- [ ] 3.3 — Daily gift caps in friendship
-- [ ] 3.4 — Notification-style "gift arrived" toast + opt-in Notifications API
-- [ ] 3.5 — Family-friendly chat mode + profanity filter
+- [x] 3.1 — Co-op chat panel (simulated peer messages, rolling buffer)
+- [x] 3.2 — Donation / Request board (`src/ui/request-board-panel.ts`)
+- [x] 3.3 — Daily gift caps in friendship
+- [x] 3.4 — Notification-style "gift arrived" toast + opt-in Notifications API
+- [x] 3.5 — Family-friendly chat mode + profanity filter
 
 ### Phase 4 — Accessibility Finish
 - [x] 4.1 — `src/ui/focus-trap.ts` helper
@@ -702,25 +708,25 @@ Track every meaningful task. Tick the box when committed AND pushed AND the type
 - [ ] 4.5 — Lighthouse a11y ≥ 90 verified  *(needs browser-side QA — defer to Phase 11)*
 
 ### Phase 5 — Onboarding Polish
-- [ ] 5.1 — Farm naming as tutorial step 0
-- [ ] 5.2 — Alfred avatar in tutorial bubbles + quips
-- [ ] 5.3 — Lv 5 Weather Grid contextual tip
-- [ ] 5.4 — Unlock celebrations for every major milestone
-- [ ] 5.5 — Welcome-back card offline summary
+- [x] 5.1 — Farm naming as tutorial step 0
+- [x] 5.2 — Alfred avatar in tutorial bubbles + quips
+- [x] 5.3 — Lv 5 Weather Grid contextual tip
+- [x] 5.4 — Unlock celebrations for every major milestone
+- [x] 5.5 — Welcome-back card offline summary
 
 ### Phase 6 — Monetization-Grammar Completeness
-- [ ] 6.1 — Maggie's Offers (recurring NPC visitor with bundles)
-- [ ] 6.2 — Roadside Shop daily listing cap
-- [ ] 6.3 — Time-limited shop section ("This week only")
-- [ ] 6.4 — Season Pass bundles UI
-- [ ] 6.5 — Surprise Box odds disclosure
+- [x] 6.1 — Maggie's Offers (recurring NPC visitor with bundles)
+- [x] 6.2 — Roadside Shop daily listing cap
+- [x] 6.3 — Time-limited shop section ("This week only")
+- [x] 6.4 — Season Pass bundles UI
+- [x] 6.5 — Surprise Box odds disclosure
 
 ### Phase 7 — Animal Husbandry Depth
-- [ ] 7.1 — Pen-full capacity warning bubble
-- [ ] 7.2 — Auto-feed pen upgrade
-- [ ] 7.3 — Animal mood floating icons
-- [ ] 7.4 — Baby-ages-up celebratory moment
-- [ ] 7.5 — Bulk sell flow
+- [x] 7.1 — Pen-full capacity warning bubble
+- [x] 7.2 — Auto-feed pen upgrade
+- [x] 7.3 — Animal mood floating icons
+- [x] 7.4 — Baby-ages-up celebratory moment
+- [x] 7.5 — Bulk sell flow
 
 ### Phase 8 — Live-Ops Calendar Parity
 - [ ] 8.1 — Sky Race weekly event
@@ -758,6 +764,11 @@ Append a one-line entry per session here. Keep newest at top. Don't delete entri
 YYYY-MM-DD  Phase X.Y started / completed — commit <sha> — note
 ```
 
+- 2026-05-23  Phase 7.1-7.5 complete — commit pending — Added `state.animalCare` with per-pen auto-feed upgrades, auto-feed consumption in `systems/pens.ts`, full-pen and mood world bubbles, baby grow-up celebrations in lifecycle, and bulk sell controls in `pen-panel.ts`. Typecheck + build green.
+- 2026-05-23  Phase 6.1-6.5 complete — commit pending — Added `src/systems/maggie-offers.ts`, persistent Maggie visits, weekly "This Week Only" shop offers, Roadside Stall daily listing caps, pass bundle claim cards, and Surprise Box odds disclosure. Save version bumped to v9. Typecheck + build green.
+- 2026-05-23  Phase 5.1-5.5 complete — commit pending — Tutorial now starts with farm naming via Alfred, profile name updates in HUD, tutorial steps have Alfred quips, level-up unlocks use `unlocksForLevel()` + `unlock-celebration.ts`, Level 5 opens with a Weather Grid contextual tip, and Welcome Back hooks include filled Club requests plus next major unlock. Build green.
+- 2026-05-23  Phase 3.2-3.5 complete — commit pending — Added `src/systems/request-board.ts`, `src/ui/request-board-panel.ts`, `src/systems/notifications.ts`, and `src/systems/family-filter.ts`. The request board now supports daily donation/receive caps, simulated peer requests/fills, player claims, opt-in browser gift alerts, QEB + world-bubble attention, and a Book-sheet Requests entry. Friendship gifts now cap at 4/day. Family-friendly mode filters social text. Build green.
+- 2026-05-23  Phase 3.1 complete — commit pending — Farming Club now has a Chat tab backed by optional `club.chat` state, simulated member messages, capped 40-message history, unread attention in Feature Visibility / QEB / world bubble, and canned quick replies. Files: src/types.ts, src/systems/club.ts, src/ui/club-panel.ts, src/style.css, src/systems/feature-visibility.ts, src/ui/mobile-shell.ts, src/ui/world-bubbles.ts, roadmap.md. Typecheck + build green.
 - 2026-05-22  All Phase 1/2/4 work merged to `main` via PR #16 and PR #17. Local branch in sync. Added "Current Status" snapshot section at the top of this doc so any future session sees progress at a glance. Confirmed via grep + ls that every ticked item has corresponding source code on `main`: 14 files in src/three/decor/, src/ui/focus-trap.ts present, trapFocus used in modal.ts + mobile-shell.ts, shop.ts declares 7 tabs (including Offers + Pass), #offer-pill in index.html, .sr-only + :focus-visible in style.css. Typecheck + build green.
 - 2026-05-22  Phase 4 (4.1–4.4) complete — new src/ui/focus-trap.ts exports trapFocus(rootEl) returning a release function. Applied to the central modal harness (src/ui/modal.ts wraps it around the .modal panel + adds Esc-to-close + role="dialog" + aria-modal + role="tablist"/role="tab" + keyboard activation on tabs). Applied to every bottom sheet via showSheet/hideSheet in mobile-shell.ts (per-sheet release map). Applied to the side panel via openSidePanel/closeSidePanel. Added .sr-only utility class + :focus-visible ring (honey-500, brighter under .high-contrast). Added a companion sr-only span next to the XP bar so screen readers announce "Level X, Y of Z experience points" instead of the visible "Y / Z XP". 4.5 (Lighthouse verification) needs a browser run and is deferred to Phase 11. Files: src/ui/focus-trap.ts (new), src/ui/modal.ts (focus trap + ARIA + Esc), src/ui/mobile-shell.ts (per-sheet focus trap + side panel trap), src/ui/hud.ts (sr-only XP), index.html (sr-only span), src/style.css (.sr-only + :focus-visible). Typecheck + build green.
 - 2026-05-22  Phase 2 complete — Shop now has 7 tabs (Seeds/Trees/Sell/Buy/Supplies remain for backwards compat; added Offers + Pass per FV3 grammar). Offers tab: Daily Deal card (buyable for diamonds), Surprise Box card, Piggy Bank card, Maggie's Offers placeholder (Phase 6), plus an "Earn through play" Gem Pack panel with 4 packs (Cart/Safe/Chest/Vault) — no real IAP. Pass tab: 3-track summary (Free / Elite / Platinum) with "Open Pass" button, plus a 3-card "Upcoming Bundles" preview. New top-right offer-pill (40px round, cherry tint, pulses) appears whenever a daily deal or surprise box is ready; tap → opens shop with Offers tab focused. Files: src/ui/shop.ts (+~190 lines), src/ui/hud.ts (offer-pill update logic), src/main.ts (offer-pill click wiring + openShop arity change), index.html (offer-pill markup), style.css (~150 new lines for pill + offer-card + gem-pack + pass-shop layouts). Typecheck + build green.

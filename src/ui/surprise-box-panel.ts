@@ -8,6 +8,8 @@ import { openModal } from './modal';
 import {
   initSurpriseBox, hasPendingBox, currentRarity, openSurpriseBox,
   instantSpawn, timeUntilNext, SURPRISE_INSTANT_COST,
+  SURPRISE_NATURAL_RARITY_ODDS, SURPRISE_INSTANT_RARITY_ODDS,
+  SURPRISE_REWARD_DISCLOSURE,
 } from '../systems/surprise-box';
 
 let revealTimer: number | null = null;
@@ -48,7 +50,25 @@ function render(body: HTMLElement): void {
              💎 ${SURPRISE_INSTANT_COST} — Open a box now
            </button>`
       }
-      <p class="surprise-fineprint">Common boxes hold coins, feed & XP. Rare boxes can include diamonds and boosters. Epic boxes drop materials, gems, and ink.</p>
+      <div class="surprise-odds-card">
+        <div class="surprise-odds-title">Odds disclosure</div>
+        <div class="surprise-odds-grid">
+          <div>
+            <b>Natural boxes</b>
+            ${renderOdds(SURPRISE_NATURAL_RARITY_ODDS)}
+          </div>
+          <div>
+            <b>Diamond instant boxes</b>
+            ${renderOdds(SURPRISE_INSTANT_RARITY_ODDS)}
+          </div>
+        </div>
+        <div class="surprise-reward-disclosure">
+          ${(['common', 'rare', 'epic'] as const).map(r => `
+            <div><b>${r}</b><span>${SURPRISE_REWARD_DISCLOSURE[r].join(' · ')}</span></div>
+          `).join('')}
+        </div>
+        <p>After rarity is chosen, one reward is picked evenly from that rarity's reward pool.</p>
+      </div>
     </div>
   `;
 
@@ -75,4 +95,12 @@ function render(body: HTMLElement): void {
       }
     });
   }
+}
+
+function renderOdds(odds: Record<'common' | 'rare' | 'epic', number>): string {
+  return `
+    <span>Common <b>${odds.common}%</b></span>
+    <span>Rare <b>${odds.rare}%</b></span>
+    <span>Epic <b>${odds.epic}%</b></span>
+  `;
 }

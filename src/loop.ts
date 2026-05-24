@@ -37,6 +37,7 @@ import { maybeRolloverGazette } from './systems/gazette';
 import { tickBalloon } from './systems/balloon';
 import { maybeRolloverCart } from './systems/festival-cart';
 import { tickClub, maybeRolloverClub } from './systems/club';
+import { tickRequestBoard } from './systems/request-board';
 import { regenerateEnergy, maybeDailyEnergyBonus } from './systems/expeditions';
 import { tickContest, maybeRolloverContest } from './systems/contest';
 import { tickLiveEvent } from './systems/live-events';
@@ -48,6 +49,7 @@ import { checkMilestones as checkJournalMilestones } from './systems/journal';
 import { tickSurpriseBox } from './systems/surprise-box';
 import { tickSanctuary } from './systems/sanctuary';
 import { mailboxTick } from './systems/mailbox';
+import { maybeRefreshOfferSystems } from './systems/maggie-offers';
 
 let smokeT = 0;
 
@@ -142,6 +144,7 @@ export function update(dt: number): void {
     maybeDailyEnergyBonus();
     refreshForecast();
     checkJournalMilestones();
+    maybeRefreshOfferSystems();
   }
 
   updateWeatherAndSeason();
@@ -295,6 +298,11 @@ export function update(dt: number): void {
   }
   // Club + helpers (lightweight, per-frame).
   tickClub(dt);
+  state._requestBoardTick = (state._requestBoardTick ?? 0) + dt;
+  if (state._requestBoardTick > 12) {
+    state._requestBoardTick = 0;
+    tickRequestBoard();
+  }
   tickHelpers(dt);
 
   // Autosave

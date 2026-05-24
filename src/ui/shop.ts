@@ -21,11 +21,19 @@ import { collectionBonuses } from '../systems/collection';
 import { perkValue } from '../systems/prestige';
 import { track } from '../systems/telemetry';
 import { comboHit } from '../systems/combo';
-import { addPassPoints, passDaysLeft, isEliteUnlocked, isPlatinumUnlocked, PASS_TIERS } from '../systems/season-pass';
+import {
+  addPassPoints, passDaysLeft, isEliteUnlocked, isPlatinumUnlocked, PASS_TIERS,
+  PASS_BUNDLES, passBundleStatus, claimPassBundle,
+} from '../systems/season-pass';
 import { spawnHUDBurst } from '../systems/flyers';
 import { piggyOnCoinSpend } from '../systems/piggy-bank';
 import { initDailyDeal, dailyDealAvailable, dailyDealDiscount, buyDailyDeal } from '../systems/daily-deal';
-import { hasPendingBox } from '../systems/surprise-box';
+import { hasPendingBox, SURPRISE_NATURAL_RARITY_ODDS } from '../systems/surprise-box';
+import {
+  initMaggieOffers, initWeeklyShop, maggieVisitActive, maggieDaysRemaining,
+  weeklyShopDaysRemaining, buyMaggieOffer, buyWeeklyShopOffer,
+  markOfferSystemsSeen, MAGGIE_LEVEL,
+} from '../systems/maggie-offers';
 
 export function openShop(defaultTab?: string): void {
   openModal('🛒 Shop', [
@@ -205,18 +213,26 @@ function buyShopItem(key: string, qty: number, unit: number): void {
 // =============================================================
 function renderShopOffers(container: HTMLElement): void {
   initDailyDeal();
+  initMaggieOffers();
+  initWeeklyShop();
   const d = state.dailyDeal;
   const dealReady = dailyDealAvailable();
   const dealDiscount = dealReady ? dailyDealDiscount() : 0;
   const surprisePending = hasPendingBox();
   const pb = state.piggyBank;
   const piggyPct = pb ? Math.min(100, Math.round((pb.gems / Math.max(1, pb.cap)) * 100)) : 0;
+  const maggie = state.maggieOffers;
+  const weekly = state.weeklyShop;
+  const maggieActive = maggieVisitActive();
+  markOfferSystemsSeen();
 
   container.innerHTML = `
     <p style="font-size:12px;color:#666;margin:0 0 12px 0">
       Limited-time deals and curated bundles. Hay-Day-style — earned, not bought.
     </p>
     <div class="offers-grid"></div>
+    <div class="maggie-offers-section"></div>
+    <div class="weekly-shop-section"></div>
     <h4 style="margin:18px 0 8px 0;font-family:var(--font-display);">💎 Diamonds — Earn Through Play</h4>
     <p style="font-size:12px;color:#666;margin:0 0 8px 0">
       Sunny Acres does not sell diamonds. Earn them by completing achievements,
@@ -254,7 +270,7 @@ function renderShopOffers(container: HTMLElement): void {
     <div class="offer-card-tag">SURPRISE BOX</div>
     <div style="font-size:54px;line-height:1">📦</div>
     <div class="offer-card-name">Mystery Rewards</div>
-    <div class="offer-card-price">${surprisePending ? '🎁 Ready to open!' : 'Earn by playing'}</div>
+    <div class="offer-card-price">${surprisePending ? '🎁 Ready to open!' : `Natural: ${SURPRISE_NATURAL_RARITY_ODDS.epic}% epic`}</div>
     <button>${surprisePending ? 'Open box' : 'View details'}</button>
   `;
   surpriseCard.querySelector<HTMLButtonElement>('button')!.addEventListener('click', () => {
@@ -281,7 +297,7 @@ function renderShopOffers(container: HTMLElement): void {
     grid.appendChild(piggyCard);
   }
 
-  // ----- Maggie's Offers (Phase 6 placeholder) -----
+  // Maggie + weekly offers render into dedicated sections below.
   const maggieCard = document.createElement('div');
   maggieCard.className = 'offer-card offer-card--coming';
   maggieCard.innerHTML = `
@@ -291,7 +307,9 @@ function renderShopOffers(container: HTMLElement): void {
     <div class="offer-card-meta">Coming in a future update</div>
     <button disabled>Soon</button>
   `;
+  maggieCard.style.display = 'none';
   grid.appendChild(maggieCard);
+  renderMaggieAndWeeklyOffers(container, maggie, weekly, maggieActive);
 
   // ----- Gem Packs (Phase 2.3) -----
   const gemGrid = container.querySelector<HTMLElement>('.gem-packs-grid')!;
@@ -319,6 +337,112 @@ function renderShopOffers(container: HTMLElement): void {
 //  PASS TAB — FV3-grammar Free / Elite / Platinum summary card,
 //  plus a "Next bundles" lookahead that names the upcoming themes.
 // =============================================================
+function renderMaggieAndWeeklyOffers(
+  container: HTMLElement,
+  maggie: NonNullable<typeof state.maggieOffers> | undefined,
+  weekly: NonNullable<typeof state.weeklyShop> | undefined,
+  maggieActive: boolean,
+): void {
+  const maggieHost = container.querySelector<HTMLElement>('.maggie-offers-section')!;
+  if (state.level < MAGGIE_LEVEL) {
+    maggieHost.innerHTML = `
+      <div class="maggie-locked">
+        <div class="maggie-portrait">🧺</div>
+        <div><b>Maggie's Offers</b><span>Recurring visitor bundles unlock at Level ${MAGGIE_LEVEL}.</span></div>
+      </div>
+    `;
+  } else if (maggie && maggieActive) {
+    const days = maggieDaysRemaining();
+    maggieHost.innerHTML = `
+      <div class="offer-section-head">
+        <div>
+          <h4>🧺 Maggie's Offers</h4>
+          <p>${maggie.themeName} · leaves in ${days} day${days === 1 ? '' : 's'}</p>
+        </div>
+      </div>
+      <div class="maggie-bundles-grid">
+        ${maggie.offers.map(offer => `
+          <div class="maggie-bundle-card ${offer.bought ? 'is-bought' : ''}">
+            <div class="maggie-bundle-emoji">${offer.emoji}</div>
+            <div class="offer-card-tag">-${offer.discountPct}%</div>
+            <div class="maggie-bundle-name">${offer.title}</div>
+            <div class="maggie-bundle-tagline">${offer.tagline}</div>
+            <div class="offer-item-chips">${itemChips(offer.items)}</div>
+            <div class="maggie-bundle-cost">${currencyLine(offer.costCoins, offer.costGems)}</div>
+            <button data-maggie-offer="${offer.id}" ${offer.bought || state.coins < offer.costCoins || state.gems < offer.costGems ? 'disabled' : ''}>
+              ${offer.bought ? 'Bought' : 'Claim bundle'}
+            </button>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  } else if (maggie) {
+    maggieHost.innerHTML = `
+      <div class="maggie-locked">
+        <div class="maggie-portrait">🧺</div>
+        <div><b>Maggie is restocking</b><span>Next visit: Day ${maggie.nextVisitDay}.</span></div>
+      </div>
+    `;
+  }
+  maggieHost.querySelectorAll<HTMLButtonElement>('button[data-maggie-offer]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      if (buyMaggieOffer(btn.dataset.maggieOffer!)) renderShopOffers(container);
+    }),
+  );
+
+  const weeklyHost = container.querySelector<HTMLElement>('.weekly-shop-section')!;
+  if (!weekly) return;
+  const days = weeklyShopDaysRemaining();
+  weeklyHost.innerHTML = `
+    <div class="offer-section-head">
+      <div>
+        <h4>⏳ This Week Only</h4>
+        <p>Rotating coin offers reset in ${days} day${days === 1 ? '' : 's'}.</p>
+      </div>
+    </div>
+    <div class="weekly-offers-grid">
+      ${weekly.offers.map(offer => {
+        const item = ITEMS[offer.itemKey];
+        const soldOut = offer.bought >= offer.maxBuys;
+        return `
+          <div class="weekly-offer-card ${soldOut ? 'is-bought' : ''}">
+            <div class="weekly-offer-emoji">${offer.emoji}</div>
+            <img class="ico" src="${sprites.item[offer.itemKey]?.toDataURL() ?? ''}">
+            <div class="offer-card-tag">-${offer.discountPct}%</div>
+            <div class="weekly-offer-name">${offer.title}</div>
+            <div class="weekly-offer-meta">${offer.qty}× ${item?.name ?? offer.itemKey}</div>
+            <div class="weekly-offer-price">${offer.costCoins}💰</div>
+            <button data-weekly-offer="${offer.id}" ${soldOut || state.coins < offer.costCoins ? 'disabled' : ''}>
+              ${soldOut ? 'Sold out' : `Buy ${offer.bought}/${offer.maxBuys}`}
+            </button>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+  weeklyHost.querySelectorAll<HTMLButtonElement>('button[data-weekly-offer]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      if (buyWeeklyShopOffer(btn.dataset.weeklyOffer!)) renderShopOffers(container);
+    }),
+  );
+}
+
+function itemChips(items: Record<string, number>): string {
+  return Object.keys(items).map(key => `
+    <span class="offer-item-chip">
+      <img class="ico-mini" src="${sprites.item[key]?.toDataURL() ?? ''}">
+      ${items[key]}× ${ITEMS[key]?.name ?? key}
+    </span>
+  `).join('');
+}
+
+function currencyLine(coins: number, gems: number): string {
+  const parts: string[] = [];
+  if (coins > 0) parts.push(`${coins}💰`);
+  if (gems > 0) parts.push(`${gems}💎`);
+  return parts.length ? parts.join(' + ') : 'Free';
+}
+
 function renderShopPass(container: HTMLElement): void {
   const p = state.pass;
   const daysLeft = passDaysLeft();
@@ -351,9 +475,9 @@ function renderShopPass(container: HTMLElement): void {
       <button class="pass-shop-open" id="pass-shop-open">Open Pass</button>
     </div>
 
-    <h4 style="margin:18px 0 8px 0;font-family:var(--font-display);">🌟 Upcoming Bundles</h4>
+    <h4 style="margin:18px 0 8px 0;font-family:var(--font-display);">🌟 Earnable Pass Bundles</h4>
     <p style="font-size:12px;color:#666;margin:0 0 8px 0">
-      The next themed passes you can look forward to. All gameplay-earned — no purchase required.
+      Bundle cards unlock from pass tiers and earned Elite / Platinum tracks.
     </p>
     <div class="pass-bundles-grid"></div>
   `;
@@ -363,24 +487,29 @@ function renderShopPass(container: HTMLElement): void {
     document.getElementById('open-pass')?.click();
   });
 
-  // Lookahead bundles — purely cosmetic preview
+  // Earnable pass bundles (Phase 6.4)
   const bundleGrid = container.querySelector<HTMLElement>('.pass-bundles-grid')!;
-  const lookahead: Array<{ icon: string; name: string; subtitle: string }> = [
-    { icon: '🌸', name: 'Cherry Blossom Pass', subtitle: 'Spring · weeks 5–8' },
-    { icon: '🌞', name: 'Harvest Sun Pass',    subtitle: 'Summer · weeks 9–12' },
-    { icon: '🍂', name: 'Autumn Mill Pass',    subtitle: 'Autumn · weeks 13–16' },
-  ];
-  for (const b of lookahead) {
+  for (const b of PASS_BUNDLES) {
+    const status = passBundleStatus(b.id);
     const card = document.createElement('div');
-    card.className = 'pass-bundle-card';
+    card.className = `pass-bundle-card ${status.claimed ? 'is-claimed' : ''}`;
     card.innerHTML = `
       <div class="pass-bundle-icon">${b.icon}</div>
       <div class="pass-bundle-name">${b.name}</div>
       <div class="pass-bundle-sub">${b.subtitle}</div>
-      <span class="pass-bundle-tag">PREVIEW</span>
+      <div class="pass-bundle-reward">${b.rewardLabel}</div>
+      <button data-pass-bundle="${b.id}" ${status.unlocked && !status.claimed ? '' : 'disabled'}>
+        ${status.claimed ? 'Claimed' : status.unlocked ? 'Claim' : status.reason}
+      </button>
+      <span class="pass-bundle-tag">${b.requiredTrack.toUpperCase()}</span>
     `;
     bundleGrid.appendChild(card);
   }
+  bundleGrid.querySelectorAll<HTMLButtonElement>('button[data-pass-bundle]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      if (claimPassBundle(btn.dataset.passBundle!)) renderShopPass(container);
+    }),
+  );
 }
 
 function renderShopSupplies(container: HTMLElement): void {

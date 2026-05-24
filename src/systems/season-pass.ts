@@ -40,6 +40,8 @@ export interface SeasonPassState {
   claimedPlatinum?: number[];
   /** Order-Board cycles completed during this pass (drives unlocks). */
   cyclesThisPass?: number;
+  /** Gameplay-earned shop bundle ledger. */
+  claimedBundles?: string[];
 }
 
 /** Cycle thresholds at which the elite + platinum tracks earn their
@@ -50,6 +52,18 @@ export const PLATINUM_CYCLES_REQUIRED = 8;
 
 export const PASS_LENGTH_DAYS = 28;
 export const POINTS_PER_TIER = 90; // ~ a full day of play per tier
+
+export interface PassBundleDef {
+  id: string;
+  name: string;
+  icon: string;
+  subtitle: string;
+  requiredTier: number;
+  requiredTrack: PassTrack;
+  unlockLabel: string;
+  rewardLabel: string;
+  reward: () => void;
+}
 
 const REWARDS: Array<Omit<PassTier, 'tier'>> = [
   { pointsRequired: POINTS_PER_TIER * 1, rewardLabel: '+250💰',
@@ -112,6 +126,58 @@ const PLATINUM_REWARDS: Array<Omit<PassTier, 'tier'>> = REWARDS.map((r, i) => ({
 }));
 export const PASS_TIERS_PLATINUM: PassTier[] = PLATINUM_REWARDS.map((r, i) => ({ ...r, tier: i + 1 }));
 
+export const PASS_BUNDLES: PassBundleDef[] = [
+  {
+    id: 'harvest-helper',
+    name: 'Harvest Helper Bundle',
+    icon: '🌾',
+    subtitle: 'A small boost for keeping the pass moving.',
+    requiredTier: 2,
+    requiredTrack: 'free',
+    unlockLabel: 'Reach Free tier 2',
+    rewardLabel: '+6 Feed, +2 Fertilizer, +75 XP',
+    reward: () => {
+      addItem('feed', 6);
+      addItem('fertilizer', 2);
+      addXP(75);
+      toast('Pass Bundle: feed, fertilizer, and XP!', 'gold');
+    },
+  },
+  {
+    id: 'elite-craft',
+    name: 'Elite Craft Bundle',
+    icon: '🏅',
+    subtitle: 'For farmers who finished enough order cycles.',
+    requiredTier: 5,
+    requiredTrack: 'elite',
+    unlockLabel: `Unlock Elite and reach tier 5`,
+    rewardLabel: '+2 Speed, +2 Quality Ink, +1 Priority',
+    reward: () => {
+      addItem('speedup', 2);
+      addItem('qualityink', 2);
+      addItem('priority', 1);
+      toast('Elite Bundle claimed!', 'gold');
+    },
+  },
+  {
+    id: 'platinum-depot',
+    name: 'Platinum Depot Bundle',
+    icon: '💎',
+    subtitle: 'A late-pass crate packed with rare materials.',
+    requiredTier: 8,
+    requiredTrack: 'platinum',
+    unlockLabel: `Unlock Platinum and reach tier 8`,
+    rewardLabel: '+1 Deed, +1 Map, +2 Planks, +2 Paint',
+    reward: () => {
+      addItem('deed', 1);
+      addItem('map', 1);
+      addItem('plank', 2);
+      addItem('paint', 2);
+      toast('Platinum Bundle claimed!', 'gold');
+    },
+  },
+];
+
 export function initPass(): void {
   if (!state.pass) {
     state.pass = {
@@ -123,12 +189,14 @@ export function initPass(): void {
       claimedElite: [],
       claimedPlatinum: [],
       cyclesThisPass: 0,
+      claimedBundles: [],
     };
   }
   // Backfill the new fields on old saves.
   if (!state.pass.claimedElite) state.pass.claimedElite = [];
   if (!state.pass.claimedPlatinum) state.pass.claimedPlatinum = [];
   if (state.pass.cyclesThisPass === undefined) state.pass.cyclesThisPass = 0;
+  if (!state.pass.claimedBundles) state.pass.claimedBundles = [];
   rolloverIfExpired();
 }
 
@@ -172,6 +240,7 @@ export function rolloverIfExpired(): void {
       claimedElite: [],
       claimedPlatinum: [],
       cyclesThisPass: 0,
+      claimedBundles: [],
     };
     track('pass_rolled');
   }
@@ -219,5 +288,38 @@ export function claimPassTier(tier: number, passTrack: PassTrack = 'free'): bool
   sfx.bell(); sfx.coin();
   track('pass_tier_claimed', { tier, track: passTrack });
   updateHUD();
+  return true;
+}
+
+export function passBundleStatus(id: string): { unlocked: boolean; claimed: boolean; reason: string } {
+  initPass();
+  const p = state.pass!;
+  const def = PASS_BUNDLES.find(b => b.id === id);
+  if (!def) return { unlocked: false, claimed: false, reason: 'Unknown bundle' };
+  const claimed = (p.claimedBundles ?? []).includes(id);
+  if (p.tier < def.requiredTier) {
+    return { unlocked: false, claimed, reason: `Reach tier ${def.requiredTier}` };
+  }
+  if (def.requiredTrack === 'elite' && !isEliteUnlocked()) {
+    return { unlocked: false, claimed, reason: `${p.cyclesThisPass ?? 0}/${ELITE_CYCLES_REQUIRED} Elite cycles` };
+  }
+  if (def.requiredTrack === 'platinum' && !isPlatinumUnlocked()) {
+    return { unlocked: false, claimed, reason: `${p.cyclesThisPass ?? 0}/${PLATINUM_CYCLES_REQUIRED} Platinum cycles` };
+  }
+  return { unlocked: true, claimed, reason: claimed ? 'Claimed' : 'Ready' };
+}
+
+export function claimPassBundle(id: string): boolean {
+  initPass();
+  const def = PASS_BUNDLES.find(b => b.id === id);
+  if (!def) return false;
+  const status = passBundleStatus(id);
+  if (!status.unlocked || status.claimed) return false;
+  def.reward();
+  (state.pass!.claimedBundles ??= []).push(id);
+  sfx.bell();
+  sfx.coin();
+  updateHUD();
+  track('pass_bundle_claimed', { id, track: def.requiredTrack });
   return true;
 }

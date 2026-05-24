@@ -5,6 +5,7 @@
 
 import { state } from '../state';
 import { track } from './telemetry';
+import { familySafeName } from './family-filter';
 
 export interface TutorialStep {
   id: string;
@@ -13,6 +14,8 @@ export interface TutorialStep {
 }
 
 export const TUTORIAL_STEPS: TutorialStep[] = [
+  { id: 'farmName', text: 'Give your farm a name. Alfred will put it on the mailbox route.',
+    done: s => !!s.farmName },
   { id: 'plow', text: 'Tap the Plow tool, then tap a green tile to till the soil.',
     done: s => s.stats.plowed >= 1 },
   { id: 'plant', text: 'Tap the Seeds tool, then tap plowed soil to plant wheat.',
@@ -62,4 +65,13 @@ export function currentStep(): TutorialStep | null {
 export function dismissTutorial(): void {
   initTutorial();
   state.tutorial!.dismissed = true;
+}
+
+export function setTutorialFarmName(name: string): boolean {
+  const safe = familySafeName(name, 'Sunny Acres');
+  if (safe.length < 2) return false;
+  state.farmName = safe.slice(0, 28);
+  track('farm_named', { length: state.farmName.length });
+  tutorialAdvance();
+  return true;
 }

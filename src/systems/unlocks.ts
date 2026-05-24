@@ -119,6 +119,10 @@ export function nextBigUnlock(): UnlockHint | null {
 
 /** Unlocks currently unlocked at the player's level OR earlier — useful
  *  for a "what you've earned" celebration view. */
+export function unlocksForLevel(level: number): UnlockHint[] {
+  return HIGHLIGHTS.filter(u => u.level === level);
+}
+
 export function alreadyUnlocked(): UnlockHint[] {
   const lvl = state.level;
   return HIGHLIGHTS.filter(u => u.level <= lvl);

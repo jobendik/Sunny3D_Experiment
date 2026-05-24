@@ -3312,6 +3312,10 @@ Status legend: ✅ implemented, 🟡 partial, ⬜ missing.
 - [x] ✅ Simulated member contributions — `src/systems/club.ts`
 - [x] ✅ Milestone rewards — `src/systems/club.ts`
 - [x] ✅ Club level + cosmetic banner — `src/systems/club.ts`
+- [x] ✅ Co-op chat panel with simulated peer messages, unread attention state, capped rolling buffer, and quick player replies — `src/systems/club.ts`, `src/ui/club-panel.ts`
+- [x] ✅ Club donation / request board with player requests, simulated peer fills, daily give/receive caps, notifications opt-in, and board attention pips — `src/systems/request-board.ts`, `src/ui/request-board-panel.ts`
+- [x] ✅ Daily friendship gift caps and clearer gift-cap UI — `src/systems/friendship.ts`, `src/ui/friendship-panel.ts`
+- [x] ✅ Family-friendly social text filtering for chat/request surfaces — `src/systems/family-filter.ts`
 
 ## Phase 10 — Village / Town Hub
 - [x] ✅ Village hub map with nodes (Square, Bakery, Dock, Tower, Carpenter, Market, Station, Fairground) — `src/systems/village.ts`
@@ -3387,3 +3391,12 @@ These remain open for a v3 expansion (not covered in this checklist):
 - True 3D / isometric scene parallax beyond the procedural tile renderer.
 
 All other items in Phases 0–15 of this roadmap are now implemented.
+
+---
+
+# 26. Recent Development Log
+
+- 2026-05-23 — Continued forward-roadmap development through Phase 6 and Phase 7. Added Maggie's recurring offer visits, weekly "This Week Only" shop offers, Roadside Stall daily listing caps, earnable Season Pass bundle claims, and Surprise Box odds disclosure. Then added animal-care depth: per-pen auto-feed upgrades, full-pen and mood world bubbles, baby grow-up celebrations, and bulk sell controls. Save schema is now v9 for offer and animal-care roots. Verified with `npm run typecheck` and `npm run build`.
+- 2026-05-23 — Continued post-roadmap polish with Farming Club co-op chat. Added save-compatible optional `club.chat` state, simulated peer messages, unread pips in feature visibility / QEB / club world bubble, a two-tab Club panel, capped message history, and canned quick replies to avoid open-text moderation risk. Verified with `npm run typecheck` and `npm run build`.
+- 2026-05-23 — Completed the rest of forward-roadmap Phase 3 social work. Added Club donation/request board, one active player request, simulated peer request generation/filling, daily donated/received caps, filled-request toasts + opt-in Notifications API, friendship daily gift caps, and family-friendly filtering for social text. Request Board now has its own hidden trigger, Book entry, world-bubble route, QEB attention, and feature gate. Verified with `npm run build`.
+- 2026-05-23 — Continued into onboarding polish. Tutorial now starts with farm naming, Alfred narrates the early steps, the HUD profile shows the saved farm name, level-up milestones open a data-driven unlock celebration, Level 5 includes a Weather Grid contextual tip, and Welcome Back now teases filled Club requests plus the next major unlock. Verified with `npm run build`.

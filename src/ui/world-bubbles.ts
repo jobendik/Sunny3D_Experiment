@@ -26,6 +26,8 @@ import { siloUsage, barnUsage } from '../systems/storage';
 import { nowSeconds } from '../utils';
 import { ANIMALS } from '../data/animals';
 import { feedPen } from '../systems/pens';
+import { canBreedPen } from '../systems/lifecycle';
+import { moodLevel } from '../systems/animal-mood';
 import { activeVisitors } from '../systems/visitors-v2';
 import { activeChatter } from '../systems/chatter';
 import { gateForButton, gateStatus } from '../systems/feature-visibility';
@@ -78,7 +80,7 @@ import {
 import { ITEMS } from '../data/items';
 import { unreadCount as mailboxUnreadCount } from '../systems/mailbox';
 
-const POOL_SIZE = 28;
+const POOL_SIZE = 36;
 const tmpVec = new Vector3();
 
 export type BubbleKind = 'feed' | 'ready' | 'full' | 'emote' | 'love' | 'visitor' | 'hub' | 'chatter';
@@ -247,7 +249,7 @@ export function computeBubbleTargets(): BubbleTarget[] {
       let ready = 0;
       if (aniDef) {
         for (const a of animals) {
-          if (now - a.lastProduced >= aniDef.produceTime) ready++;
+          if (a.stage !== 'baby' && now - a.lastProduced >= aniDef.produceTime) ready++;
         }
       }
       if (ready > 0) {
@@ -258,6 +260,29 @@ export function computeBubbleTargets(): BubbleTarget[] {
           kind: 'ready',
           tap: () => openPenPanel(b),
         });
+      }
+      if (animals.length >= (def.capacity ?? animals.length + 1) && canBreedPen(b.id)) {
+        out.push({
+          key: `pen-full:${b.id}`,
+          wx: cx + 0.45, wy: 2.35, wz: cz,
+          icon: '!',
+          kind: 'full',
+          pulse: true,
+          tap: () => openPenPanel(b),
+        });
+      }
+      if (animals.length > 0 && ready === 0 && feedLvl >= 35) {
+        const mood = moodLevel(b.id);
+        if (mood < 40 || mood >= 85) {
+          out.push({
+            key: `mood:${b.id}`,
+            wx: cx - 0.45, wy: 2.25, wz: cz,
+            icon: mood < 40 ? '😟' : '😊',
+            kind: mood < 40 ? 'emote' : 'love',
+            pulse: mood < 30 || mood >= 92,
+            tap: () => openPenPanel(b),
+          });
+        }
       }
     } else if (def.kind === 'production') {
       // Production buildings: bubble when at least one job is done.
@@ -636,15 +661,21 @@ export function computeBubbleTargets(): BubbleTarget[] {
 
   // -------- Request Board (Phase 1.6) --------
   // Birdhouse-topped board near the home centre. Always visible — it
-  // acts as the friendship/neighbourhood hub even before the Club
-  // tier unlocks. Until Phase 3 ships the dedicated panel, it routes
-  // to the friendship panel.
+  // acts as the friendship hub before Club Requests unlock. After
+  // that, it opens the dedicated donation/request board.
   out.push({
     key: 'hub:requests',
     wx: REQUEST_BOARD_X, wy: REQUEST_BOARD_BUBBLE_Y, wz: REQUEST_BOARD_Z,
-    icon: '🤝',
-    kind: 'hub',
-    tap: () => document.getElementById('open-friendship')?.click(),
+    icon: (() => {
+      const s = gateStatus(gateForButton('open-request-board')!);
+      return s === 'unlocked' || s === 'attention' ? '📌' : '🤝';
+    })(),
+    kind: gateStatus(gateForButton('open-request-board')!) === 'attention' ? 'ready' : 'hub',
+    pulse: gateStatus(gateForButton('open-request-board')!) === 'attention',
+    tap: () => {
+      const s = gateStatus(gateForButton('open-request-board')!);
+      document.getElementById(s === 'unlocked' || s === 'attention' ? 'open-request-board' : 'open-friendship')?.click();
+    },
   });
 
   // -------- Co-Op Signpost (Phase 1.8) --------
@@ -657,7 +688,8 @@ export function computeBubbleTargets(): BubbleTarget[] {
         key: 'hub:club',
         wx: SIGNPOST_X, wy: SIGNPOST_BUBBLE_Y, wz: SIGNPOST_Z,
         icon: '🏆',
-        kind: 'hub',
+        kind: status === 'attention' ? 'ready' : 'hub',
+        pulse: status === 'attention',
         tap: () => document.getElementById('open-club')?.click(),
       });
     }

@@ -22,6 +22,8 @@
 import { state } from '../state';
 import { BUILDINGS } from './../data/buildings';
 import { localDayIndex } from './daily';
+import { requestBoardHasAttention } from './request-board';
+import { friendshipGiftsRemainingToday } from './friendship';
 
 export type FeatureCategory =
   | 'core'        // always visible (shop/build/help/save)
@@ -157,6 +159,7 @@ export const FEATURE_GATES: FeatureGate[] = [
     hasAttention: () => {
       const f = state.friendship;
       if (!f) return false;
+      if (friendshipGiftsRemainingToday() <= 0) return false;
       // Any neighbor at level >=1 not gifted today?
       const today = state.day;
       for (const id in f.byNeighbor) {
@@ -176,7 +179,12 @@ export const FEATURE_GATES: FeatureGate[] = [
   },
   { id: 'club', label: 'Club', icon: '🏆', category: 'social',
     unlockLevel: 15, revealAt: 3, openButtonId: 'open-club',
-    isUnlocked: () => !!state.club?.unlocked || state.level >= 15 },
+    isUnlocked: () => !!state.club?.unlocked || state.level >= 15,
+    hasAttention: () => (state.club?.chat?.unread ?? 0) > 0 },
+  { id: 'requests', label: 'Requests', icon: '📌', category: 'social',
+    unlockLevel: 15, revealAt: 3, openButtonId: 'open-request-board',
+    isUnlocked: () => !!state.club?.unlocked || state.level >= 15,
+    hasAttention: () => !!state.club?.unlocked && requestBoardHasAttention() },
   { id: 'ranks', label: 'Ranks', icon: '🏅', category: 'social',
     unlockLevel: 5, openButtonId: 'open-leaderboard' },
 

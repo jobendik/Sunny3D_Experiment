@@ -15,6 +15,7 @@ import { addPassPoints } from './season-pass';
 import { perkValue } from './prestige';
 import { spawnHUDBurst } from './flyers';
 import { nextBigUnlock } from './unlocks';
+import { showUnlockCelebration } from '../ui/unlock-celebration';
 
 /** Rain confetti streamers from the top of the screen — celebratory burst. */
 function spawnConfetti(count: number): void {
@@ -63,6 +64,7 @@ export function addXP(amt: number): void {
     spawnHUDBurst('coin', 10);
     spawnConfetti(60);
     celebrate();
+    showUnlockCelebration(state.level);
     maybeUnlockOrders();
     if (state.level === 4 && !state.dog) spawnDog();
     // Tease the next big unlock so each level-up plants curiosity.

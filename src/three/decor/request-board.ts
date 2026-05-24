@@ -3,8 +3,8 @@
 //
 //  Tall pole with a birdhouse on top and a small corkboard with
 //  pinned cards just below. Sits near the home centre as the
-//  neighbourhood social hub. World bubble routes to the club panel
-//  until Phase 3 introduces a dedicated request-board panel.
+//  neighbourhood social hub. Before Club unlock it routes to Friends;
+//  afterward it opens the dedicated request-board panel.
 // =============================================================
 
 import { Group, Mesh } from 'three';

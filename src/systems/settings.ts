@@ -32,10 +32,12 @@ export function initSettings(): void {
       largeText: false,
       highContrast: false,
       familyFriendly: false,
+      notificationsOn: false,
       scenicMode: false,
       hapticOn: true,
     };
   }
+  state.settings.notificationsOn = !!state.settings.notificationsOn;
   applySettings();
 }
 

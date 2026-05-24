@@ -4,7 +4,8 @@
 //  always knows exactly where to tap next.
 // =============================================================
 
-import { currentStep, dismissTutorial, tutorialAdvance, TUTORIAL_STEPS } from '../systems/tutorial';
+import { currentStep, dismissTutorial, tutorialAdvance, TUTORIAL_STEPS, setTutorialFarmName } from '../systems/tutorial';
+import { updateHUD } from './hud';
 
 let lastStepId: string | null = null;
 
@@ -14,6 +15,7 @@ let lastStepId: string | null = null;
  *  is always docked open so we fall back to the FAB too — the spotlight is
  *  off-screen safely when the element isn't visible. */
 const STEP_TARGETS: Record<string, string> = {
+  farmName: '#profile-block',
   plow:    '[data-tool="plow"]',
   plant:   '[data-tool="seed"]',
   harvest: '[data-tool="hand"]',
@@ -73,8 +75,33 @@ export function renderTutorialBubble(): void {
   const stepEl = document.getElementById('tutorial-step')!;
   const textEl = document.getElementById('tutorial-text')!;
   const stepIdx = TUTORIAL_STEPS.findIndex(s => s.id === step.id);
-  stepEl.textContent = `Step ${stepIdx + 1} of ${TUTORIAL_STEPS.length}`;
-  textEl.textContent = step.text;
+  stepEl.textContent = `Alfred · Step ${stepIdx + 1} of ${TUTORIAL_STEPS.length}`;
+  if (step.id === 'farmName') {
+    textEl.innerHTML = `
+      <div class="tutorial-alfred-line">🌾 "Every good farm deserves a name."</div>
+      <form id="farm-name-form" class="tutorial-name-form">
+        <input id="farm-name-input" maxlength="28" autocomplete="off" placeholder="Sunny Acres">
+        <button type="submit">Name farm</button>
+      </form>
+    `;
+    const form = document.getElementById('farm-name-form') as HTMLFormElement | null;
+    const input = document.getElementById('farm-name-input') as HTMLInputElement | null;
+    form?.addEventListener('submit', e => {
+      e.preventDefault();
+      const ok = setTutorialFarmName(input?.value || 'Sunny Acres');
+      if (ok) {
+        updateHUD();
+        lastStepId = null;
+        renderTutorialBubble();
+      }
+    });
+    setTimeout(() => input?.focus(), 0);
+  } else {
+    const quip = alfredQuip(step.id);
+    textEl.innerHTML = quip
+      ? `<div class="tutorial-alfred-line">🌾 ${quip}</div><div>${step.text}</div>`
+      : step.text;
+  }
 }
 
 export function bindTutorial(): void {
@@ -91,4 +118,16 @@ export function bindTutorial(): void {
     const sel = STEP_TARGETS[step.id];
     if (sel) placeSpotlightAndArrow(sel);
   });
+}
+
+function alfredQuip(stepId: string): string {
+  switch (stepId) {
+    case 'plow': return '"Start with one patch. Farms grow from little squares."';
+    case 'plant': return '"Seeds in the soil, patience in the pocket."';
+    case 'harvest': return '"Ripe wheat bends bright. Tap it with the Hand tool."';
+    case 'sell': return '"Coins keep the cart wheels turning."';
+    case 'orders': return '"Neighbors remember a timely delivery."';
+    case 'build': return '"A production building turns chores into possibilities."';
+    default: return '';
+  }
 }

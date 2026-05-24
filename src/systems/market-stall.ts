@@ -40,12 +40,37 @@ const MAX_SLOTS_TABLE: ReadonlyArray<{ minLevel: number; slots: number }> = [
   { minLevel: 20, slots: 5 },
 ];
 
+const BASE_DAILY_LISTING_CAP = 8;
+
 export function maxStallSlots(): number {
   let n = 0;
   for (const row of MAX_SLOTS_TABLE) {
     if (state.level >= row.minLevel) n = row.slots;
   }
   return n;
+}
+
+function resetListingLedgerIfNeeded(): void {
+  const stall = state.marketStall;
+  if (!stall) return;
+  if (stall.lastListingDay !== state.day) {
+    stall.lastListingDay = state.day;
+    stall.listedToday = 0;
+  }
+}
+
+export function dailyListingCap(): number {
+  const rep = state.marketStall?.reputation ?? 0;
+  const repBonus = rep >= 800 ? 4 : rep >= 500 ? 3 : rep >= 250 ? 2 : rep >= 100 ? 1 : 0;
+  const levelBonus = state.level >= 20 ? 2 : state.level >= 14 ? 1 : 0;
+  return BASE_DAILY_LISTING_CAP + repBonus + levelBonus;
+}
+
+export function stallListingsRemainingToday(): number {
+  initMarketStall();
+  resetListingLedgerIfNeeded();
+  const stall = state.marketStall!;
+  return Math.max(0, dailyListingCap() - (stall.listedToday ?? 0));
 }
 
 export function initMarketStall(): void {
@@ -58,8 +83,13 @@ export function initMarketStall(): void {
       lifetimeSales: 0,
       lastTick: nowSeconds(),
       pendingCoins: 0,
+      listedToday: 0,
+      lastListingDay: state.day,
     };
   }
+  if (state.marketStall.listedToday === undefined) state.marketStall.listedToday = 0;
+  if (state.marketStall.lastListingDay === undefined) state.marketStall.lastListingDay = state.day;
+  resetListingLedgerIfNeeded();
   // Keep slot cap in sync with level.
   state.marketStall.maxSlots = Math.max(state.marketStall.maxSlots, maxStallSlots());
   if (!state.marketStall.unlocked && state.level >= 4) {
@@ -117,6 +147,10 @@ export function listItemForSale(itemKey: string, qty: number, pricePerUnit: numb
     toast('All stall slots are full.');
     return false;
   }
+  if (stallListingsRemainingToday() <= 0) {
+    toast('Daily listing limit reached. More stall slips tomorrow.');
+    return false;
+  }
   if (qty <= 0 || pricePerUnit <= 0) return false;
   if ((state.inv[itemKey] ?? 0) < qty) {
     toast('Not enough in your inventory.');
@@ -134,7 +168,14 @@ export function listItemForSale(itemKey: string, qty: number, pricePerUnit: numb
   };
   slot.saleProb = saleProbabilityPerMinute(slot);
   stall.slots.push(slot);
-  track('market_listing_created', { item: itemKey, qty, price: pricePerUnit });
+  stall.listedToday = (stall.listedToday ?? 0) + 1;
+  track('market_listing_created', {
+    item: itemKey,
+    qty,
+    price: pricePerUnit,
+    listedToday: stall.listedToday,
+    dailyCap: dailyListingCap(),
+  });
   return true;
 }
 

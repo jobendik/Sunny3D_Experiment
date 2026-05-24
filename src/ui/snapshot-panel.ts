@@ -4,6 +4,7 @@
 
 import { state } from '../state';
 import { buildSnapshot, copySnapshotImage, downloadSnapshot } from '../systems/snapshot';
+import { familySafeName } from '../systems/family-filter';
 import { openModal } from './modal';
 import { toast } from './toasts';
 
@@ -22,7 +23,7 @@ function render(body: HTMLElement): void {
     </div>
     <div class="snapshot-form">
       <label>Farm Name:
-        <input type="text" id="farm-name" value="${state.farmName ?? 'Sunny Acres'}" maxlength="24">
+        <input type="text" id="farm-name" value="${state.farmName ?? 'Sunny Acres'}" maxlength="28">
       </label>
       <button id="save-name" class="btn">Update</button>
     </div>
@@ -33,7 +34,7 @@ function render(body: HTMLElement): void {
   `;
   document.getElementById('save-name')!.addEventListener('click', () => {
     const el = document.getElementById('farm-name') as HTMLInputElement;
-    state.farmName = (el.value || 'Sunny Acres').trim();
+    state.farmName = familySafeName(el.value || 'Sunny Acres', 'Sunny Acres').slice(0, 28);
     render(body);
   });
   document.getElementById('copy-snap')!.addEventListener('click', async () => {

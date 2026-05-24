@@ -14,8 +14,9 @@ import type { GameState, Tile } from './types';
 // saves stored an 18×18 grid; the migration generates a fresh 32×32
 // world and embeds the old grid into the centre (see embedLegacyGrid).
 // v7 adds Hay Day-grammar systems: mailbox, surprise box, piggy bank,
-// daily deal, sanctuary, settings.
-const CURRENT_SAVE_VERSION = 7;
+// daily deal, sanctuary, settings. v8 adds Phase-6 offer grammar
+// state. v9 adds animal-care upgrades.
+const CURRENT_SAVE_VERSION = 9;
 
 interface SaveData {
   saveVersion?: number;
@@ -52,6 +53,7 @@ interface SaveData {
   market?: GameState['market'];
   soil?: GameState['soil'];
   mood?: GameState['mood'];
+  animalCare?: GameState['animalCare'];
   biome?: GameState['biome'];
   prestige?: GameState['prestige'];
   tutorial?: GameState['tutorial'];
@@ -102,6 +104,8 @@ interface SaveData {
   surpriseBox?: GameState['surpriseBox'];
   piggyBank?: GameState['piggyBank'];
   dailyDeal?: GameState['dailyDeal'];
+  maggieOffers?: GameState['maggieOffers'];
+  weeklyShop?: GameState['weeklyShop'];
   sanctuary?: GameState['sanctuary'];
   settings?: GameState['settings'];
   // Transient migration hints (not stored in localStorage; set by
@@ -149,6 +153,7 @@ export function saveGame(): void {
     market: state.market,
     soil: state.soil,
     mood: state.mood,
+    animalCare: state.animalCare,
     biome: state.biome,
     prestige: state.prestige,
     tutorial: state.tutorial,
@@ -196,6 +201,8 @@ export function saveGame(): void {
     surpriseBox: state.surpriseBox,
     piggyBank: state.piggyBank,
     dailyDeal: state.dailyDeal,
+    maggieOffers: state.maggieOffers,
+    weeklyShop: state.weeklyShop,
     sanctuary: state.sanctuary,
     settings: state.settings,
   };
@@ -237,6 +244,14 @@ function migrateSave(data: SaveData): SaveData {
     // v7: Hay Day-grammar additions — all new fields default via
     // their init() function on load. No structural migration needed.
     data.saveVersion = 7;
+  }
+  if (data.saveVersion < 8) {
+    // v8: Phase-6 offer roots default through their init functions.
+    data.saveVersion = 8;
+  }
+  if (data.saveVersion < 9) {
+    // v9: animal-care roots default through initAnimalCare().
+    data.saveVersion = 9;
   }
   return data;
 }
@@ -314,6 +329,7 @@ export function loadGame(): boolean {
     if (data.market) state.market = data.market;
     if (data.soil) state.soil = data.soil;
     if (data.mood) state.mood = data.mood;
+    if (data.animalCare) state.animalCare = data.animalCare;
     if (data.biome) state.biome = data.biome;
     if (data.prestige) state.prestige = data.prestige;
     if (data.tutorial) state.tutorial = data.tutorial;
@@ -361,6 +377,8 @@ export function loadGame(): boolean {
     if (data.surpriseBox) state.surpriseBox = data.surpriseBox;
     if (data.piggyBank) state.piggyBank = data.piggyBank;
     if (data.dailyDeal) state.dailyDeal = data.dailyDeal;
+    if (data.maggieOffers) state.maggieOffers = data.maggieOffers;
+    if (data.weeklyShop) state.weeklyShop = data.weeklyShop;
     if (data.sanctuary) state.sanctuary = data.sanctuary;
     if (data.settings) state.settings = data.settings;
     state.saveVersion = data.saveVersion ?? CURRENT_SAVE_VERSION;

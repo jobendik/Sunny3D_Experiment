@@ -27,6 +27,26 @@ const SPAWN_INTERVAL_MIN = 60 * 30;  // 30 min minimum between boxes
 const SPAWN_INTERVAL_MAX = 60 * 90;  // 90 min maximum
 const DIAMOND_INSTANT_COST = 8;       // diamond cost to instantly spawn a new box
 
+export type SurpriseRarity = 'common' | 'rare' | 'epic';
+
+export const SURPRISE_NATURAL_RARITY_ODDS: Record<SurpriseRarity, number> = {
+  common: 70,
+  rare: 24,
+  epic: 6,
+};
+
+export const SURPRISE_INSTANT_RARITY_ODDS: Record<SurpriseRarity, number> = {
+  common: 0,
+  rare: 40,
+  epic: 60,
+};
+
+export const SURPRISE_REWARD_DISCLOSURE: Record<SurpriseRarity, string[]> = {
+  common: ['Coins', 'XP', 'Feed', 'Fertilizer'],
+  rare: ['Common rewards', 'Diamonds', 'Speed Boosts'],
+  epic: ['Rare rewards', 'Quality Ink', 'Upgrade materials', 'Exotic Tokens', 'Scout Favors'],
+};
+
 export interface SurpriseReward {
   label: string;
   emoji: string;
@@ -45,14 +65,18 @@ export function initSurpriseBox(): void {
   }
 }
 
-function pickRarity(): 'common' | 'rare' | 'epic' {
-  const r = Math.random();
-  if (r < 0.06) return 'epic';
-  if (r < 0.30) return 'rare';
+function rollRarity(odds: Record<SurpriseRarity, number>): SurpriseRarity {
+  const r = Math.random() * 100;
+  if (r < odds.epic) return 'epic';
+  if (r < odds.epic + odds.rare) return 'rare';
   return 'common';
 }
 
-function buildRewardPool(rarity: 'common' | 'rare' | 'epic'): SurpriseReward[] {
+function pickRarity(): SurpriseRarity {
+  return rollRarity(SURPRISE_NATURAL_RARITY_ODDS);
+}
+
+function buildRewardPool(rarity: SurpriseRarity): SurpriseReward[] {
   const lvl = Math.max(1, state.level);
   const mul = rarity === 'epic' ? 4 : rarity === 'rare' ? 2 : 1;
   const pool: SurpriseReward[] = [
@@ -183,7 +207,7 @@ export function hasPendingBox(): boolean {
   return state.surpriseBox!.pending;
 }
 
-export function currentRarity(): 'common' | 'rare' | 'epic' {
+export function currentRarity(): SurpriseRarity {
   initSurpriseBox();
   return state.surpriseBox!.rarity;
 }
@@ -219,7 +243,7 @@ export function instantSpawn(): boolean {
   }
   state.gems -= DIAMOND_INSTANT_COST;
   state.surpriseBox!.pending = true;
-  state.surpriseBox!.rarity = Math.random() < 0.4 ? 'rare' : 'epic'; // diamond skips never give common
+  state.surpriseBox!.rarity = rollRarity(SURPRISE_INSTANT_RARITY_ODDS);
   sfx.bell();
   updateHUD();
   track('surprise_box_instant', { cost: DIAMOND_INSTANT_COST });

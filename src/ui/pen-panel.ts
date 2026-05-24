@@ -11,7 +11,9 @@ import { toast } from './toasts';
 import { updateHUD } from './hud';
 import { addItem } from '../systems/inventory';
 import { addXP } from '../systems/xp';
-import { feedPen, penFeedLevel } from '../systems/pens';
+import {
+  feedPen, penFeedLevel, hasAutoFeed, autoFeedUpgradeCost, buyAutoFeedUpgrade,
+} from '../systems/pens';
 import { questProgress } from '../systems/quests';
 import { dailyChallengeProgress } from '../systems/daily';
 import { addWeeklyPoints, currentTheme } from '../systems/weekly';
@@ -24,6 +26,7 @@ import { recordEventAction } from '../systems/live-events';
 import { addClubProgress } from '../systems/club';
 import {
   canBreedPen, tryBreed, sellAnimal, recordProduce,
+  sellMatureOverflow, sellAllAdults,
   BREED_COIN_COST, BREED_FEED_COST, BABY_GROW_S,
 } from '../systems/lifecycle';
 import { nowSeconds as nowS } from '../utils';
@@ -38,12 +41,18 @@ export function openPenPanel(b: BuildingInstance): void {
   openModal(def.name, null);
   document.getElementById('modal-tabs')!.innerHTML = '';
   const body = document.getElementById('modal-body')!;
+  let confirmBulkAll = false;
 
   function render(): void {
     const feedPct = penFeedLevel(b.id);
     const isHungry = feedPct < 20;
     const mood = moodLevel(b.id);
     const mm = moodMultipliers(b.id);
+    const autoFeed = hasAutoFeed(b.id);
+    const autoCost = autoFeedUpgradeCost(b.id);
+    const matureCount = animals.filter(a => a.stage === 'mature').length;
+    const adultCount = animals.filter(a => a.stage !== 'baby').length;
+    const full = animals.length >= (def.capacity ?? animals.length);
     const sp = specEffects();
     const effectiveTime = aniDef.produceTime * breedSpeedMod(b.id) / mm.speed / (1 + (sp.animalSpeed ?? 0));
     const slots: string[] = [];
@@ -101,6 +110,11 @@ export function openPenPanel(b: BuildingInstance): void {
         Animals produce ${ITEMS[aniDef.produces]!.name} every ${effectiveTime.toFixed(0)}s (base ${aniDef.produceTime}s).
         Capacity: ${animals.length}/${def.capacity}
       </div>
+      ${full ? `
+        <div class="pen-capacity-warning">
+          Pen full. Sell an animal or use bulk sell before buying or breeding more.
+        </div>
+      ` : ''}
       <div class="mood-bar-wrap">
         <span style="font-size:12px;font-weight:bold">Mood: ${Math.floor(mood)}/100</span>
         <div class="mood-bar"><div class="mood-bar-fill" style="width:${mood}%"></div></div>
@@ -115,12 +129,33 @@ export function openPenPanel(b: BuildingInstance): void {
         <button data-act="feed" style="background:var(--green-btn);color:white;border:none;border-radius:6px;padding:6px 12px;font-weight:bold;cursor:pointer">Feed</button>
         <span style="font-size:11px;color:#888">have: ${state.inv.feed ?? 0}</span>
       </div>
+      <div class="animal-care-row ${autoFeed ? 'is-active' : ''}">
+        <div>
+          <b>${autoFeed ? 'Auto-feed installed' : 'Auto-feed upgrade'}</b>
+          <span>${autoFeed ? 'Uses barn feed when this pen drops below 35%.' : `${autoCost.coins} coins + ${autoCost.feed} feed`}</span>
+        </div>
+        <button class="btn small" data-act="autofeed" ${autoFeed || state.coins < autoCost.coins || (state.inv.feed ?? 0) < autoCost.feed ? 'disabled' : ''}>
+          ${autoFeed ? 'Installed' : 'Install'}
+        </button>
+      </div>
       ${isHungry ? '<div style="color:#d24a4a;font-size:12px;margin-bottom:6px;text-align:center">⚠️ Animals are too hungry to produce. Feed them!</div>' : ''}
       ${canBreedPen(b.id) ? `
         <div class="breed-row">
           <span class="breed-row-label">❤️ Two mature animals ready to breed</span>
           <button class="btn primary" data-act="breed">
             Breed · ${BREED_COIN_COST}💰 + ${BREED_FEED_COST}🌾
+          </button>
+        </div>
+      ` : ''}
+      ${adultCount > 0 ? `
+        <div class="bulk-sell-row">
+          <div>
+            <b>Bulk sell</b>
+            <span>${matureCount > 2 ? `${matureCount - 2} mature extra${matureCount - 2 === 1 ? '' : 's'} available` : `${adultCount} non-baby animal${adultCount === 1 ? '' : 's'} available`}</span>
+          </div>
+          <button class="btn small" data-act="sell-extras" ${matureCount > 2 ? '' : 'disabled'}>Sell extras</button>
+          <button class="btn small danger" data-act="sell-adults">
+            ${confirmBulkAll ? 'Confirm all adults' : 'Sell all adults'}
           </button>
         </div>
       ` : ''}
@@ -131,6 +166,9 @@ export function openPenPanel(b: BuildingInstance): void {
         const act = btn.dataset.act;
         if (act === 'feed') {
           feedPen(b.id, 10);
+          render();
+        } else if (act === 'autofeed') {
+          buyAutoFeedUpgrade(b.id);
           render();
         } else if (act === 'buy') {
           if (state.coins < aniDef.price) {
@@ -213,6 +251,20 @@ export function openPenPanel(b: BuildingInstance): void {
             updateHUD();
             render();
           }
+        } else if (act === 'sell-extras') {
+          sellMatureOverflow(b.id, 2);
+          updateHUD();
+          render();
+        } else if (act === 'sell-adults') {
+          if (!confirmBulkAll) {
+            confirmBulkAll = true;
+            render();
+            return;
+          }
+          sellAllAdults(b.id);
+          confirmBulkAll = false;
+          updateHUD();
+          render();
         }
       });
     });

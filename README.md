@@ -39,8 +39,10 @@ npm run typecheck  # run tsc without emit
 6. **Expand** your land (Lv 7+), build **Landmark** projects, join the
    **Farming Club** (Lv 15), and run **Expeditions** (Lv 16+) at endgame.
 
-The first 10 minutes deliberately surface only the core loop. New systems
-unlock and appear in the More menu as you level up — see
+The first 10 minutes deliberately surface only the core loop: name the
+farm, plow, plant, harvest, sell, deliver, and place the first
+production building. Alfred narrates the early steps with a spotlight
+on the next action. New systems unlock and appear in the More menu as you level up — see
 [`docs/system-fatigue-audit.md`](docs/system-fatigue-audit.md) for the full
 tier breakdown.
 
@@ -98,6 +100,7 @@ expeditions, and obstacle clearing) into stronger composite cards.
 
 **Market & Logistics (Lv 3–13)**
 - Market Stall (passive simulated buyers, offline sales)
+- Maggie's recurring offers, weekly "This Week Only" shelf, and daily listing caps
 - Sunny Gazette (daily paper: hot item, sales, help requests)
 - Boat / Train / Balloon / Festival Cart deliveries
 - Market Contracts (Lv 9, multi-day bulk orders)
@@ -109,11 +112,13 @@ expeditions, and obstacle clearing) into stronger composite cards.
 - Collection Codex (passive perks per discovery)
 - Building Mastery (per-building star ranks)
 - Building Upgrades (per-instance levels)
+- Animal-care upgrades (auto-feed pens, mood bubbles, grow-up moments, bulk sell)
 
 **Social (Lv 3–15)**
 - Friendship with named villagers (gifts, deliveries)
 - Village Hub (visit nodes, reputation)
-- Farming Club (Lv 15, weekly shared goal w/ peers)
+- Farming Club (Lv 15, weekly shared goal, quick chat, donation board)
+- Daily gift caps and opt-in browser alerts for filled Club requests
 - Simulated leaderboard (5 categories)
 
 **Exploration (Lv 7+)**

@@ -12,6 +12,8 @@ import { computeIdleSummary, formatAway } from '../systems/idle-income';
 import { VILLAGERS, pickRandomVillager } from '../data/characters';
 import { choice } from '../utils';
 import { openModal, closeModal } from './modal';
+import { nextBigUnlock } from '../systems/unlocks';
+import { activePlayerRequest } from '../systems/request-board';
 
 /** Build a short list of "what's good about coming back tomorrow" hooks. */
 function buildTomorrowHooks(): string[] {
@@ -41,6 +43,14 @@ function buildTomorrowHooks(): string[] {
     const o = state.orders[0]!;
     const v = o.customerId && VILLAGERS[o.customerId] ? VILLAGERS[o.customerId]! : pickRandomVillager();
     hooks.push(`${v.emoji} <b>${v.name}</b> is hoping for a delivery.`);
+  }
+  const clubReq = state.club?.unlocked ? activePlayerRequest() : null;
+  if (clubReq?.status === 'filled') {
+    hooks.push(`🎁 Your Club request for <b>${clubReq.qtyFilled}× ${ITEMS[clubReq.itemKey]?.name ?? clubReq.itemKey}</b> is ready to claim.`);
+  }
+  const next = nextBigUnlock();
+  if (next) {
+    hooks.push(`${next.icon} Next big unlock: <b>${next.label}</b> at Level ${next.level}.`);
   }
   return hooks;
 }

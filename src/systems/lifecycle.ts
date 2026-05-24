@@ -21,10 +21,12 @@
 import { state } from '../state';
 import { BUILDINGS } from '../data/buildings';
 import { ANIMALS } from '../data/animals';
+import { TILE } from '../constants';
 import { nowSeconds } from '../utils';
 import { toast } from '../ui/toasts';
 import { sfx } from '../audio/sfx';
 import { addItem, removeItem } from './inventory';
+import { floatText } from './particles';
 
 /** Real-world seconds for a baby to grow into an adult. */
 export const BABY_GROW_S = 90;
@@ -61,6 +63,15 @@ export function tickLifecycle(): void {
         if (now - a.bornAt >= BABY_GROW_S) {
           a.stage = 'adult';
           a.lastProduced = now;
+          const aniDef = def.animal ? ANIMALS[def.animal] : null;
+          toast(`A baby ${aniDef?.name ?? 'animal'} grew up!`, 'gold');
+          sfx.bell?.();
+          floatText(
+            b.x * TILE + def.w * TILE / 2,
+            b.y * TILE + def.h * TILE / 2,
+            'Grew up!',
+            '#d7832f',
+          );
         }
       }
     }
@@ -157,6 +168,57 @@ export function sellAnimal(buildingId: string, idx: number): boolean {
   sfx.coin?.();
   toast(`Sold ${aniDef.name} for ${refund}💰`, 'gold');
   return true;
+}
+
+export function sellMatureOverflow(buildingId: string, keepMature = 2): { sold: number; coins: number } {
+  const b = state.buildings.find(x => x.id === buildingId);
+  if (!b) return { sold: 0, coins: 0 };
+  const def = BUILDINGS[b.type];
+  if (!def || !def.animal) return { sold: 0, coins: 0 };
+  const list = state.penAnimals[buildingId];
+  if (!list) return { sold: 0, coins: 0 };
+  const matureIndexes = list
+    .map((a, idx) => ({ a, idx }))
+    .filter(row => row.a.stage === 'mature')
+    .map(row => row.idx);
+  const toSell = Math.max(0, matureIndexes.length - keepMature);
+  if (toSell <= 0) return { sold: 0, coins: 0 };
+  let sold = 0;
+  let coins = 0;
+  for (const idx of matureIndexes.slice(0, toSell).sort((a, b) => b - a)) {
+    const before = state.coins;
+    if (sellAnimal(buildingId, idx)) {
+      sold++;
+      coins += state.coins - before;
+    }
+  }
+  if (sold > 1) toast(`Sold ${sold} mature animals for ${coins} coins.`, 'gold');
+  return { sold, coins };
+}
+
+export function sellAllAdults(buildingId: string): { sold: number; coins: number } {
+  const b = state.buildings.find(x => x.id === buildingId);
+  if (!b) return { sold: 0, coins: 0 };
+  const def = BUILDINGS[b.type];
+  if (!def || !def.animal) return { sold: 0, coins: 0 };
+  const list = state.penAnimals[buildingId];
+  if (!list) return { sold: 0, coins: 0 };
+  const indexes = list
+    .map((a, idx) => ({ a, idx }))
+    .filter(row => row.a.stage !== 'baby')
+    .map(row => row.idx)
+    .sort((a, b) => b - a);
+  let sold = 0;
+  let coins = 0;
+  for (const idx of indexes) {
+    const before = state.coins;
+    if (sellAnimal(buildingId, idx)) {
+      sold++;
+      coins += state.coins - before;
+    }
+  }
+  if (sold > 1) toast(`Bulk sold ${sold} animals for ${coins} coins.`, 'gold');
+  return { sold, coins };
 }
 
 /** Visual scale for an animal in the 3D scene. Babies render smaller. */

@@ -50,6 +50,7 @@ import { initCollection } from './systems/collection';
 import { initMarket, refreshMarketModifiers } from './systems/market';
 import { initSoil, tickSoil, ensureSoilGridFor } from './systems/soil';
 import { initMood, tickMood } from './systems/animal-mood';
+import { initAnimalCare } from './systems/pens';
 import { initBiome } from './systems/biome';
 import { initPrestige } from './systems/prestige';
 import { initTutorial } from './systems/tutorial';
@@ -131,6 +132,7 @@ import { initMailbox, mailboxTick, unreadCount } from './systems/mailbox';
 import { initSurpriseBox, tickSurpriseBox, hasPendingBox } from './systems/surprise-box';
 import { initPiggyBank, piggyPct } from './systems/piggy-bank';
 import { initDailyDeal } from './systems/daily-deal';
+import { initMaggieOffers, initWeeklyShop } from './systems/maggie-offers';
 import { initSanctuary, tickSanctuary } from './systems/sanctuary';
 import { initSettings } from './systems/settings';
 import { toggleEditMode, isEditMode, setEditMode } from './systems/edit-mode';
@@ -151,6 +153,8 @@ import { maybeShowStorageInterrupt } from './ui/storage-interrupt';
 import { initStorageInterrupt } from './systems/storage-interrupt';
 import { bindFeedTray, tickFeedTray } from './ui/feed-tray';
 import { initChatter, tickChatter } from './systems/chatter';
+import { initRequestBoard } from './systems/request-board';
+import { openRequestBoardPanel } from './ui/request-board-panel';
 
 // Note: starting farm layout (lake, paths, soil hints, pre-plowed
 // patch) is now built by `generateWorld()` in three/terrain/world-gen.ts
@@ -185,6 +189,7 @@ function bindToolbarHandlers(): void {
   document.getElementById('open-balloon')?.addEventListener('click', openBalloonPanel);
   document.getElementById('open-cart')?.addEventListener('click', openFestivalCartPanel);
   document.getElementById('open-club')?.addEventListener('click', openClubPanel);
+  document.getElementById('open-request-board')?.addEventListener('click', openRequestBoardPanel);
   document.getElementById('open-village')?.addEventListener('click', openVillagePanel);
   document.getElementById('open-expeditions')?.addEventListener('click', openExpeditionsPanel);
   document.getElementById('open-events')?.addEventListener('click', openLiveEventsPanel);
@@ -302,6 +307,7 @@ function init(): void {
   // Ensure soil grid covers the world dims (in case save was older)
   ensureSoilGridFor(GRID_W, GRID_H);
   initMood();
+  initAnimalCare();
   initBiome();
   initPrestige();
   initTutorial();
@@ -326,6 +332,7 @@ function init(): void {
   initExpansion();
   syncRegionUnlocks();
   initClub(); maybeRolloverClub();
+  initRequestBoard();
   initVillage();
   initExpeditions();
   initContest(); maybeRolloverContest();
@@ -353,6 +360,8 @@ function init(): void {
   initSurpriseBox();
   initPiggyBank();
   initDailyDeal();
+  initMaggieOffers();
+  initWeeklyShop();
   initSanctuary();
   installWorldBubbles();
   initOrderMeter();

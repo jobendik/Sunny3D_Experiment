@@ -16,11 +16,15 @@ import { sfx } from '../audio/sfx';
 import type { FriendshipEntry, MaterialKey } from '../types';
 
 const GIFT_MATERIALS: MaterialKey[] = ['plank', 'nail', 'screw', 'panel', 'bolt', 'rope', 'stake', 'mallet'];
+export const FRIENDSHIP_DAILY_GIFT_CAP = 4;
 
 export function initFriendship(): void {
   if (!state.friendship) {
-    state.friendship = { byNeighbor: {} };
+    state.friendship = { byNeighbor: {}, giftsClaimedToday: 0, lastGiftCapDay: state.day };
   }
+  state.friendship.giftsClaimedToday = state.friendship.giftsClaimedToday ?? 0;
+  state.friendship.lastGiftCapDay = state.friendship.lastGiftCapDay ?? state.day;
+  resetGiftCapIfNeeded();
   for (const id of VILLAGER_IDS) {
     if (!state.friendship.byNeighbor[id]) {
       state.friendship.byNeighbor[id] = {
@@ -28,6 +32,13 @@ export function initFriendship(): void {
       };
     }
   }
+}
+
+function resetGiftCapIfNeeded(): void {
+  if (!state.friendship) return;
+  if (state.friendship.lastGiftCapDay === state.day) return;
+  state.friendship.lastGiftCapDay = state.day;
+  state.friendship.giftsClaimedToday = 0;
 }
 
 function entry(id: string): FriendshipEntry {
@@ -81,8 +92,15 @@ export function friendshipHearts(neighborId: string): string {
 }
 
 export function canClaimDailyGift(neighborId: string): boolean {
+  resetGiftCapIfNeeded();
+  if ((state.friendship?.giftsClaimedToday ?? 0) >= FRIENDSHIP_DAILY_GIFT_CAP) return false;
   const e = entry(neighborId);
   return e.level >= 2 && e.lastGiftDay !== state.day;
+}
+
+export function friendshipGiftsRemainingToday(): number {
+  initFriendship();
+  return Math.max(0, FRIENDSHIP_DAILY_GIFT_CAP - (state.friendship!.giftsClaimedToday ?? 0));
 }
 
 /** Claim a daily gift. Higher friendship => better odds at materials. */
@@ -90,6 +108,7 @@ export function claimDailyGift(neighborId: string): boolean {
   if (!canClaimDailyGift(neighborId)) return false;
   const e = entry(neighborId);
   e.lastGiftDay = state.day;
+  state.friendship!.giftsClaimedToday = (state.friendship!.giftsClaimedToday ?? 0) + 1;
   const v = VILLAGERS[neighborId]!;
   const lvl = e.level;
   // Build a small loot bundle that scales with friendship.

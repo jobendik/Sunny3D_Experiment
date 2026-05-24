@@ -4,11 +4,14 @@ import { nextBigUnlock } from '../systems/unlocks';
 import { isEliteUnlocked, isPlatinumUnlocked } from '../systems/season-pass';
 import { dailyDealAvailable } from '../systems/daily-deal';
 import { hasPendingBox } from '../systems/surprise-box';
+import { offersHaveAttention } from '../systems/maggie-offers';
 
 const numFmt = new Intl.NumberFormat('en-US');
 
 export function updateHUD(): void {
   document.getElementById('coin-amount')!.textContent = numFmt.format(state.coins);
+  const nameEl = document.querySelector<HTMLElement>('.profile-name');
+  if (nameEl) nameEl.textContent = state.farmName || 'Farmer';
   const gemEl = document.getElementById('gem-amount');
   if (gemEl) gemEl.textContent = numFmt.format(state.gems);
   document.getElementById('level-num')!.textContent = String(state.level);
@@ -48,7 +51,8 @@ function updateOfferPill(): void {
   if (!pill) return;
   const dailyReady = dailyDealAvailable();
   const surpriseReady = hasPendingBox();
-  const visible = dailyReady || surpriseReady;
+  const rotatingReady = offersHaveAttention();
+  const visible = dailyReady || surpriseReady || rotatingReady;
   if (!visible) {
     pill.setAttribute('hidden', '');
     pill.classList.remove('offer-pill--pulse');
@@ -56,7 +60,7 @@ function updateOfferPill(): void {
   }
   pill.removeAttribute('hidden');
   // Pulse only when there's something genuinely time-sensitive to claim.
-  pill.classList.toggle('offer-pill--pulse', dailyReady || surpriseReady);
+  pill.classList.toggle('offer-pill--pulse', dailyReady || surpriseReady || rotatingReady);
   const pip = document.getElementById('offer-pill-pip');
   if (pip) pip.style.display = '';
 }

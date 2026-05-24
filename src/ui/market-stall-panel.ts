@@ -11,6 +11,7 @@ import { openModal } from './modal';
 import {
   initMarketStall, listItemForSale, cancelListing, collectListing,
   priceRangeFor, reputationTier, collectAll,
+  dailyListingCap, stallListingsRemainingToday,
 } from '../systems/market-stall';
 import { updateHUD } from './hud';
 import { sfx } from '../audio/sfx';
@@ -42,6 +43,9 @@ function renderActive(body: HTMLElement): void {
   const slots = stall.maxSlots;
   const filled = stall.slots.length;
   const soldCount = stall.slots.filter(s => s.status === 'sold').length;
+  const listed = stall.listedToday ?? 0;
+  const listingCap = dailyListingCap();
+  const remaining = stallListingsRemainingToday();
   let html = `
     <div class="stall-header">
       <div class="stall-rep">
@@ -53,6 +57,11 @@ function renderActive(body: HTMLElement): void {
         Slots: <b>${filled} / ${slots}</b>
         <small>${slots < 5 ? `Lv ${slots === 2 ? 8 : slots === 3 ? 14 : 20} → +1 slot` : 'Max'}</small>
       </div>
+    </div>
+    <div class="stall-cap-row ${remaining <= 0 ? 'is-empty' : ''}">
+      <span>Daily listing slips</span>
+      <b>${listed} / ${listingCap}</b>
+      <small>${remaining > 0 ? `${remaining} left today` : 'More slips tomorrow'}</small>
     </div>
   `;
   if (soldCount > 0) {
@@ -113,13 +122,26 @@ function renderActive(body: HTMLElement): void {
 }
 
 function renderListPicker(body: HTMLElement): void {
+  const remaining = stallListingsRemainingToday();
+  if (remaining <= 0) {
+    body.innerHTML = `
+      <div class="stall-cap-empty">
+        <div class="stall-cap-empty-icon">ðŸ§¾</div>
+        <h3>Daily slips used</h3>
+        <p>Maggie will bring fresh listing slips tomorrow. Sold slots can still be collected.</p>
+        <button class="btn primary" id="stall-back-active">Back to stall</button>
+      </div>
+    `;
+    body.querySelector('#stall-back-active')!.addEventListener('click', () => renderActive(body));
+    return;
+  }
   const keys = Object.keys(state.inv).filter(k => (state.inv[k] ?? 0) > 0 && ITEMS[k]);
   if (keys.length === 0) {
     body.innerHTML = '<div style="text-align:center;padding:18px;color:#888">You have no items to sell yet.</div>';
     return;
   }
   body.innerHTML = `
-    <p style="margin:0 0 10px;font-size:12px;color:#666">Pick an item from your barn to list at the market stall.</p>
+    <p style="margin:0 0 10px;font-size:12px;color:#666">Pick an item from your barn to list at the market stall. ${remaining} listing slip${remaining === 1 ? '' : 's'} left today.</p>
     <div class="stall-list-grid">
       ${keys.map(k => `
         <button class="stall-list-item" data-pick="${k}">
@@ -143,6 +165,7 @@ function renderListEditor(body: HTMLElement, itemKey: string): void {
   let qty = Math.min(5, have);
   let price = range.recommended;
   function paint(): void {
+    const remaining = stallListingsRemainingToday();
     body.innerHTML = `
       <button class="btn small stall-list-back" id="stall-list-back">← Back</button>
       <div class="stall-list-editor">
@@ -168,8 +191,8 @@ function renderListEditor(body: HTMLElement, itemKey: string): void {
           <div class="stall-edit-summary">
             Total: <b>${qty * price}💰</b> if sold
           </div>
-          <button class="btn primary" id="stall-confirm-list" ${qty <= 0 || stall.slots.length >= stall.maxSlots ? 'disabled' : ''}>
-            ${stall.slots.length >= stall.maxSlots ? 'All slots full' : 'List for sale'}
+          <button class="btn primary" id="stall-confirm-list" ${qty <= 0 || stall.slots.length >= stall.maxSlots || remaining <= 0 ? 'disabled' : ''}>
+            ${stall.slots.length >= stall.maxSlots ? 'All slots full' : remaining <= 0 ? 'No slips left today' : 'List for sale'}
           </button>
         </div>
       </div>

@@ -432,6 +432,10 @@ export interface MoodRoot {
   lastTick: number;
 }
 
+export interface AnimalCareRoot {
+  autoFeedPens: Record<string, true>;
+}
+
 export interface BiomeRoot {
   current: 'pond' | 'river' | 'deep';
   activeBait: string | null;
@@ -495,6 +499,8 @@ export interface PassRoot {
   claimedPlatinum?: number[];
   /** Order-Board cycles completed in the current pass window. */
   cyclesThisPass?: number;
+  /** Gameplay-earned bundle cards claimed from the shop Pass tab. */
+  claimedBundles?: string[];
 }
 
 export interface VisitorRoot {
@@ -528,6 +534,8 @@ export interface MarketStallRoot {
   lifetimeSales: number;
   lastTick: number;   // seconds
   pendingCoins: number; // coins from sales that finished while away
+  listedToday?: number;
+  lastListingDay?: number;
 }
 
 export type GazetteArticleType =
@@ -632,6 +640,8 @@ export interface FriendshipEntry {
 
 export interface FriendshipRoot {
   byNeighbor: Record<string, FriendshipEntry>;
+  giftsClaimedToday?: number;
+  lastGiftCapDay?: number;
 }
 
 export interface BuildingMasteryEntry {
@@ -712,6 +722,52 @@ export interface ClubMember {
   lastContributionAt: number;
 }
 
+export type ClubChatKind = 'system' | 'sim' | 'player';
+
+export interface ClubChatMessage {
+  id: string;
+  kind: ClubChatKind;
+  authorId: string;
+  authorName: string;
+  emoji: string;
+  text: string;
+  createdAt: number; // epoch ms; no save rebase needed
+}
+
+export interface ClubChatRoot {
+  messages: ClubChatMessage[];
+  unread: number;
+  lastReadAt: number;
+  nextSimAt: number; // epoch seconds
+}
+
+export type ClubRequestStatus = 'open' | 'filled' | 'claimed' | 'expired';
+
+export interface ClubDonationRequest {
+  id: string;
+  requesterId: string;
+  requesterName: string;
+  emoji: string;
+  itemKey: string;
+  qtyRequested: number;
+  qtyFilled: number;
+  status: ClubRequestStatus;
+  isPlayerRequest: boolean;
+  createdAt: number; // epoch seconds
+  expiresAt: number; // epoch seconds
+  claimedAt?: number;
+}
+
+export interface ClubRequestBoardRoot {
+  requests: ClubDonationRequest[];
+  playerRequestId: string | null;
+  donatedToday: number;
+  receivedToday: number;
+  lastGiftDay: number;
+  nextSimRequestAt: number; // epoch seconds
+  nextSimFillAt: number; // epoch seconds
+}
+
 export interface ClubRoot {
   unlocked: boolean;
   level: number;
@@ -723,6 +779,8 @@ export interface ClubRoot {
   milestonesClaimed: number[];
   members: ClubMember[];
   bannerCount: number;
+  chat?: ClubChatRoot;
+  requestBoard?: ClubRequestBoardRoot;
 }
 
 // ---- Phase 10: Village Hub ----
@@ -993,6 +1051,51 @@ export interface DailyDealRoot {
   bought: boolean;
 }
 
+// ---- Phase 6: offer grammar / Maggie / weekly shop ----
+
+export interface MaggieOffer {
+  id: string;
+  title: string;
+  emoji: string;
+  tagline: string;
+  items: Record<string, number>;
+  costCoins: number;
+  costGems: number;
+  discountPct: number;
+  bought: boolean;
+}
+
+export interface MaggieOffersRoot {
+  visitId: string;
+  themeId: string;
+  themeName: string;
+  dayStarted: number;
+  activeUntilDay: number;
+  nextVisitDay: number;
+  offers: MaggieOffer[];
+  lastSeenVisitId?: string;
+}
+
+export interface WeeklyShopOffer {
+  id: string;
+  title: string;
+  emoji: string;
+  itemKey: string;
+  qty: number;
+  costCoins: number;
+  discountPct: number;
+  bought: number;
+  maxBuys: number;
+}
+
+export interface WeeklyShopRoot {
+  weekIndex: number;
+  startDay: number;
+  endsDay: number;
+  offers: WeeklyShopOffer[];
+  lastSeenWeek?: number;
+}
+
 // ---- Sanctuary (wildlife sightings book) ----
 
 export interface SanctuarySpecies {
@@ -1020,6 +1123,7 @@ export interface SettingsRoot {
   largeText: boolean;
   highContrast: boolean;
   familyFriendly: boolean;
+  notificationsOn?: boolean;
   scenicMode: boolean;       // toggle to hide HUD
   hapticOn: boolean;
 }
@@ -1073,6 +1177,7 @@ export interface GameState {
   market?: MarketState;
   soil?: SoilState;
   mood?: MoodRoot;
+  animalCare?: AnimalCareRoot;
   biome?: BiomeRoot;
   prestige?: PrestigeRoot;
   tutorial?: TutorialRoot;
@@ -1127,6 +1232,8 @@ export interface GameState {
   surpriseBox?: SurpriseBoxRoot;
   piggyBank?: PiggyBankRoot;
   dailyDeal?: DailyDealRoot;
+  maggieOffers?: MaggieOffersRoot;
+  weeklyShop?: WeeklyShopRoot;
   sanctuary?: SanctuaryRoot;
   settings?: SettingsRoot;
   saveVersion?: number;
@@ -1147,6 +1254,7 @@ export interface GameState {
   _surpriseBoxTick?: number;
   _sanctuaryTick?: number;
   _mailboxTick?: number;
+  _requestBoardTick?: number;
 }
 
 // ---- Sprite cache shape ----
