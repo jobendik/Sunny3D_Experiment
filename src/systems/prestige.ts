@@ -63,7 +63,15 @@ export function previewPrestigeGain(): number {
   return CONFIG.prestige.talentBonus + (state.level - CONFIG.prestige.minLevel) * CONFIG.prestige.talentPerLevelOverMin;
 }
 
-export function doPrestige(): boolean {
+export interface PrestigeOptions {
+  /** When true, also wipe buildings, animals, trees, decor, and grid tiles.
+   *  Default (false) keeps the player's physical farm intact — only
+   *  progression (coins, XP, level, inventory, day, weather, orders,
+   *  quests, achievements, stats, specialization) is reset. */
+  wipeFarm?: boolean;
+}
+
+export function doPrestige(opts: PrestigeOptions = {}): boolean {
   if (!canPrestige()) return false;
   initPrestige();
   const p = state.prestige!;
@@ -73,25 +81,18 @@ export function doPrestige(): boolean {
   p.totalLifetimeXP += state.xp + state.level * 50;
   p.totalLifetimeCoins += state.coins;
 
-  // Reset the world but keep core meta progress.
+  // Always reset progression / meta state.
   state.coins = 100 + (perkValue('startCoins'));
   state.xp = 0;
   state.level = 1;
   state.day = 1;
   state.startTime = performance.now() / 1000;
   state.inv = { wheat: 5 + perkValue('startSeeds') };
-  state.buildings = [];
-  state.penAnimals = {};
-  state.prodQueues = {};
   state.orders = [];
   state.quests = [];
   state.achievements = {}; // keep them re-earnable for replayability
-  state.decor = [];
-  state.trees = [];
   state.crows = [];
-  state.dog = null;
   state.fishing = null;
-  state.penFeed = {};
   state.event = null;
   state.eventCooldown = 0;
   state.weather = 'sunny';
@@ -106,15 +107,40 @@ export function doPrestige(): boolean {
   };
   // Reset specialization but allow re-pick.
   state.specialization = { primary: null, secondary: null, switches: 0 };
-  // Wipe grid
-  for (let y = 0; y < GRID_H; y++) {
-    for (let x = 0; x < GRID_W; x++) {
-      state.grid[y]![x] = { type: 'grass', crop: null, plantedAt: 0, watered: false, building: null };
+
+  // Physical farm: keep by default. The Hay Day-style soft-reset model
+  // is "you keep the farm you built, but the progression clock resets",
+  // which is much friendlier than wiping a player's decoration work.
+  if (opts.wipeFarm) {
+    state.buildings = [];
+    state.penAnimals = {};
+    state.prodQueues = {};
+    state.decor = [];
+    state.trees = [];
+    state.dog = null;
+    state.penFeed = {};
+    // Wipe grid tiles
+    for (let y = 0; y < GRID_H; y++) {
+      for (let x = 0; x < GRID_W; x++) {
+        state.grid[y]![x] = { type: 'grass', crop: null, plantedAt: 0, watered: false, building: null };
+      }
+    }
+  } else {
+    // Soft reset: clear active production queues + crop plantings so
+    // the player isn't holding mid-cycle goods, but keep the buildings,
+    // animals, trees, and decor placement.
+    state.prodQueues = {};
+    for (let y = 0; y < GRID_H; y++) {
+      for (let x = 0; x < GRID_W; x++) {
+        const t = state.grid[y]![x];
+        if (t && t.crop) { t.crop = null; t.plantedAt = 0; t.watered = false; }
+      }
     }
   }
+
   sfx.levelup();
   toast(`✨ Prestiged! +${gain} talents`, 'gold');
-  track('prestige', { count: p.prestigeCount, gain });
+  track('prestige', { count: p.prestigeCount, gain, wipeFarm: !!opts.wipeFarm });
   updateHUD();
   return true;
 }

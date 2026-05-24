@@ -88,6 +88,20 @@ export function tickContracts(): void {
       track('contract_expired', { id: a.id });
       toast(`📜 Contract with ${VILLAGERS[a.customerId]?.name ?? 'someone'} expired.`);
       c.active.splice(i, 1);
+    } else {
+      // Warn when ≤ 15 min remain on an active contract — only once
+      // per contract via the rising-edge event-notification key.
+      const remain = a.expiresAt - now;
+      if (remain > 0 && remain < 15 * 60) {
+        void import('./notifications').then(m =>
+          m.notifyEvent(
+            `contract-${a.id}`,
+            '📜 Contract expiring soon',
+            `${VILLAGERS[a.customerId]?.name ?? 'A customer'}'s contract expires in ${Math.ceil(remain / 60)} min.`,
+            30 * 60 * 1000, // 30-min cooldown so we don't keep pinging
+          )
+        );
+      }
     }
   }
   // Refresh offers periodically.

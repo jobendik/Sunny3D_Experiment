@@ -279,6 +279,13 @@ export interface FishingState {
   speed: number;
   zoneStart: number;
   zoneWidth: number;
+  /** Multi-phase difficulty: phases 1..N alternate marker direction and
+   *  shrink the safe zone. Player must time the hook on the *current*
+   *  phase. */
+  phase?: number;
+  totalPhases?: number;
+  /** Wall-clock deadline (seconds) — once exceeded the fish flees. */
+  expiresAt?: number;
 }
 
 export interface ActiveEvent {
@@ -1248,6 +1255,10 @@ export interface SettingsRoot {
   notificationsOn?: boolean;
   scenicMode: boolean;       // toggle to hide HUD
   hapticOn: boolean;
+  /** Game-pace preset. 'fast' = default (1×), 'cozy' = slower crop growth
+   *  and day cycle (2×), 'relaxed' = even slower (3×). Lets casual players
+   *  preserve the "come back tomorrow" anticipation that fast crops break. */
+  gamePace?: 'fast' | 'cozy' | 'relaxed';
 }
 
 export interface GameState {

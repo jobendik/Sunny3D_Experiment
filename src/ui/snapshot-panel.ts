@@ -3,10 +3,11 @@
 // =============================================================
 
 import { state } from '../state';
-import { buildSnapshot, copySnapshotImage, downloadSnapshot } from '../systems/snapshot';
+import { buildSnapshot, copySnapshotImage, downloadSnapshot, shareSnapshot } from '../systems/snapshot';
 import { familySafeName } from '../systems/family-filter';
 import { openModal } from './modal';
 import { toast } from './toasts';
+import { crazyGamesHappytime } from '../systems/crazygames';
 
 export function openSnapshot(): void {
   openModal('🖼️ Farm Snapshot', null);
@@ -28,7 +29,8 @@ function render(body: HTMLElement): void {
       <button id="save-name" class="btn">Update</button>
     </div>
     <div class="snapshot-actions">
-      <button class="btn primary" id="copy-snap">📋 Copy</button>
+      <button class="btn primary" id="share-snap">📣 Share</button>
+      <button class="btn" id="copy-snap">📋 Copy</button>
       <button class="btn" id="dl-snap">⬇️ Download</button>
     </div>
   `;
@@ -42,4 +44,11 @@ function render(body: HTMLElement): void {
     toast(ok ? 'Copied to clipboard!' : 'Use Download instead', ok ? 'gold' : '');
   });
   document.getElementById('dl-snap')!.addEventListener('click', () => downloadSnapshot());
+  document.getElementById('share-snap')!.addEventListener('click', async () => {
+    crazyGamesHappytime();
+    const result = await shareSnapshot();
+    if (result === 'shared') toast('Shared your farm!', 'gold');
+    else if (result === 'fallback') toast('Downloaded — share manually', 'xp');
+    // 'cancelled' = silent
+  });
 }

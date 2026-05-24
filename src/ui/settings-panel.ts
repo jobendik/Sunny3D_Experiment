@@ -4,7 +4,10 @@
 
 import { state } from '../state';
 import { openModal } from './modal';
-import { initSettings, toggleSetting, setScenicMode } from '../systems/settings';
+import {
+  initSettings, toggleSetting, setScenicMode, setGamePace,
+  type SettingsBoolKey,
+} from '../systems/settings';
 import { closeModal } from './modal';
 
 export function openSettingsPanel(): void {
@@ -15,7 +18,7 @@ export function openSettingsPanel(): void {
 }
 
 interface SettingDef {
-  key: keyof NonNullable<typeof state.settings>;
+  key: SettingsBoolKey;
   label: string;
   icon: string;
   description: string;
@@ -68,6 +71,15 @@ function render(body: HTMLElement): void {
     `;
   }
   html += `</div>
+    <div class="settings-pace">
+      <h3 style="margin:14px 0 6px;font-size:14px">Game Pace</h3>
+      <p class="settings-desc" style="margin:0 0 8px">Crops grow at this multiplier. Cozy and Relaxed let your farm survive between sessions instead of resolving everything at once.</p>
+      <div class="settings-pace-row" role="radiogroup" aria-label="Game pace">
+        <button class="settings-pace-btn" data-pace="fast">⚡ Fast (1×)</button>
+        <button class="settings-pace-btn" data-pace="cozy">🌾 Cozy (2×)</button>
+        <button class="settings-pace-btn" data-pace="relaxed">🌙 Relaxed (3×)</button>
+      </div>
+    </div>
     <div class="settings-actions">
       <button class="btn primary big" id="enter-scenic">🌅 Enter Scenic Mode</button>
       <p class="settings-fineprint">Scenic Mode hides the HUD so you can admire the farm. Tap anywhere to exit.</p>
@@ -77,7 +89,7 @@ function render(body: HTMLElement): void {
   body.innerHTML = html;
 
   body.querySelectorAll<HTMLElement>('.settings-row').forEach(row => {
-    const key = row.dataset.setting as keyof NonNullable<typeof state.settings>;
+    const key = row.dataset.setting as SettingsBoolKey;
     const onActivate = () => {
       toggleSetting(key);
       render(body);
@@ -88,6 +100,16 @@ function render(body: HTMLElement): void {
         e.preventDefault();
         onActivate();
       }
+    });
+  });
+
+  const currentPace = state.settings?.gamePace ?? 'fast';
+  body.querySelectorAll<HTMLButtonElement>('.settings-pace-btn').forEach(btn => {
+    if (btn.dataset.pace === currentPace) btn.classList.add('is-active');
+    btn.addEventListener('click', () => {
+      const pace = btn.dataset.pace as 'fast' | 'cozy' | 'relaxed';
+      setGamePace(pace);
+      render(body);
     });
   });
 

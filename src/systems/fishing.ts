@@ -1,7 +1,7 @@
 import { state } from '../state';
 import { FISH } from '../data/fish';
 import { ITEMS } from '../data/items';
-import { rand, clamp } from '../utils';
+import { rand, clamp, nowSeconds } from '../utils';
 import { sfx } from '../audio/sfx';
 import { toast } from '../ui/toasts';
 import { addItem } from './inventory';
@@ -46,8 +46,16 @@ export function startFishing(): void {
     if (r <= 0) { chosenKind = k; break; }
   }
   const fish = FISH[chosenKind]!;
+  // Rare fish (level ≥ 4) demand multi-phase catches: hook once on the
+  // first wide zone, the zone narrows + speeds up for phase 2, narrows
+  // again for phase 3. Common fish stay single-phase so early players
+  // aren't punished.
+  const totalPhases = (fish.level ?? 1) >= 4 ? 3 : (fish.level ?? 1) >= 2 ? 2 : 1;
   const zoneWidth = 80 - fish.weight * 0.3;
   const zoneStart = 60 + rand(120);
+  // 10-second timeout per phase — narrows the "perfect-window grind"
+  // exploit and creates real tension on hook-now decisions.
+  const phaseTimeout = 10;
   state.fishing = {
     active: true,
     fishKind: chosenKind,
@@ -56,23 +64,55 @@ export function startFishing(): void {
     speed: 180 + rand(120),
     zoneStart,
     zoneWidth: clamp(zoneWidth, 28, 80),
+    phase: 1,
+    totalPhases,
+    expiresAt: nowSeconds() + phaseTimeout,
   };
   const overlay = document.getElementById('fishing-overlay')!;
   overlay.classList.add('open');
+  renderPhasePill();
   const zone = document.getElementById('fishing-zone') as HTMLElement;
   zone.style.left = zoneStart + 'px';
   zone.style.width = state.fishing.zoneWidth + 'px';
   requestAnimationFrame(animateFishingMarker);
 }
 
+/** Show the current phase + countdown above the fishing track. */
+function renderPhasePill(): void {
+  const f = state.fishing;
+  if (!f) return;
+  const pill = document.getElementById('fishing-phase-pill');
+  if (!pill) return;
+  const total = f.totalPhases ?? 1;
+  const phase = f.phase ?? 1;
+  if (total <= 1) {
+    pill.textContent = '';
+    pill.style.display = 'none';
+    return;
+  }
+  const remain = Math.max(0, (f.expiresAt ?? nowSeconds()) - nowSeconds());
+  pill.style.display = '';
+  pill.textContent = `Phase ${phase} / ${total} · ${remain.toFixed(1)}s`;
+}
+
 export function animateFishingMarker(): void {
   if (!state.fishing || !state.fishing.active) return;
   const f = state.fishing;
+  // Timeout check — fish flees if the player stalls.
+  if (f.expiresAt !== undefined && nowSeconds() > f.expiresAt) {
+    const overlay = document.getElementById('fishing-overlay');
+    overlay?.classList.remove('open');
+    toast('The fish got away — too slow!', 'error');
+    sfx.splash();
+    state.fishing = null;
+    return;
+  }
   f.pos += f.dir * f.speed * (1 / 60);
   if (f.pos > 280) { f.pos = 280; f.dir = -1; }
   if (f.pos < 0) { f.pos = 0; f.dir = 1; }
   const m = document.getElementById('fishing-marker');
   if (m) (m as HTMLElement).style.left = f.pos + 'px';
+  renderPhasePill();
   requestAnimationFrame(animateFishingMarker);
 }
 
@@ -81,6 +121,31 @@ export function tryHookFish(): void {
   const f = state.fishing;
   const inZone = f.pos >= f.zoneStart - 3 && f.pos <= f.zoneStart + f.zoneWidth + 3;
   const overlay = document.getElementById('fishing-overlay')!;
+  const total = f.totalPhases ?? 1;
+  const phase = f.phase ?? 1;
+
+  // Multi-phase rare catches: a successful hook advances to the next
+  // (narrower, faster) phase. Only after the final phase do we award.
+  if (inZone && phase < total) {
+    f.phase = phase + 1;
+    // Each phase: zone shrinks 35%, speed +25%, timer resets to 8s.
+    f.zoneWidth = Math.max(18, f.zoneWidth * 0.65);
+    f.zoneStart = 60 + rand(160);
+    f.speed *= 1.25;
+    f.pos = 0;
+    f.dir = 1;
+    f.expiresAt = nowSeconds() + 8;
+    const zone = document.getElementById('fishing-zone') as HTMLElement | null;
+    if (zone) {
+      zone.style.left = f.zoneStart + 'px';
+      zone.style.width = f.zoneWidth + 'px';
+    }
+    sfx.click();
+    toast(`Phase ${phase} → ${phase + 1}!`, 'xp');
+    renderPhasePill();
+    return;
+  }
+
   overlay.classList.remove('open');
   f.active = false;
   if (inZone) {

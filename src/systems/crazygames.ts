@@ -221,6 +221,26 @@ export async function crazyGamesLoadCloud(key: string): Promise<string | null> {
   }
 }
 
+/** Resolve the CrazyGames-signed-in user. Returns null when the SDK is
+ *  inactive, no user is signed in, or the call errors. Cached after the
+ *  first successful lookup so we don't re-fetch on every leaderboard
+ *  render. */
+let cachedUser: { username?: string; profilePictureUrl?: string } | null | undefined;
+export async function crazyGamesGetUser(): Promise<{ username?: string; profilePictureUrl?: string } | null> {
+  if (cachedUser !== undefined) return cachedUser;
+  if (!isEnabled()) { cachedUser = null; return null; }
+  const sdk = await loadSdk();
+  if (!sdk?.user) { cachedUser = null; return null; }
+  try {
+    const u = await sdk.user.getUser();
+    cachedUser = u ?? null;
+    return cachedUser;
+  } catch {
+    cachedUser = null;
+    return null;
+  }
+}
+
 /** Whether the SDK has been activated this session. */
 export function crazyGamesActive(): boolean {
   return isEnabled();

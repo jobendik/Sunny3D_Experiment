@@ -56,16 +56,35 @@ export function setGameNotifications(on: boolean): void {
   track('notifications_toggle', { on: !!state.settings!.notificationsOn });
 }
 
-export function sendGameNotification(title: string, body: string): void {
+export function sendGameNotification(title: string, body: string, tag = 'sunny-acres-club'): void {
   if (!notificationsEnabled()) return;
   try {
     const n = new Notification(title, {
       body,
-      tag: 'sunny-acres-club',
+      tag,
       silent: true,
     });
     window.setTimeout(() => n.close(), 6500);
   } catch {
     state.settings!.notificationsOn = false;
   }
+}
+
+/** Per-event "rising edge" notifier — only fires when the tab is hidden
+ *  (foreground events already have toasts/world bubbles) and only once
+ *  per cooldown window. Use stable keys like 'boat-returned',
+ *  'train-returned', 'contract-expiring-<id>'. */
+const lastFired: Record<string, number> = {};
+export function notifyEvent(
+  key: string,
+  title: string,
+  body: string,
+  cooldownMs = 10 * 60 * 1000,
+): void {
+  if (!notificationsEnabled()) return;
+  if (typeof document !== 'undefined' && !document.hidden) return;
+  const last = lastFired[key] ?? 0;
+  if (Date.now() - last < cooldownMs) return;
+  lastFired[key] = Date.now();
+  sendGameNotification(title, body, `sunny-acres-${key}`);
 }

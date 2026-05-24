@@ -100,6 +100,11 @@ export function tickBoat(): void {
     Object.assign(b, makeBoat());
     track('boat_arrived', { name: b.boatName, crates: b.crates.length });
     toast(`⛵ The boat "${b.boatName}" has docked! ${b.crates.length} crates need filling.`);
+    // Fires only when the tab is hidden — foreground players already
+    // saw the toast.
+    void import('./notifications').then(m =>
+      m.notifyEvent('boat-arrived', '⛵ Boat docked', `${b.boatName} needs ${b.crates.length} crates filled.`)
+    );
   } else if (b.state === 'docked' && now >= b.departsAt) {
     // Boat departs — even if partially full. Reward proportional to filled crates.
     departBoat(false);
@@ -107,6 +112,9 @@ export function tickBoat(): void {
     // Time to send next boat (after arrival delay).
     Object.assign(b, makeBoat());
     track('boat_arrived', { name: b.boatName, crates: b.crates.length });
+    void import('./notifications').then(m =>
+      m.notifyEvent('boat-arrived', '⛵ Boat docked', `${b.boatName} needs ${b.crates.length} crates filled.`)
+    );
   }
 }
 

@@ -116,3 +116,44 @@ export function downloadSnapshot(): void {
   a.click();
   a.remove();
 }
+
+/** Native share via Web Share API. Falls back to download if the
+ *  browser doesn't support sharing files. Returns 'shared',
+ *  'fallback' (used download), or 'cancelled'. */
+export async function shareSnapshot(): Promise<'shared' | 'fallback' | 'cancelled'> {
+  const snap = buildSnapshot();
+  const text = `My Sunny Acres farm — Level ${state.level}, ${state.stats.harvested.toLocaleString()} crops harvested, ${state.stats.ordersFulfilled.toLocaleString()} orders. Try it!`;
+  // Pull the PNG into a File so navigator.share can attach it.
+  let file: File | null = null;
+  try {
+    const blob = await (await fetch(snap.url)).blob();
+    file = new File([blob], `${farmName().replace(/\s+/g, '_')}.png`, { type: 'image/png' });
+  } catch {
+    /* fall through to download */
+  }
+  const nav = navigator as Navigator & {
+    canShare?: (data: ShareData) => boolean;
+    share?: (data: ShareData) => Promise<void>;
+  };
+  if (file && nav.share && nav.canShare && nav.canShare({ files: [file] })) {
+    try {
+      await nav.share({ title: 'Sunny Acres', text, files: [file] });
+      return 'shared';
+    } catch (e) {
+      // AbortError = user cancelled
+      if ((e as { name?: string }).name === 'AbortError') return 'cancelled';
+      // fall through
+    }
+  }
+  // Final fallback — text-only share if available, else download.
+  if (nav.share) {
+    try {
+      await nav.share({ title: 'Sunny Acres', text });
+      return 'shared';
+    } catch (e) {
+      if ((e as { name?: string }).name === 'AbortError') return 'cancelled';
+    }
+  }
+  downloadSnapshot();
+  return 'fallback';
+}

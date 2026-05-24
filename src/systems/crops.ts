@@ -6,6 +6,7 @@ import { specEffects } from './specializations';
 import { activeEffects as weatherGridEffects } from './weather-grid';
 import { perkValue } from './prestige';
 import { currentHazardMod } from './hazards';
+import { paceMultiplier } from './settings';
 import type { Tile } from '../types';
 
 export function growthMultiplier(): number {
@@ -13,11 +14,15 @@ export function growthMultiplier(): number {
   const sp = specEffects();
   const eff = weatherGridEffects();
   const hazard = currentHazardMod();
-  return base
+  // paceMultiplier() (1×/2×/3×) divides growth — cozy mode lets players
+  // savour the "come back tomorrow" loop instead of resolving everything
+  // in a single sitting.
+  return (base
     * (1 + (sp.cropGrowth ?? 0))
     * (1 + eff.growth)
     * (1 + perkValue('growthBoost'))
-    * (1 + hazard.growth); // hazard.growth is negative when unprepared
+    * (1 + hazard.growth)) // hazard.growth is negative when unprepared
+    / paceMultiplier();
 }
 
 export function cropStage(tile: Tile): number {

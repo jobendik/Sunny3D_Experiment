@@ -136,6 +136,9 @@ export function tickTrain(): void {
   if (t.status === 'away' && now >= t.returnsAt) {
     t.status = 'returned';
     track('train_returned', { route: t.routeId });
+    void import('./notifications').then(m =>
+      m.notifyEvent('train-returned', '🚂 Train returned', `Your train from ${t.routeId} is back with rewards.`)
+    );
   }
 }
 

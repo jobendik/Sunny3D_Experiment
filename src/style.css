@@ -2710,6 +2710,18 @@ button {
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.75);
 }
 .fishing-hint { font-size: var(--fs-13); color: var(--ink-soft); margin-bottom: 12px; }
+.fishing-phase-pill {
+  display: none;
+  align-self: center;
+  padding: 4px 10px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  background: var(--sky-500, #4a9fd2);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
 .fishing-btn {
   background: var(--grad-btn-primary);
   color: white;
@@ -6538,6 +6550,33 @@ button {
   color: var(--ink-mute);
   font-style: italic;
   margin-top: 8px;
+}
+.settings-pace {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--ink-mute);
+}
+.settings-pace-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.settings-pace-btn {
+  flex: 1 1 30%;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 13px;
+  border: 2px solid var(--ink-mute);
+  border-radius: 10px;
+  background: var(--paper-100);
+  cursor: pointer;
+  transition: border-color 120ms, background 120ms;
+}
+.settings-pace-btn:hover { border-color: var(--honey-400); }
+.settings-pace-btn.is-active {
+  background: var(--honey-400);
+  border-color: var(--honey-600, var(--honey-400));
+  font-weight: 700;
 }
 
 /* ---------------- Daily Deal (gazette) ---------------- */
