@@ -104,7 +104,7 @@ function makeCritter(kind: 'butterfly' | 'bee' | 'firefly'): Mesh {
     transparent: true,
     side: DoubleSide,
     depthWrite: false,
-    blending: kind === 'firefly' ? AdditiveBlending : undefined,
+    ...(kind === 'firefly' ? { blending: AdditiveBlending } : {}),
   });
   const geom = new PlaneGeometry(kind === 'firefly' ? 0.34 : 0.30, kind === 'firefly' ? 0.34 : 0.30);
   const m = new Mesh(geom, mat);

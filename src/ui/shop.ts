@@ -34,6 +34,11 @@ import {
   weeklyShopDaysRemaining, buyMaggieOffer, buyWeeklyShopOffer,
   markOfferSystemsSeen, MAGGIE_LEVEL,
 } from '../systems/maggie-offers';
+import {
+  imperfectProduceActive, imperfectImperfectCount, consumeImperfectForSale,
+  imperfectSellBonusPct, recordImperfectBonus,
+} from '../systems/imperfect-produce';
+import { recordHabitatContribution } from '../systems/habitat-partner';
 
 export function openShop(defaultTab?: string): void {
   openModal('🛒 Shop', [
@@ -113,17 +118,27 @@ function renderShopSell(container: HTMLElement): void {
     container.innerHTML = '<div style="text-align:center;padding:20px;color:#888">Your barn is empty. Plant crops and harvest!</div>';
     return;
   }
-  container.innerHTML = `<div class="shop-grid"></div>`;
+  const imperfectActive = imperfectProduceActive();
+  const totalImperfect = imperfectImperfectCount();
+  const heroBanner = imperfectActive
+    ? `<div class="imperfect-hero-banner">🥕 <b>Imperfect Hero Week</b> — imperfect crops sell for +${Math.round(imperfectSellBonusPct() * 100)}% (you have ${totalImperfect} waiting).</div>`
+    : '';
+  container.innerHTML = `${heroBanner}<div class="shop-grid"></div>`;
   const grid = container.querySelector<HTMLElement>('.shop-grid')!;
   for (const k of keys) {
     const it = ITEMS[k];
     if (!it) continue;
     const div = document.createElement('div');
     div.className = 'shop-item';
+    const imperfectHere = imperfectImperfectCount(k);
+    const imperfectChip = imperfectHere > 0
+      ? `<div class="imperfect-chip" title="${imperfectHere} imperfect on hand">🥕 ${imperfectHere}</div>`
+      : '';
     div.innerHTML = `
       <img class="ico" src="${sprites.item[k]!.toDataURL()}">
       <div class="name">${it.name}</div>
       <div class="price"><img class="ico-mini" src="${sprites.item.coin!.toDataURL()}">${it.sell}/ea</div>
+      ${imperfectChip}
       <button class="sell">Sell 1</button>
       <button class="sell">Sell all (${state.inv[k]})</button>
       <div class="qty">×${state.inv[k]}</div>
@@ -138,6 +153,9 @@ function renderShopSell(container: HTMLElement): void {
 export function sellItem(k: string, qty: number): void {
   if (!state.inv[k] || state.inv[k]! < qty) return;
   const it = ITEMS[k]!;
+  // Pull imperfect units from the campaign tally first so the bonus
+  // is consumed even when the player sells a mixed batch.
+  const imperfectSold = consumeImperfectForSale(k, qty);
   removeItem(k, qty);
   let unitPrice = it.sell;
   // Market dynamics
@@ -155,12 +173,19 @@ export function sellItem(k: string, qty: number): void {
   unitPrice = Math.max(1, Math.floor(unitPrice * mult));
   // Combo applies to sell value too
   const combo = comboHit();
-  const total = Math.floor(unitPrice * qty * combo.mult);
+  const baseTotal = Math.floor(unitPrice * qty * combo.mult);
+  const imperfectBonus = imperfectSold > 0
+    ? Math.floor(unitPrice * imperfectSold * combo.mult * imperfectSellBonusPct())
+    : 0;
+  const total = baseTotal + imperfectBonus;
+  if (imperfectBonus > 0) recordImperfectBonus(imperfectBonus);
+  recordHabitatContribution('sale', qty);
   state.coins += total;
   state.stats.sold += qty;
   state.stats.earned += total;
   sfx.coin();
-  toast(`+${total}${isEvent('market_rush') ? ' (+50%!)' : ''}`, 'gold');
+  const imperfectNote = imperfectBonus > 0 ? ` · 🥕+${imperfectBonus} Imperfect Hero` : '';
+  toast(`+${total}${isEvent('market_rush') ? ' (+50%!)' : ''}${imperfectNote}`, 'gold');
   spawnHUDBurst('coin', Math.min(8, 2 + Math.floor(total / 30)));
   updateHUD();
   renderShopSell(document.getElementById('modal-body')!);

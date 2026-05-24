@@ -51,6 +51,7 @@ import { tickSurpriseBox } from './systems/surprise-box';
 import { tickSanctuary } from './systems/sanctuary';
 import { mailboxTick } from './systems/mailbox';
 import { maybeRefreshOfferSystems } from './systems/maggie-offers';
+import { rolloverImperfectProduce } from './systems/imperfect-produce';
 
 let smokeT = 0;
 
@@ -146,6 +147,7 @@ export function update(dt: number): void {
     refreshForecast();
     checkJournalMilestones();
     maybeRefreshOfferSystems();
+    rolloverImperfectProduce();
   }
 
   updateWeatherAndSeason();

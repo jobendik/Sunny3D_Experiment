@@ -54,7 +54,7 @@ function applyCozyShade(m: MeshLambertMaterial): void {
        // current diffuse contribution and blend it with the unlit
        // diffuse color tinted slightly warm — gives every shaded
        // side that "ambient bounce" feel without a real GI pass.
-       float _cozyShade = clamp(dot(normalize(reflectedLight.directDiffuse + reflectedLight.indirectDiffuse), vec3(0.3333)), 0.0, 1.0);
+       float _cozyShade = clamp(dot(reflectedLight.directDiffuse + reflectedLight.indirectDiffuse, vec3(0.3333)), 0.0, 1.0);
        float _cozyLift = smoothstep(0.0, 0.45, _cozyShade);
        reflectedLight.indirectDiffuse += diffuseColor.rgb * (1.0 - _cozyLift) * 0.32 * vec3(1.04, 0.98, 0.86);
       `,
@@ -71,7 +71,7 @@ export function mat(color: string, opts: Omit<MatKey, 'color'> = {}): MeshLamber
       emissive: opts.emissive ? new Color(opts.emissive) : new Color(0x000000),
       transparent: !!opts.transparent,
       opacity: opts.opacity ?? 1,
-      side: opts.side ?? undefined,
+      ...(opts.side !== undefined ? { side: opts.side } : {}),
       flatShading: true,
     });
     applyCozyShade(m);
@@ -88,7 +88,7 @@ export function basicMat(color: string, opts: Omit<MatKey, 'color'> = {}): MeshB
       color: new Color(color),
       transparent: !!opts.transparent,
       opacity: opts.opacity ?? 1,
-      side: opts.side ?? undefined,
+      ...(opts.side !== undefined ? { side: opts.side } : {}),
     });
     basicCache.set(k, m);
   }

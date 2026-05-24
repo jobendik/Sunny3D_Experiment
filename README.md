@@ -141,6 +141,8 @@ expeditions, and obstacle clearing) into stronger composite cards.
 **Live ops / events**
 - Live Events (weekly themed events with token rewards)
 - Featured calendar events: Sky Race, County Fair, Country Camping, and Fishing Tournament
+- Imperfect Hero Week (recurring food-waste CSR campaign with +25% Shop bonus on flagged crops)
+- Habitat Restoration partnership tracker (symbolic acres accrued by play)
 - Beauty Contest (weekly farm-decoration scoring)
 - Weather Hazards (preparation challenges)
 - Idle income on return (welcome-back screen with summary)
@@ -300,13 +302,18 @@ Manual smoke test for new builds:
 
 ## Current status
 
-The game has now completed forward-roadmap Phase 8 live-ops calendar parity:
-Sky Race, County Fair, Country Camping, and Fishing Tournament are save-backed,
-shown in the Quick Event Bar, hosted by the Event Board, and anchored by
-dedicated 3D props. Phase 9.1 also adds a shared virtual-list helper for
-long Inventory, Gazette, and Leaderboard lists; Phase 9.2 gates timer
-refreshes through IntersectionObserver-aware visible tickers. The save
-schema is v10.
+The game has now completed forward-roadmap Phase 10 real-world CSR:
+**Imperfect Hero Week** is a recurring weekly campaign that flags
+~22% of harvested crops as "imperfect" and pays a +25% Shop bonus
+when they're sold, and a **Habitat Restoration Partnership** tracker
+accrues symbolic acres from harvests, orders, sales, fishing,
+weather casts, and landmark completions. Both surface through a
+new tabbed Awards panel (Medals · Habitat · Hero) and the Gazette.
+Phases 1–8 (diegetic 3D, shop taxonomy, co-op chat, accessibility,
+onboarding, monetization grammar, animal husbandry, live-ops
+calendar) are all in, and Phase 9 has 9.1 (virtualized Inventory /
+Gazette / Leaderboard) and 9.2 (IntersectionObserver-aware visible
+tickers for countdowns) shipped. The save schema is v11.
 
 The game is **intentionally code-generated and procedural** — no external
 game assets, no CDN, no analytics, no network calls. It loads in under a

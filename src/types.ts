@@ -1204,6 +1204,40 @@ export interface SanctuaryRoot {
   totalSightings: number;
 }
 
+// ---- Phase 10.1: Imperfect Produce CSR campaign ----
+
+export interface ImperfectProduceRoot {
+  unlocked: boolean;
+  windowStartDay: number;
+  windowEndsDay: number;
+  nextWindowDay: number;
+  /** Imperfect units waiting in the barn, keyed by item id. */
+  imperfectByItem: Record<string, number>;
+  totalImperfectFlagged: number;
+  totalImperfectSold: number;
+  totalBonusEarned: number;
+  lifetimeImperfect: number;
+  lastShownStartDay: number;
+}
+
+// ---- Phase 10.2: Habitat partnership cosmetic tracker ----
+
+export interface HabitatPartnerRoot {
+  /** Symbolic "acres restored" — never real currency. */
+  acresRestored: number;
+  lastMilestoneShown: number;
+  contributions: {
+    harvest: number;
+    order: number;
+    fish: number;
+    sale: number;
+    landmark: number;
+    expedition: number;
+    weatherCast: number;
+    donate: number;
+  };
+}
+
 // ---- Settings (accessibility / scenic mode preferences) ----
 
 export interface SettingsRoot {
@@ -1328,6 +1362,9 @@ export interface GameState {
   weeklyShop?: WeeklyShopRoot;
   sanctuary?: SanctuaryRoot;
   settings?: SettingsRoot;
+  // Phase 10: real-world CSR campaigns
+  imperfectProduce?: ImperfectProduceRoot;
+  habitatPartner?: HabitatPartnerRoot;
   saveVersion?: number;
   // Internal periodic timers
   _weatherPartT?: number;

@@ -136,6 +136,8 @@ import { initDailyDeal } from './systems/daily-deal';
 import { initMaggieOffers, initWeeklyShop } from './systems/maggie-offers';
 import { initSanctuary, tickSanctuary } from './systems/sanctuary';
 import { initSettings } from './systems/settings';
+import { initImperfectProduce, rolloverImperfectProduce } from './systems/imperfect-produce';
+import { initHabitatPartner } from './systems/habitat-partner';
 import { toggleEditMode, isEditMode, setEditMode } from './systems/edit-mode';
 import { setScenicMode } from './systems/settings';
 import { openMailboxPanel } from './ui/mailbox-panel';
@@ -365,6 +367,10 @@ function init(): void {
   initMaggieOffers();
   initWeeklyShop();
   initSanctuary();
+  // Phase 10 — real-world CSR
+  initImperfectProduce();
+  rolloverImperfectProduce();
+  initHabitatPartner();
   installWorldBubbles();
   initOrderMeter();
   initStorageInterrupt();

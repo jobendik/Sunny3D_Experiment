@@ -22,6 +22,7 @@ import { screenToWorld } from './camera';
 import { recordEventAction as recordEventActionStub } from './live-events';
 import { addClubProgress as addClubProgressStub } from './club';
 import { checkMilestones as checkJournalMilestonesStub } from './journal';
+import { recordHabitatContribution } from './habitat-partner';
 
 export function initWeatherGrid(): void {
   if (!state.weatherGrid) {
@@ -156,6 +157,7 @@ export function castGrid(): boolean {
   // Live-event + club hooks
   recordEventActionStub('card_cast', undefined, slotted.length);
   addClubProgressStub('card_cast', slotted.length);
+  recordHabitatContribution('weatherCast', 1);
   checkJournalMilestonesStub();
   updateHUD();
   return true;

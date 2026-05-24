@@ -15,6 +15,7 @@ import { spawnHUDBurst } from './flyers';
 import { recordVillageEngagement } from './village';
 import { addClubProgress } from './club';
 import { unlockGreenhouse } from './greenhouse';
+import { recordHabitatContribution } from './habitat-partner';
 import type { LandmarkProject, LandmarkStage } from '../types';
 
 export interface LandmarkDef {
@@ -201,6 +202,7 @@ function completeStage(id: string): void {
   p.stageIdx += 1;
   if (p.stageIdx >= def.stages.length) {
     p.completed = true;
+    recordHabitatContribution('landmark', 1);
     track('landmark_completed', { id });
     setTimeout(() => {
       toast(`🎉 ${def.name} is complete! ${def.reward}`, 'gold');

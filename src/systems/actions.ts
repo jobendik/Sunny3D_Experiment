@@ -38,6 +38,8 @@ import { recordEventAction } from './live-events';
 import { addClubProgress } from './club';
 import { checkMilestones as checkJournalMilestones } from './journal';
 import { refreshSetsAndAnnounce } from './decor-sets';
+import { maybeFlagImperfectHarvest } from './imperfect-produce';
+import { recordHabitatContribution } from './habitat-partner';
 
 export function tryPlaceDecoration(gx: number, gy: number): void {
   const placing = state.placing!;
@@ -224,6 +226,8 @@ export function tryHarvestOrInteract(gx: number, gy: number): void {
     }
     const wasFirstHarvest = state.stats.harvested === 0;
     addItem(crop.item, yieldAmt);
+    const flaggedImperfect = maybeFlagImperfectHarvest(crop.item, yieldAmt);
+    recordHabitatContribution('harvest', yieldAmt);
     addXP(crop.xp);
     state.stats.harvested += yieldAmt;
     // Pop the crop sprite — scale up, drift, fade out — so the harvest
@@ -255,6 +259,14 @@ export function tryHarvestOrInteract(gx: number, gy: number): void {
       `+${yieldAmt} ${ITEMS[crop.item]!.name}`,
       '#3a8020',
     );
+    if (flaggedImperfect > 0) {
+      floatText(
+        gx * TILE + TILE / 2,
+        gy * TILE + TILE / 2 + 6,
+        `🥕 ${flaggedImperfect} imperfect`,
+        '#b86b1a',
+      );
+    }
     t.crop = null;
     t.plantedAt = 0;
     t.type = 'soil';

@@ -9,7 +9,7 @@
 
 ## Current Status — Snapshot
 
-_Last updated 2026-05-24 after completing Phase 9.2 visible timer gating._
+_Last updated 2026-05-23 after completing Phase 10 real-world CSR campaigns._
 
 | Phase | Items | Status |
 |---|---|---|
@@ -22,10 +22,10 @@ _Last updated 2026-05-24 after completing Phase 9.2 visible timer gating._
 | 7 — Animal husbandry depth | 5 / 5 | ✅ shipped locally |
 | 8 — Live-ops calendar (Sky Race / County Fair / Country Camping / Fishing Tournament) | 5 / 5 | ✅ shipped locally |
 | 9 — Performance + virtualization | 2 / 5 | 🟧 9.1-9.2 shipped locally |
-| 10 — Real-world CSR campaigns | 0 / 2 | ⬜ not started |
+| 10 — Real-world CSR campaigns | 2 / 2 | ✅ shipped locally |
 | 11 — Final QA pass | 0 / 6 | ⬜ not started |
 
-**Done so far:** 49 / 56 items. **Next actionable unchecked item:** Phase 9.3 — Sprite atlas for procedural icons (optional). Phase 4.5 remains deferred to Phase 11 browser-side QA.
+**Done so far:** 51 / 56 items. **Next actionable unchecked item:** Phase 9.3 — Sprite atlas for procedural icons (optional), Phase 9.5 — Bubble layer profiling, or Phase 11 final QA pass. Phase 4.5 remains deferred to Phase 11 browser-side QA.
 
 **Verified facts about the codebase as of this snapshot:**
 - 14 files in `src/three/decor/` (one per Phase-1 prop).
@@ -44,6 +44,7 @@ _Last updated 2026-05-24 after completing Phase 9.2 visible timer gating._
 - The Event Board now has a Featured tab, the QEB shows each active featured event, and four world props anchor the calendar: Sky Race flag, County Fair tent, Camping marker, and Fishing Tournament board.
 - Phase 9.1 virtualized lists are implemented via `src/ui/virtual-list.ts` and applied to Inventory/Barn + Silo, Gazette neighbor/help lists, and the expanded simulated Leaderboard.
 - Phase 9.2 visible timer gating is implemented via `src/ui/visible-ticker.ts` and applied to Order Meter, Boat, Train, Balloon, Production, Daily Timer, and Surprise Box countdown surfaces.
+- Phase 10 real-world CSR is implemented as `src/systems/imperfect-produce.ts` (weekly campaign, +25% sell bonus on flagged crops, Gazette badge during the window) and `src/systems/habitat-partner.ts` (symbolic acres-restored tracker that accrues from harvests/orders/landmarks/fishing/weather casts). The Awards modal now has three tabs: Medals · Habitat · Hero. Save schema is v11.
 
 ---
 
@@ -747,8 +748,8 @@ Track every meaningful task. Tick the box when committed AND pushed AND the type
 - [ ] 9.5 — Bubble-layer RAF profiling under load
 
 ### Phase 10 — Real-World CSR
-- [ ] 10.1 — Imperfect produce campaign
-- [ ] 10.2 — Habitat partnership tracker
+- [x] 10.1 — Imperfect produce campaign
+- [x] 10.2 — Habitat partnership tracker
 
 ### Phase 11 — Final QA Pass
 - [ ] 11.1 — Fresh-save full playthrough Lv 1 → 25
@@ -768,6 +769,7 @@ Append a one-line entry per session here. Keep newest at top. Don't delete entri
 YYYY-MM-DD  Phase X.Y started / completed — commit <sha> — note
 ```
 
+- 2026-05-23  Phase 10.1-10.2 complete — commit pending — Added `src/systems/imperfect-produce.ts` (weekly Imperfect Hero Week campaign: 22% of harvested crops flagged, +25% Shop sell bonus, daily Gazette badge) and `src/systems/habitat-partner.ts` (symbolic acres-restored tracker accruing from harvests, orders, sales, fishing, weather casts, and landmark completions). The Awards modal becomes tabbed: Medals · Habitat · Hero. Save schema bumped to v11 with safe defaults via init functions. Shop's Sell tab shows an Imperfect Hero banner and per-row 🥕 chip when imperfect units are on hand. Typecheck + build green.
 - 2026-05-24  Phase 9.2 complete — commit pending — Added `src/ui/visible-ticker.ts` and gated timer/countdown refreshes through IntersectionObserver for Order Meter, Boat, Train, Balloon, Production, Daily Timer, and Surprise Box panels. Typecheck + build green.
 - 2026-05-24  Phase 9.1 complete — commit pending — Added `src/ui/virtual-list.ts`, virtualized long Inventory/Barn + Silo sections, Gazette neighbor/help lists with delegated actions, and expanded/virtualized Leaderboard rows. Typecheck + build green.
 - 2026-05-24  Phase 8.1-8.5 complete — commit pending — Added save-backed Sky Race, County Fair, Country Camping, and Fishing Tournament systems, Featured Event Board tab, QEB entries, action-hook integration, save schema v10, and four dedicated 3D event props with world bubbles. Typecheck + build green.

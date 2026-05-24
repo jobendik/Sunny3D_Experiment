@@ -16,8 +16,9 @@ import type { GameState, Tile } from './types';
 // v7 adds Hay Day-grammar systems: mailbox, surprise box, piggy bank,
 // daily deal, sanctuary, settings. v8 adds Phase-6 offer grammar
 // state. v9 adds animal-care upgrades. v10 adds Phase-8 featured
-// live-ops event roots.
-const CURRENT_SAVE_VERSION = 10;
+// live-ops event roots. v11 adds Phase-10 CSR roots (imperfect
+// produce + habitat partnership).
+const CURRENT_SAVE_VERSION = 11;
 
 interface SaveData {
   saveVersion?: number;
@@ -113,6 +114,9 @@ interface SaveData {
   weeklyShop?: GameState['weeklyShop'];
   sanctuary?: GameState['sanctuary'];
   settings?: GameState['settings'];
+  // Phase 10: real-world CSR campaigns (v11)
+  imperfectProduce?: GameState['imperfectProduce'];
+  habitatPartner?: GameState['habitatPartner'];
   // Transient migration hints (not stored in localStorage; set by
   // migrateSave() and read by loadGame() to shift entity coords).
   _migrateOffsetX?: number;
@@ -214,6 +218,8 @@ export function saveGame(): void {
     weeklyShop: state.weeklyShop,
     sanctuary: state.sanctuary,
     settings: state.settings,
+    imperfectProduce: state.imperfectProduce,
+    habitatPartner: state.habitatPartner,
   };
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
@@ -265,6 +271,10 @@ function migrateSave(data: SaveData): SaveData {
   if (data.saveVersion < 10) {
     // v10: Phase-8 featured event roots default through initFeaturedEvents().
     data.saveVersion = 10;
+  }
+  if (data.saveVersion < 11) {
+    // v11: Phase-10 CSR roots default through initImperfectProduce()/initHabitatPartner().
+    data.saveVersion = 11;
   }
   return data;
 }
@@ -398,6 +408,8 @@ export function loadGame(): boolean {
     if (data.weeklyShop) state.weeklyShop = data.weeklyShop;
     if (data.sanctuary) state.sanctuary = data.sanctuary;
     if (data.settings) state.settings = data.settings;
+    if (data.imperfectProduce) state.imperfectProduce = data.imperfectProduce;
+    if (data.habitatPartner) state.habitatPartner = data.habitatPartner;
     state.saveVersion = data.saveVersion ?? CURRENT_SAVE_VERSION;
 
     const offset = data.saveTime || 0;

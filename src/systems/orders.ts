@@ -24,6 +24,7 @@ import { recordVillageEngagement } from './village';
 import { reputationCoinBonus } from './reputation';
 import { maybeDeliverThanks } from './mailbox';
 import { piggyOnDelivery } from './piggy-bank';
+import { recordHabitatContribution } from './habitat-partner';
 import type { Order } from '../types';
 
 export function generateOrder(): Order {
@@ -80,6 +81,7 @@ export function fulfillOrder(orderId: string): void {
   state.coins += reward;
   state.stats.earned += reward;
   state.stats.ordersFulfilled += 1;
+  recordHabitatContribution('order', 1);
   addXP(o.xp);
   // Order Board macro-meter: bigger payouts advance the bar faster.
   addOrderPoints(reward);

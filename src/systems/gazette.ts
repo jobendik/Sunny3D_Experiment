@@ -18,6 +18,7 @@ import { toast } from '../ui/toasts';
 import { sfx } from '../audio/sfx';
 import { updateHUD } from '../ui/hud';
 import { refreshDailyDeal } from './daily-deal';
+import { imperfectProduceActive, imperfectProduceDaysLeft, imperfectSellBonusPct } from './imperfect-produce';
 import type { NeighborSaleOffer, HelpRequestOffer, MaterialKey } from '../types';
 
 const MATERIAL_REWARDS: MaterialKey[] = ['plank', 'nail', 'screw', 'panel', 'bolt', 'rope', 'stake', 'mallet'];
@@ -127,6 +128,17 @@ export function refreshGazette(): void {
       type: 'event_notice',
       title: '📢 News from Sunny Acres',
       body: state.event.msg,
+    });
+  }
+
+  // 5a) Imperfect Hero Week badge — surfaced as a special article so
+  // the player sees the campaign in their daily paper.
+  if (imperfectProduceActive()) {
+    const left = imperfectProduceDaysLeft();
+    g.articles.push({
+      type: 'event_notice',
+      title: '🥕 Imperfect Hero Week',
+      body: `Wonky carrots and lopsided tomatoes are the heroes this week. Sell imperfect crops through the Shop for +${Math.round(imperfectSellBonusPct() * 100)}% — ${left} day${left === 1 ? '' : 's'} left.`,
     });
   }
 

@@ -8209,3 +8209,157 @@ body.family-friendly .mailbox-letter-body {
     width: 100%;
   }
 }
+
+/* ============================================================
+   Phase 10 — Real-world CSR campaigns
+   - Imperfect Hero Week banner on the Shop's Sell tab
+   - Habitat Partnership tracker in the Awards modal
+   ============================================================ */
+
+.imperfect-hero-banner {
+  background: linear-gradient(135deg, #fff5e0, #ffe6b3);
+  border: 1px solid var(--honey-400, #f4b942);
+  border-radius: 10px;
+  padding: 9px 12px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: #6a4310;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+.imperfect-chip {
+  display: inline-block;
+  margin: 4px auto 6px;
+  padding: 2px 8px;
+  background: rgba(244, 185, 66, 0.18);
+  color: #6a4310;
+  border: 1px solid rgba(244, 185, 66, 0.45);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.csr-card {
+  background: var(--paper-100, #fff7e1);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: var(--ink, #2c1c0e);
+  line-height: 1.4;
+}
+.csr-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.csr-emoji {
+  font-size: 32px;
+  line-height: 1;
+}
+.csr-title {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--ink, #2c1c0e);
+}
+.csr-sub {
+  font-size: 12px;
+  color: var(--ink-mute, #8a7458);
+}
+.csr-subhead {
+  margin: 14px 0 6px;
+  font-size: 13px;
+  color: var(--ink-soft, #5a4028);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.csr-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--ink-soft, #5a4028);
+}
+.csr-list li {
+  padding: 3px 0;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.07);
+}
+.csr-list li:last-child { border-bottom: none; }
+.csr-footnote {
+  margin-top: 12px;
+  font-size: 11px;
+  color: var(--ink-mute, #8a7458);
+  font-style: italic;
+}
+.csr-status-line {
+  font-size: 13px;
+  color: var(--ink-soft, #5a4028);
+  margin-bottom: 4px;
+}
+.csr-status {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.csr-status.on {
+  background: rgba(94, 163, 60, 0.15);
+  color: var(--sage-500, #5ea33c);
+  border: 1px solid rgba(94, 163, 60, 0.45);
+}
+.csr-status.off {
+  background: rgba(138, 116, 88, 0.15);
+  color: var(--ink-mute, #8a7458);
+  border: 1px solid rgba(138, 116, 88, 0.35);
+}
+
+.habitat-card .habitat-acres {
+  text-align: center;
+  font-size: 22px;
+  color: var(--sage-500, #5ea33c);
+  margin: 6px 0 8px;
+  font-family: var(--font-display, inherit);
+}
+.habitat-bar {
+  height: 12px;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+.habitat-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #5ea33c, #9ed378);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+.habitat-bar-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--ink-mute, #8a7458);
+}
+.habitat-pips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 10px 0 4px;
+}
+.habitat-pip {
+  display: inline-block;
+  padding: 2px 7px;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--ink-mute, #8a7458);
+}
+.habitat-pip.on {
+  background: rgba(94, 163, 60, 0.18);
+  border-color: rgba(94, 163, 60, 0.55);
+  color: var(--sage-500, #5ea33c);
+  font-weight: 700;
+}

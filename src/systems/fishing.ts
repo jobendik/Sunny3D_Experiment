@@ -18,6 +18,7 @@ import { track } from './telemetry';
 import { recordEventAction } from './live-events';
 import { addClubProgress } from './club';
 import { checkMilestones as checkJournalMilestones } from './journal';
+import { recordHabitatContribution } from './habitat-partner';
 
 export function startFishing(): void {
   if (state.level < 3) {
@@ -86,6 +87,7 @@ export function tryHookFish(): void {
     addItem(f.fishKind, 1);
     addXP(FISH[f.fishKind]!.xp);
     state.stats.fishCaught++;
+    recordHabitatContribution('fish', 1);
     sfx.fishCatch();
     const bm = baitValueMultiplier();
     // Rare catch event chain: every 10th catch grants a bonus
